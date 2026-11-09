@@ -1,0 +1,53 @@
+{
+  "name": "Night Owl",
+  "wallpaper": "",
+  "yaru": "blue",
+  "gnomeAccent": "blue",
+  "colors": {
+    "background": "#010e1a",
+    "border": "#0b2942",
+    "surface": "#0b2942",
+    "highlight": "#1d3b53",
+    "selection": "#234d70",
+    "card": "#011627",
+    "cardBorder": "#1d3b53",
+    "track": "#000a13",
+    "text": "#d6deeb",
+    "textSoft": "#c5cfe0",
+    "textSecondary": "#a1b2c8",
+    "textMuted": "#637777",
+    "textDisabled": "#3b5168",
+    "accent": "#82aaff",
+    "warning": "#ef5350",
+    "glow": "#1c82aaff"
+  },
+  "terminal": {
+    "foreground": "#d6deeb",
+    "background": "#011627",
+    "cursor": "#80a4c2",
+    "selectionForeground": "#d6deeb",
+    "selectionBackground": "#1d3b53",
+    "ansi": [
+      "#011627",
+      "#ef5350",
+      "#22da6e",
+      "#addb67",
+      "#82aaff",
+      "#c792ea",
+      "#21c7a8",
+      "#ffffff",
+      "#575656",
+      "#ef5350",
+      "#22da6e",
+      "#ffeb95",
+      "#82aaff",
+      "#c792ea",
+      "#7fdbca",
+      "#ffffff"
+    ]
+  },
+  "vscode": {
+    "theme": "Night Owl",
+    "extension": "sdras.night-owl"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "name": "Dracula",
+  "wallpaper": "",
+  "yaru": "purple",
+  "gnomeAccent": "purple",
+  "colors": {
+    "background": "#21222c",
+    "border": "#44475a",
+    "surface": "#44475a",
+    "highlight": "#515468",
+    "selection": "#6272a4",
+    "card": "#282a36",
+    "cardBorder": "#44475a",
+    "track": "#191a21",
+    "text": "#f8f8f2",
+    "textSoft": "#e6e6e0",
+    "textSecondary": "#bfc3d9",
+    "textMuted": "#7e88b5",
+    "textDisabled": "#565b7a",
+    "accent": "#bd93f9",
+    "warning": "#ff5555",
+    "glow": "#1cbd93f9"
+  },
+  "terminal": {
+    "foreground": "#f8f8f2",
+    "background": "#282a36",
+    "cursor": "#f8f8f2",
+    "selectionForeground": "#ffffff",
+    "selectionBackground": "#44475a",
+    "ansi": [
+      "#21222c",
+      "#ff5555",
+      "#50fa7b",
+      "#f1fa8c",
+      "#bd93f9",
+      "#ff79c6",
+      "#8be9fd",
+      "#f8f8f2",
+      "#6272a4",
+      "#ff6e6e",
+      "#69ff94",
+      "#ffffa5",
+      "#d6acff",
+      "#ff92df",
+      "#a4ffff",
+      "#ffffff"
+    ]
+  },
+  "vscode": {
+    "theme": "Dracula Theme",
+    "extension": "dracula-theme.theme-dracula"
+  }
+}

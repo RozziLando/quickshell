@@ -1,0 +1,53 @@
+{
+  "name": "One Dark",
+  "wallpaper": "",
+  "yaru": "blue",
+  "gnomeAccent": "blue",
+  "colors": {
+    "background": "#21252b",
+    "border": "#2c313a",
+    "surface": "#2c313a",
+    "highlight": "#3e4451",
+    "selection": "#4b5263",
+    "card": "#282c34",
+    "cardBorder": "#3e4451",
+    "track": "#1b1f24",
+    "text": "#dcdfe4",
+    "textSoft": "#c8ccd4",
+    "textSecondary": "#abb2bf",
+    "textMuted": "#5c6370",
+    "textDisabled": "#4b5263",
+    "accent": "#61afef",
+    "warning": "#e06c75",
+    "glow": "#1c61afef"
+  },
+  "terminal": {
+    "foreground": "#abb2bf",
+    "background": "#282c34",
+    "cursor": "#528bff",
+    "selectionForeground": "#abb2bf",
+    "selectionBackground": "#3e4451",
+    "ansi": [
+      "#282c34",
+      "#e06c75",
+      "#98c379",
+      "#e5c07b",
+      "#61afef",
+      "#c678dd",
+      "#56b6c2",
+      "#abb2bf",
+      "#5c6370",
+      "#e06c75",
+      "#98c379",
+      "#e5c07b",
+      "#61afef",
+      "#c678dd",
+      "#56b6c2",
+      "#c8ccd4"
+    ]
+  },
+  "vscode": {
+    "theme": "One Dark",
+    "extension": "mskelton.one-dark-theme"
+  }
+}

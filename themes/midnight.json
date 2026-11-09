@@ -1,0 +1,53 @@
+{
+  "name": "Midnight",
+  "wallpaper": "",
+  "yaru": "purple",
+  "gnomeAccent": "purple",
+  "colors": {
+    "background": "#141416",
+    "border": "#2a2a30",
+    "surface": "#26262c",
+    "highlight": "#34343c",
+    "selection": "#4a4a55",
+    "card": "#1c1c20",
+    "cardBorder": "#2a2a30",
+    "track": "#0d0d0f",
+    "text": "#f8f8f2",
+    "textSoft": "#e6e6e0",
+    "textSecondary": "#b9b9c4",
+    "textMuted": "#7c7c8a",
+    "textDisabled": "#52525c",
+    "accent": "#9466c9",
+    "warning": "#ff5555",
+    "glow": "#0cffffff"
+  },
+  "terminal": {
+    "foreground": "#f8f8f2",
+    "background": "#141416",
+    "cursor": "#f8f8f2",
+    "selectionForeground": "#ffffff",
+    "selectionBackground": "#34343c",
+    "ansi": [
+      "#1c1c20",
+      "#ff5555",
+      "#50fa7b",
+      "#f1fa8c",
+      "#bd93f9",
+      "#ff79c6",
+      "#8be9fd",
+      "#f8f8f2",
+      "#6272a4",
+      "#ff6e6e",
+      "#69ff94",
+      "#ffffa5",
+      "#d6acff",
+      "#ff92df",
+      "#a4ffff",
+      "#ffffff"
+    ]
+  },
+  "vscode": {
+    "theme": "Midnight (Quickshell)",
+    "extension": ""
+  }
+}

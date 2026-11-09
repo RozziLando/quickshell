@@ -1,0 +1,53 @@
+{
+  "name": "Solarized",
+  "wallpaper": "",
+  "yaru": "blue",
+  "gnomeAccent": "blue",
+  "colors": {
+    "background": "#00212b",
+    "border": "#073642",
+    "surface": "#073642",
+    "highlight": "#0a4250",
+    "selection": "#0d4a5a",
+    "card": "#002b36",
+    "cardBorder": "#0a4250",
+    "track": "#001a22",
+    "text": "#eee8d5",
+    "textSoft": "#93a1a1",
+    "textSecondary": "#839496",
+    "textMuted": "#586e75",
+    "textDisabled": "#3d5a63",
+    "accent": "#268bd2",
+    "warning": "#dc322f",
+    "glow": "#1c268bd2"
+  },
+  "terminal": {
+    "foreground": "#839496",
+    "background": "#002b36",
+    "cursor": "#93a1a1",
+    "selectionForeground": "#93a1a1",
+    "selectionBackground": "#073642",
+    "ansi": [
+      "#073642",
+      "#dc322f",
+      "#859900",
+      "#b58900",
+      "#268bd2",
+      "#d33682",
+      "#2aa198",
+      "#eee8d5",
+      "#002b36",
+      "#cb4b16",
+      "#586e75",
+      "#657b83",
+      "#839496",
+      "#6c71c4",
+      "#93a1a1",
+      "#fdf6e3"
+    ]
+  },
+  "vscode": {
+    "theme": "Solarized Dark+",
+    "extension": "ryanolsonx.solarized"
+  }
+}

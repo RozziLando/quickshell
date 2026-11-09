@@ -1,0 +1,53 @@
+{
+  "name": "Iceberg",
+  "wallpaper": "",
+  "yaru": "blue",
+  "gnomeAccent": "blue",
+  "colors": {
+    "background": "#121419",
+    "border": "#1e2132",
+    "surface": "#1e2132",
+    "highlight": "#272c42",
+    "selection": "#3d425b",
+    "card": "#161821",
+    "cardBorder": "#272c42",
+    "track": "#0d0f14",
+    "text": "#d2d4de",
+    "textSoft": "#c6c8d1",
+    "textSecondary": "#a3a6b6",
+    "textMuted": "#6b7089",
+    "textDisabled": "#444b71",
+    "accent": "#84a0c6",
+    "warning": "#e27878",
+    "glow": "#1c84a0c6"
+  },
+  "terminal": {
+    "foreground": "#c6c8d1",
+    "background": "#161821",
+    "cursor": "#c6c8d1",
+    "selectionForeground": "#c6c8d1",
+    "selectionBackground": "#272c42",
+    "ansi": [
+      "#1e2132",
+      "#e27878",
+      "#b4be82",
+      "#e2a478",
+      "#84a0c6",
+      "#a093c7",
+      "#89b8c2",
+      "#c6c8d1",
+      "#6b7089",
+      "#e98989",
+      "#c0ca8e",
+      "#e9b189",
+      "#91acd1",
+      "#ada0d3",
+      "#95c4ce",
+      "#d2d4de"
+    ]
+  },
+  "vscode": {
+    "theme": "Iceberg",
+    "extension": "cocopon.iceberg-theme"
+  }
+}

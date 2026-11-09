@@ -1,0 +1,53 @@
+{
+  "name": "Sonokai",
+  "wallpaper": "",
+  "yaru": "prussiangreen",
+  "gnomeAccent": "teal",
+  "colors": {
+    "background": "#222327",
+    "border": "#33353f",
+    "surface": "#33353f",
+    "highlight": "#3b3e48",
+    "selection": "#414550",
+    "card": "#2c2e34",
+    "cardBorder": "#3b3e48",
+    "track": "#1b1c20",
+    "text": "#e2e2e3",
+    "textSoft": "#cfcfd1",
+    "textSecondary": "#b0b2b8",
+    "textMuted": "#7f8490",
+    "textDisabled": "#595f6f",
+    "accent": "#76cce0",
+    "warning": "#fc5d7c",
+    "glow": "#1c76cce0"
+  },
+  "terminal": {
+    "foreground": "#e2e2e3",
+    "background": "#2c2e34",
+    "cursor": "#e2e2e3",
+    "selectionForeground": "#e2e2e3",
+    "selectionBackground": "#414550",
+    "ansi": [
+      "#181819",
+      "#fc5d7c",
+      "#9ed072",
+      "#e7c664",
+      "#76cce0",
+      "#b39df3",
+      "#f39660",
+      "#e2e2e3",
+      "#7f8490",
+      "#fc5d7c",
+      "#9ed072",
+      "#e7c664",
+      "#76cce0",
+      "#b39df3",
+      "#f39660",
+      "#e2e2e3"
+    ]
+  },
+  "vscode": {
+    "theme": "Sonokai",
+    "extension": "slava0135.sonokai-pro"
+  }
+}

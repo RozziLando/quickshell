@@ -1,0 +1,53 @@
+{
+  "name": "Catppuccin Mocha",
+  "wallpaper": "",
+  "yaru": "purple",
+  "gnomeAccent": "purple",
+  "colors": {
+    "background": "#181825",
+    "border": "#313244",
+    "surface": "#313244",
+    "highlight": "#45475a",
+    "selection": "#585b70",
+    "card": "#1e1e2e",
+    "cardBorder": "#313244",
+    "track": "#11111b",
+    "text": "#cdd6f4",
+    "textSoft": "#bac2de",
+    "textSecondary": "#a6adc8",
+    "textMuted": "#7f849c",
+    "textDisabled": "#585b70",
+    "accent": "#cba6f7",
+    "warning": "#f38ba8",
+    "glow": "#1ccba6f7"
+  },
+  "terminal": {
+    "foreground": "#cdd6f4",
+    "background": "#1e1e2e",
+    "cursor": "#f5e0dc",
+    "selectionForeground": "#1e1e2e",
+    "selectionBackground": "#f5e0dc",
+    "ansi": [
+      "#45475a",
+      "#f38ba8",
+      "#a6e3a1",
+      "#f9e2af",
+      "#89b4fa",
+      "#f5c2e7",
+      "#94e2d5",
+      "#bac2de",
+      "#585b70",
+      "#f38ba8",
+      "#a6e3a1",
+      "#f9e2af",
+      "#89b4fa",
+      "#f5c2e7",
+      "#94e2d5",
+      "#a6adc8"
+    ]
+  },
+  "vscode": {
+    "theme": "Catppuccin Mocha",
+    "extension": "catppuccin.catppuccin-vsc"
+  }
+}

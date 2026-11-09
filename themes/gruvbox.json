@@ -1,0 +1,53 @@
+{
+  "name": "Gruvbox",
+  "wallpaper": "",
+  "yaru": "",
+  "gnomeAccent": "orange",
+  "colors": {
+    "background": "#1d2021",
+    "border": "#3c3836",
+    "surface": "#3c3836",
+    "highlight": "#504945",
+    "selection": "#665c54",
+    "card": "#282828",
+    "cardBorder": "#3c3836",
+    "track": "#141617",
+    "text": "#ebdbb2",
+    "textSoft": "#d5c4a1",
+    "textSecondary": "#bdae93",
+    "textMuted": "#928374",
+    "textDisabled": "#665c54",
+    "accent": "#fe8019",
+    "warning": "#fb4934",
+    "glow": "#1cfe8019"
+  },
+  "terminal": {
+    "foreground": "#ebdbb2",
+    "background": "#282828",
+    "cursor": "#ebdbb2",
+    "selectionForeground": "#ebdbb2",
+    "selectionBackground": "#504945",
+    "ansi": [
+      "#282828",
+      "#cc241d",
+      "#98971a",
+      "#d79921",
+      "#458588",
+      "#b16286",
+      "#689d6a",
+      "#a89984",
+      "#928374",
+      "#fb4934",
+      "#b8bb26",
+      "#fabd2f",
+      "#83a598",
+      "#d3869b",
+      "#8ec07c",
+      "#ebdbb2"
+    ]
+  },
+  "vscode": {
+    "theme": "Gruvbox Dark Medium",
+    "extension": "jdinhlife.gruvbox"
+  }
+}

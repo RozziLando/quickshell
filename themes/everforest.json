@@ -1,0 +1,53 @@
+{
+  "name": "Everforest",
+  "wallpaper": "",
+  "yaru": "sage",
+  "gnomeAccent": "green",
+  "colors": {
+    "background": "#232a2e",
+    "border": "#343f44",
+    "surface": "#343f44",
+    "highlight": "#3d484d",
+    "selection": "#475258",
+    "card": "#2d353b",
+    "cardBorder": "#3d484d",
+    "track": "#1e2326",
+    "text": "#d3c6aa",
+    "textSoft": "#d3c6aa",
+    "textSecondary": "#9da9a0",
+    "textMuted": "#859289",
+    "textDisabled": "#4f585e",
+    "accent": "#a7c080",
+    "warning": "#e67e80",
+    "glow": "#1ca7c080"
+  },
+  "terminal": {
+    "foreground": "#d3c6aa",
+    "background": "#2d353b",
+    "cursor": "#d3c6aa",
+    "selectionForeground": "#d3c6aa",
+    "selectionBackground": "#475258",
+    "ansi": [
+      "#475258",
+      "#e67e80",
+      "#a7c080",
+      "#dbbc7f",
+      "#7fbbb3",
+      "#d699b6",
+      "#83c092",
+      "#d3c6aa",
+      "#475258",
+      "#e67e80",
+      "#a7c080",
+      "#dbbc7f",
+      "#7fbbb3",
+      "#d699b6",
+      "#83c092",
+      "#d3c6aa"
+    ]
+  },
+  "vscode": {
+    "theme": "Everforest Pro Dark",
+    "extension": "andreilucaci.everforest-pro"
+  }
+}

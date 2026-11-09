@@ -1,0 +1,53 @@
+{
+  "name": "Tokyo Night",
+  "wallpaper": "",
+  "yaru": "blue",
+  "gnomeAccent": "blue",
+  "colors": {
+    "background": "#16161e",
+    "border": "#24283b",
+    "surface": "#24283b",
+    "highlight": "#292e42",
+    "selection": "#414868",
+    "card": "#1a1b26",
+    "cardBorder": "#292e42",
+    "track": "#101014",
+    "text": "#c0caf5",
+    "textSoft": "#a9b1d6",
+    "textSecondary": "#9aa5ce",
+    "textMuted": "#565f89",
+    "textDisabled": "#414868",
+    "accent": "#7aa2f7",
+    "warning": "#f7768e",
+    "glow": "#1c7aa2f7"
+  },
+  "terminal": {
+    "foreground": "#c0caf5",
+    "background": "#1a1b26",
+    "cursor": "#c0caf5",
+    "selectionForeground": "#c0caf5",
+    "selectionBackground": "#283457",
+    "ansi": [
+      "#15161e",
+      "#f7768e",
+      "#9ece6a",
+      "#e0af68",
+      "#7aa2f7",
+      "#bb9af7",
+      "#7dcfff",
+      "#a9b1d6",
+      "#414868",
+      "#f7768e",
+      "#9ece6a",
+      "#e0af68",
+      "#7aa2f7",
+      "#bb9af7",
+      "#7dcfff",
+      "#c0caf5"
+    ]
+  },
+  "vscode": {
+    "theme": "Tokyo Night",
+    "extension": "enkia.tokyo-night"
+  }
+}

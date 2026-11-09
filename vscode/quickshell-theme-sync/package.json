@@ -1,0 +1,47 @@
+{
+  "name": "quickshell-theme-sync",
+  "displayName": "Quickshell Theme Sync",
+  "description": "Follows the Quickshell island theme: when the shell theme changes, the matching VS Code color theme is applied.",
+  "version": "1.2.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "label": "Midnight (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/midnight.json"
+      }
+    ],
+    "configuration": {
+      "title": "Quickshell Theme Sync",
+      "properties": {
+        "quickshellThemeSync.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Apply the VS Code theme that matches the Quickshell theme."
+        },
+        "quickshellThemeSync.shellDir": {
+          "type": "string",
+          "default": "~/.config/quickshell",
+          "description": "Quickshell config folder (the one with theme.json and themes/)."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "quickshellThemeSync.syncNow",
+        "title": "Quickshell: Sync Theme Now"
+      }
+    ]
+  }
+}

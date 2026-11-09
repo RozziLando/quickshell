@@ -1,0 +1,53 @@
+{
+  "name": "Nord",
+  "wallpaper": "",
+  "yaru": "blue",
+  "gnomeAccent": "blue",
+  "colors": {
+    "background": "#242933",
+    "border": "#3b4252",
+    "surface": "#3b4252",
+    "highlight": "#434c5e",
+    "selection": "#4c566a",
+    "card": "#2e3440",
+    "cardBorder": "#3b4252",
+    "track": "#1e222a",
+    "text": "#eceff4",
+    "textSoft": "#e5e9f0",
+    "textSecondary": "#d8dee9",
+    "textMuted": "#7b88a1",
+    "textDisabled": "#4c566a",
+    "accent": "#88c0d0",
+    "warning": "#bf616a",
+    "glow": "#1c88c0d0"
+  },
+  "terminal": {
+    "foreground": "#d8dee9",
+    "background": "#2e3440",
+    "cursor": "#d8dee9",
+    "selectionForeground": "#d8dee9",
+    "selectionBackground": "#434c5e",
+    "ansi": [
+      "#3b4252",
+      "#bf616a",
+      "#a3be8c",
+      "#ebcb8b",
+      "#81a1c1",
+      "#b48ead",
+      "#88c0d0",
+      "#e5e9f0",
+      "#4c566a",
+      "#bf616a",
+      "#a3be8c",
+      "#ebcb8b",
+      "#81a1c1",
+      "#b48ead",
+      "#8fbcbb",
+      "#eceff4"
+    ]
+  },
+  "vscode": {
+    "theme": "Nord",
+    "extension": "arcticicestudio.nord-visual-studio-code"
+  }
+}

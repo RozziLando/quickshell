@@ -1,0 +1,53 @@
+{
+  "name": "Kanagawa",
+  "wallpaper": "",
+  "yaru": "prussiangreen",
+  "gnomeAccent": "teal",
+  "colors": {
+    "background": "#16161d",
+    "border": "#2a2a37",
+    "surface": "#2a2a37",
+    "highlight": "#363646",
+    "selection": "#54546d",
+    "card": "#1f1f28",
+    "cardBorder": "#363646",
+    "track": "#121218",
+    "text": "#dcd7ba",
+    "textSoft": "#c8c093",
+    "textSecondary": "#b8b4a0",
+    "textMuted": "#727169",
+    "textDisabled": "#54546d",
+    "accent": "#7fb4ca",
+    "warning": "#ff5d62",
+    "glow": "#1c7fb4ca"
+  },
+  "terminal": {
+    "foreground": "#dcd7ba",
+    "background": "#1f1f28",
+    "cursor": "#c8c093",
+    "selectionForeground": "#c8c093",
+    "selectionBackground": "#2d4f67",
+    "ansi": [
+      "#16161d",
+      "#c34043",
+      "#76946a",
+      "#c0a36e",
+      "#7e9cd8",
+      "#957fb8",
+      "#6a9589",
+      "#c8c093",
+      "#727169",
+      "#e82424",
+      "#98bb6c",
+      "#e6c384",
+      "#7fb4ca",
+      "#938aa9",
+      "#7aa89f",
+      "#dcd7ba"
+    ]
+  },
+  "vscode": {
+    "theme": "Kanagawa",
+    "extension": "qufiwefefwoyn.kanagawa"
+  }
+}

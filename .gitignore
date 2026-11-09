@@ -1,0 +1,7 @@
+# Personal photo for the lock and login screen: copy it by hand on each PC
+assets/avatar.*
+
+# Backups made by install.sh and editors
+*.bak-*
+*~
+.qmlls.ini
