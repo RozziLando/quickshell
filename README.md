@@ -10,8 +10,8 @@ lock screen and login screen. Works on **Arch** and **Fedora**.
 [ -d ~/.config/quickshell ] && mv ~/.config/quickshell ~/.config/quickshell_backup
 git clone https://github.com/RozziLando/quickshell.git ~/.config/quickshell
 cd ~/.config/quickshell
-chmod +x installation.sh
-./installation.sh
+chmod +x install.sh
+./install.sh
 ```
 
 Run it as your normal user: it asks for the sudo password when needed.
