@@ -5,17 +5,12 @@ import Quickshell.Widgets
 import qs.services
 import qs.widgets
 
-// Vista del media player (copertina, titoli, barra, controlli, più player
-// con la rotella), usata dal player che scende dall'isola
-// (aperto dai tasti o dal cerchio sinistro).
 Item {
     id: root
 
-    // Dimensione: 1 = misura del player dell'isola
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
 
-    // true mentre è visibile: aggiorna la posizione del brano
     property bool active: visible
 
     readonly property int coverSize: u(68)
@@ -27,7 +22,6 @@ Item {
         return m + ":" + (s < 10 ? "0" : "") + s
     }
 
-    // ---------- Selezione del player ----------
     property var players: Mpris.players.values
     readonly property int playerCount: players.length
     property int index: 0
@@ -35,7 +29,6 @@ Item {
     property var player: playerCount > 0
         ? players[Math.min(index, playerCount - 1)]
         : null
-
 
     readonly property bool multi: playerCount > 1
 
@@ -50,7 +43,6 @@ Item {
         index = (index + delta + playerCount) % playerCount
     }
 
-    // ---------- Logo dell'app (ripiego per la copertina) ----------
     function appIconFor(p) {
         if (!p) return ""
         var keys = [p.desktopEntry, p.identity]
@@ -63,7 +55,6 @@ Item {
                 if (path !== "") return path
             }
         }
-        // Ultimo tentativo: il nome del desktop entry come nome icona
         if (p.desktopEntry && p.desktopEntry !== "") {
             var q = Quickshell.iconPath(p.desktopEntry, true)
             if (q !== "") return q
@@ -73,10 +64,8 @@ Item {
 
     readonly property string fallbackIcon: appIconFor(player)
 
-    // Se diminuiscono i player, resta su uno valido
     onPlayerCountChanged: if (index >= playerCount && playerCount > 0) index = playerCount - 1
 
-    // Aggiorna la posizione di riproduzione mentre il brano suona
     Timer {
         interval: 1000
         repeat: true
@@ -84,14 +73,11 @@ Item {
         onTriggered: root.player.positionChanged()
     }
 
-    // Evita che il touchpad scorra troppi player in un colpo solo
     Timer {
         id: wheelCooldown
         interval: 220
     }
 
-    // ---------- Interfaccia ----------
-        // Rotella: cambia player
         WheelHandler {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
@@ -101,43 +87,32 @@ Item {
             }
         }
 
-        // ----- Player -----
         Row {
             id: playerRow
             width: parent.width
             height: root.coverSize
-            // Con un solo player resta centrato, con più player sale per far posto ai puntini
             y: root.multi ? 0 : (root.height - height) / 2
             spacing: root.u(16)
 
-            // ----- Copertina (con ripiego sul logo dell'app) -----
             ClippingRectangle {
                 width: root.coverSize
                 height: root.coverSize
                 radius: root.u(12)
                 color: Theme.surface
 
-                // Copertina nuova, scaricata in background: quando è pronta
-                // sostituisce quella mostrata. Così cambiando brano resta la
-                // copertina precedente finché non arriva la nuova (niente
-                // lampo del logo dell'app nel mezzo)
                 Image {
                     id: incoming
                     visible: false
                     source: root.player ? root.player.trackArtUrl : ""
-                    // Decodifica alla misura che serve (pixel veri del
-                    // monitor, vedi Theme.px), non a 640 px
                     sourceSize: Qt.size(Theme.px(root.coverSize, incoming), Theme.px(root.coverSize, incoming))
                     asynchronous: true
                     onStatusChanged: {
                         if (status === Image.Ready) art.source = source
                         else if (status === Image.Error) art.source = ""
                     }
-                    // Nessuna copertina per il nuovo brano o player
                     onSourceChanged: if (source.toString() === "") art.source = ""
                 }
 
-                // Copertina mostrata (stessa immagine, già in cache)
                 Image {
                     id: art
                     anchors.fill: parent
@@ -146,11 +121,9 @@ Item {
                     visible: source.toString() !== "" && status === Image.Ready
                 }
 
-                // Logo dell'app se la copertina manca, è in caricamento o ha dato errore
                 IconImage {
                     id: playerLogo
                     anchors.centerIn: parent
-                    // Pixel veri del monitor (vedi Theme.px)
                     backer.sourceSize.width: Theme.px(playerLogo.actualSize, playerLogo)
                     backer.sourceSize.height: Theme.px(playerLogo.actualSize, playerLogo)
                     implicitSize: Math.round(root.coverSize * 0.58)
@@ -158,7 +131,6 @@ Item {
                     visible: !art.visible && root.fallbackIcon !== ""
                 }
 
-                // Ultimo ripiego: nessuna copertina e nessun logo
                 Text {
                     anchors.centerIn: parent
                     visible: !art.visible && root.fallbackIcon === ""
@@ -168,7 +140,6 @@ Item {
                 }
             }
 
-            // ----- Testi, barra e controlli -----
             Column {
                 width: parent.width - root.coverSize - playerRow.spacing
                 anchors.verticalCenter: parent.verticalCenter
@@ -193,7 +164,6 @@ Item {
                     elide: Text.ElideRight
                 }
 
-                // Barra di avanzamento (cliccabile per spostarsi nel brano)
                 Item {
                     width: parent.width
                     height: root.u(12)
@@ -227,7 +197,6 @@ Item {
                     }
                 }
 
-                // Controlli (icone disegnate: non dipendono dai font installati)
                 Row {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: root.u(18)
@@ -270,7 +239,6 @@ Item {
             }
         }
 
-        // ----- Nome del player + puntini (solo con più player) -----
         Row {
             visible: root.multi
             anchors.horizontalCenter: parent.horizontalCenter

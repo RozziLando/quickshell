@@ -3,7 +3,6 @@ import Quickshell.Networking
 import qs.services
 import qs.widgets
 
-// Pagina Wi-Fi: rete connessa, reti salvate e reti trovate, con password
 SubPage {
     id: page
 
@@ -12,14 +11,12 @@ SubPage {
     switchOn: Networking.wifiEnabled
     onSwitchToggled: Networking.wifiEnabled = !Networking.wifiEnabled
 
-    // Chiede la tastiera al centro di controllo (per la password)
     signal keyboardWanted()
 
-    // Mentre si scrive la password il pannello non deve chiudersi
     readonly property bool busy: passwordFor !== null
 
-    property var passwordFor: null    // rete per cui si sta scrivendo la password
-    property var errorFor: null       // rete la cui connessione è fallita
+    property var passwordFor: null
+    property var errorFor: null
 
     readonly property var device: {
         var devices = Networking.devices.values
@@ -28,7 +25,6 @@ SubPage {
         return null
     }
 
-    // Scansione attiva solo mentre la pagina è aperta
     Binding {
         when: page.device !== null
         target: page.device
@@ -44,7 +40,6 @@ SubPage {
         rebuild()
     }
 
-    // ---------- Liste ----------
     property var connectedList: []
     property var savedList: []
     property var availableList: []
@@ -60,9 +55,6 @@ SubPage {
         return n.security !== WifiSecurityType.Open && n.security !== WifiSecurityType.Unknown
     }
 
-    // Reti aziendali (802.1X: utente + password, certificati): una password
-    // semplice (PSK) non basta. Già salvate (es. con nm-connection-editor)
-    // si connettono normalmente; nuove vanno configurate fuori dalla shell
     function enterprise(n) {
         var s = n.security
         return s === WifiSecurityType.Wpa2Eap || s === WifiSecurityType.WpaEap
@@ -70,8 +62,6 @@ SubPage {
             || s === WifiSecurityType.DynamicWep
     }
 
-    // Ricostruisce le liste solo se qualcosa è davvero cambiato, e mai mentre
-    // si scrive la password (altrimenti il campo verrebbe ricreato)
     function rebuild() {
         if (passwordFor !== null) return
         var nets = device && Networking.wifiEnabled ? device.networks.values : []
@@ -124,7 +114,7 @@ SubPage {
         } else if (n.known || !secured(n)) {
             n.connect()
         } else if (enterprise(n)) {
-            return      // non si può fare da qui (vedi enterprise)
+            return
         } else {
             askPassword(n)
         }
@@ -142,7 +132,6 @@ SubPage {
         rebuild()
     }
 
-    // ---------- Contenuto ----------
     Text {
         visible: !Networking.wifiEnabled
         width: parent.width

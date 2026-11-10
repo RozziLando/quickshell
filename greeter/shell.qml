@@ -1,7 +1,3 @@
-// Login con greetd: stessa schermata del blocco schermo (lock/LoginView.qml).
-// Non si avvia da qui: install.sh la copia in /etc/greetd/quickshell insieme
-// ai file che usa, e greetd la lancia dentro cage.
-// Senza greetd (anteprima) mostra la schermata senza accedere davvero.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -12,7 +8,6 @@ import qs.lock
 ShellRoot {
     id: root
 
-    // Impostazioni scritte da install.sh: utente e sessione da avviare
     FileView {
         id: configFile
         path: Quickshell.shellPath("greeter.json")
@@ -25,16 +20,11 @@ ShellRoot {
     }
 
     property string pendingPassword: ""
-    // Avvisi di PAM (es. pam_faillock: "The account is locked due to 3 failed
-    // logins." "(10 minutes left to unlock)"): arrivano come informazioni,
-    // non errori, e se l'accesso fallisce si mostrano al posto di
-    // "Incorrect password"
     property string pamNotice: ""
     property bool busy: false
 
     function login(password) {
         if (!Greetd.available) {
-            // Anteprima: nessun accesso vero
             view.fail("Preview: greetd not running")
             return
         }
@@ -67,8 +57,6 @@ ShellRoot {
             Greetd.cancelSession()
             view.fail(error)
         }
-        // Password giusta: dissolvenza al nero, poi parte la sessione
-        // (session.sh pulisce la console: si passa dal nero a Hyprland)
         function onReadyToLaunch() {
             fadeOut.start()
         }
@@ -85,7 +73,6 @@ ShellRoot {
             anchors.fill: parent
             backgroundSource: Qt.resolvedUrl(Quickshell.shellPath("wallpaper"))
             userName: config.user
-            // Copiata da assets/avatar.* (greeter/sync.sh)
             avatarSources: ["file://" + Quickshell.shellPath("avatar")]
             busy: root.busy
             showPower: true
@@ -98,7 +85,6 @@ ShellRoot {
             }
         }
 
-        // Velo nero per la dissolvenza d'uscita
         Rectangle {
             id: veil
             anchors.fill: parent

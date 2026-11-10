@@ -4,38 +4,21 @@ import Quickshell
 import Quickshell.Io
 import "wallmatch.js" as WallMatch
 
-// Cambio tema: un file per tema in themes/<id>.json. Applicare un tema
-// aggiorna in un colpo solo:
-//   - Quickshell: "theme" in theme.json (Theme.qml ricarica i colori);
-//     l'ombra di Hyprland segue da sola il colore "glow" (HyprShadowSync)
-//   - kitty: ~/.config/kitty/quickshell-theme.conf, incluso in fondo a
-//     kitty.conf, e ricarica dei terminali aperti (SIGUSR1)
-//   - Nautilus (libadwaita): ~/.config/gtk-4.0/quickshell-theme.css,
-//     importato da gtk.css; cartelle colorate con la variante Yaru del tema
-//     e colore d'accento di GNOME
-//   - sfondo: "wallpaper" del tema, cercato in "wallpaperDir" (theme.json)
-//
-//   qs ipc call theme set nord
-//   qs ipc call theme list
 Singleton {
     id: root
 
     readonly property string home: Quickshell.env("HOME")
     readonly property string themesDir: Quickshell.shellPath("themes")
 
-    // [{ id, name, colors, terminal, yaru, gnomeAccent, wallpaper }]
     property var themes: []
-    // Tema chiesto via IPC prima che l'elenco fosse aggiornato
     property string pendingApply: ""
     readonly property string current: Theme.themeId
 
-    // ---------- Elenco dei temi ----------
     function refresh() { listProc.running = true }
 
     Process {
         id: listProc
         running: true
-        // Un tema per riga: "<id>\t<json su una riga>"
         command: ["sh", "-c",
             'for f in "$1"/*.json; do printf "%s\\t" "$(basename "$f" .json)"; tr -d "\\n" < "$f"; echo; done',
             "sh", root.themesDir]
@@ -59,7 +42,7 @@ Singleton {
                 if (root.pendingApply !== "") {
                     var name = root.pendingApply
                     root.pendingApply = ""
-                    root.apply(name)    // se non c'è nemmeno ora: avviso nel log
+                    root.apply(name)
                 }
             }
         }
@@ -71,16 +54,9 @@ Singleton {
         return null
     }
 
-    // ---------- Sfondi (cartella "wallpaperDir" di theme.json) ----------
-    // [{ name, path, thumb, hasThumb }]
     property var wallpapers: []
 
-    // Anteprime già pronte (PNG piccoli): decodificare ogni volta lo sfondo
-    // intero (un PNG 4K) richiedeva fino a ~0,3 s per scheda. Il nome
-    // contiene la data di modifica: sfondo cambiato -> anteprima nuova.
-    // Quelle di sfondi che non ci sono più vengono cancellate.
     readonly property string thumbDir: Quickshell.cachePath("wallpaper-thumbs")
-    // Nome del file mostrato ora (da awww/swww)
     property string currentWallpaper: ""
 
     function refreshWallpapers() {
@@ -90,7 +66,6 @@ Singleton {
 
     Process {
         id: wallpaperProc
-        // Una riga per sfondo: "<file>\t<anteprima>\t<1 se esiste già>"
         command: ["sh", "-c",
             'd="$2"; mkdir -p "$d"; keep="|";'
             + ' for f in "$1"/*; do case "$f" in'
@@ -115,7 +90,6 @@ Singleton {
         }
     }
 
-    // Sfondo con awww/swww, oppure swaybg (scripts/wallpaper.sh)
     readonly property string wallpaperScript: Quickshell.shellPath("scripts/wallpaper.sh")
 
     Process {
@@ -126,15 +100,11 @@ Singleton {
         }
     }
 
-    // swaybg non ricorda lo sfondo: lo rimette la shell all'avvio.
-    // Elenco degli sfondi già pronto: alla prima apertura dei temi non
-    // compare per un attimo "No wallpapers found"
     Component.onCompleted: {
         Quickshell.execDetached(["sh", wallpaperScript, "restore"])
         refreshWallpapers()
     }
 
-    // Opzioni dell'animazione ("wallpaperTransition" in theme.json)
     function transitionArgs() {
         var t = Theme.wallpaperTransition || "grow"
         var args = ["--transition-type", t, "--transition-fps", "60",
@@ -147,10 +117,8 @@ Singleton {
 
     function setWallpaper(path) {
         currentWallpaper = path.split("/").pop()
-        GreeterSync.sync()          // il login prende il nuovo sfondo
+        GreeterSync.sync()
         Quickshell.execDetached(["sh", wallpaperScript, "set", path].concat(transitionArgs()))
-        // Poi si rilegge quello vero: se il file non c'era (es. "wallpaper"
-        // di un tema assente in wallpaperDir) resta segnato quello di prima
         recheck.restart()
     }
     Timer {
@@ -159,8 +127,6 @@ Singleton {
         onTriggered: currentProc.running = true
     }
 
-    // ---------- Applicazione ----------
-    // keepWallpaper: non cambia lo sfondo (tema scelto in base allo sfondo)
     function apply(id, keepWallpaper) {
         var t = find(id)
         if (!t) {
@@ -168,9 +134,6 @@ Singleton {
             return
         }
 
-        // 1. Quickshell: tema attivo in theme.json (il resto del file resta)
-        // theme.json illeggibile (es. una virgola sbagliata scrivendolo a
-        // mano): non si tocca, altrimenti si perderebbero le impostazioni
         settingsFile.reload()
         var settings
         try { settings = JSON.parse(settingsFile.text()) } catch (e) {
@@ -180,11 +143,9 @@ Singleton {
         settings.theme = id
         settingsFile.setText(JSON.stringify(settings, null, 2) + "\n")
 
-        // 2. kitty e 3. Nautilus: file generati
         if (t.terminal) kittyFile.setText(kittyConf(t))
         gtkFile.setText(gtkCss(t))
 
-        // 4. Inclusioni, Yaru, accento GNOME, sfondo
         var wallpaper = t.wallpaper && !keepWallpaper ? Theme.wallpaperDir + "/" + t.wallpaper : ""
         applyProc.command = ["sh", "-c", applyScript, "sh",
                              t.yaru || "", t.gnomeAccent || ""]
@@ -196,21 +157,23 @@ Singleton {
         id: settingsFile
         path: Quickshell.shellPath("theme.json")
         blockAllReads: true
+        blockWrites: true
     }
     FileView {
         id: kittyFile
         path: root.home + "/.config/kitty/quickshell-theme.conf"
+        blockWrites: true
         printErrors: false
     }
     FileView {
         id: gtkFile
         path: root.home + "/.config/gtk-4.0/quickshell-theme.css"
+        blockWrites: true
         printErrors: false
     }
 
     Process { id: applyProc }
 
-    // $1 variante Yaru ("" = arancione), $2 accento GNOME
     readonly property string applyScript: '
         y="$1"; acc="$2"
 
@@ -253,7 +216,6 @@ Singleton {
         fi
     '
 
-    // ---------- File generati ----------
     function kittyConf(t) {
         var c = t.colors || {}, term = t.terminal, ansi = term.ansi || []
         var lines = [
@@ -282,8 +244,6 @@ Singleton {
         return lines.join("\n") + "\n"
     }
 
-    // Colori di libadwaita (Nautilus e app GTK 4): variabili CSS (libadwaita
-    // ≥ 1.6) e @define-color (versioni precedenti)
     function gtkCss(t) {
         var c = t.colors || {}
         var map = {
@@ -323,11 +283,6 @@ Singleton {
             + defs.join("\n") + "\n\n:root {\n" + vars.join("\n") + "\n}\n"
     }
 
-    // ---------- Tema più adatto a uno sfondo ----------
-    // pixels: RGBA dello sfondo disegnato in piccolo (vedi Launcher).
-    // Un tema che dichiara proprio quello sfondo ("wallpaper") vince subito;
-    // altrimenti si confrontano i colori principali dell'immagine con
-    // accento, colori ANSI e tinta di sfondo di ogni tema (wallmatch.js)
     function bestThemeFor(pixels, path) {
         var file = String(path || "").split("/").pop()
         for (var i = 0; file !== "" && i < themes.length; i++)
@@ -337,14 +292,11 @@ Singleton {
 
     IpcHandler {
         target: "theme"
-        // Tema non ancora nell'elenco (file appena aggiunto in themes/): si
-        // rilegge la cartella e si applica appena pronta
         function set(name: string): void {
             if (root.find(name)) { root.apply(name); return }
             root.pendingApply = name
             root.refresh()
         }
-        // Elenco attuale; intanto si rilegge la cartella (temi appena aggiunti)
         function list(): string {
             root.refresh()
             return root.themes.map(function (t) { return t.id }).join("\n")

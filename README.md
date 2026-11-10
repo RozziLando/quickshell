@@ -4,6 +4,27 @@ A Hyprland shell built on Quickshell (>= 0.3): an island at the top of the
 screen with clock, notifications, launcher, media player, control center,
 lock screen and login screen. Works on **Arch** and **Fedora**.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="screenshots/island.png" alt="Island" width="600"></td>
+    <td><img src="screenshots/control_center.png" alt="Control center" width="600"></td>
+    <td><img src="screenshots/app_launcher.png" alt="App launcher" width="600"></td>
+    <td><img src="screenshots/theme_switcher.png" alt="Theme and wallpaper switcher" width="600"></td>
+    <td><img src="screenshots/media_player.png" alt="Media player" width="600"></td>
+    <td><img src="screenshots/performance_monitoring.png" alt="Performance monitoring" width="600"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Island</b></td>
+    <td align="center"><b>Control center</b></td>
+    <td align="center"><b>App launcher</b></td>
+    <td align="center"><b>Theme and wallpaper switcher</b></td>
+    <td align="center"><b>Media player</b></td>
+    <td align="center"><b>Performance monitoring</b></td>
+  </tr>
+</table>
+
 ## Installation
 
 ```sh
@@ -28,6 +49,12 @@ Everything else is up to you: put (or link) the folder in
 the [keybinds](#keybinds) you want to the Hyprland config and start the shell
 with Hyprland (`exec-once = quickshell`, or `hl.exec_cmd("quickshell")` in a
 Lua config). For the login screen run `sudo greeter/install.sh`.
+
+**Profile picture.** To show your photo on the lock screen and the login
+screen, put it in `assets/` named `avatar.png`, `avatar.jpg` or
+`avatar.jpeg` (a square image looks best). Without it the circle shows the
+first letter of your user name. The file is ignored by git, so copy it by
+hand on each PC.
 
 | Option | Effect |
 |---|---|
@@ -68,6 +95,7 @@ terminal, a script or a keybind. `qs ipc show` lists everything available.
 | `qs ipc call power toggle` | open / close the power menu |
 | `qs ipc call screenshot region` | screenshot of an area selected with the mouse, to the clipboard |
 | `qs ipc call screenshot screen` | screenshot of the screen under the mouse, to the clipboard |
+| `qs ipc call screenshot save` | screenshot of the screen under the mouse, to the clipboard and saved in `~/Pictures` |
 | `qs ipc call media peek` | show the media player for a few seconds |
 | `qs ipc call theme list` | list the themes |
 | `qs ipc call theme current` | print the active theme |
@@ -85,6 +113,7 @@ Suggested binds for the Hyprland config (add them yourself):
 | `SUPER + C` | `qs ipc call controlcenter toggle` |
 | `SUPER + ESCAPE` | `qs ipc call power toggle` |
 | `SUPER + S` | `qs ipc call screenshot region` |
+| `SUPER + A` | `qs ipc call screenshot save` |
 | `SUPER + Q` | `pkill -x quickshell \|\| quickshell` (restart the shell) |
 | Play / Pause / Next / Previous | `playerctl …; qs ipc call media peek` |
 | Volume up / down / mute, mic mute | `wpctl …` (the island shows the volume bar by itself) |

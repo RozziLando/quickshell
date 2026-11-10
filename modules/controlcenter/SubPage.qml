@@ -2,8 +2,6 @@ import QtQuick
 import qs.services
 import qs.widgets
 
-// Pagina di dettaglio del centro di controllo: freccia per tornare indietro,
-// titolo, interruttore opzionale a destra e contenuto scorrevole
 Item {
     id: root
 
@@ -17,16 +15,13 @@ Item {
     signal back()
     signal switchToggled()
 
-    // Tutto ciò che si mette dentro <SubPage> va nella colonna scorrevole
     default property alias content: body.data
 
-    // Torna in cima ogni volta che la pagina viene aperta
     onVisibleChanged: if (visible) scrollToTop()
     function scrollToTop() { flick.contentY = 0 }
 
     Keys.onEscapePressed: root.back()
 
-    // ----- Intestazione -----
     Item {
         id: header
         width: parent.width
@@ -80,7 +75,6 @@ Item {
         }
     }
 
-    // ----- Contenuto -----
     Flickable {
         id: flick
         anchors {

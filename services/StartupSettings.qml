@@ -2,11 +2,6 @@ import QtQuick
 import Quickshell.Io
 import Quickshell.Bluetooth
 
-// Impostazioni applicate una volta sola all'avvio del computer (non quando
-// la shell si ricarica o viene riavviata):
-//   "bluetoothOnStartup" in theme.json: Bluetooth acceso (true) o spento (false)
-// "Primo avvio" = manca un segnaposto in $XDG_RUNTIME_DIR, cartella che si
-// svuota a ogni spegnimento / fine sessione.
 Item {
     id: root
 
@@ -26,7 +21,6 @@ Item {
         }
     }
 
-    // L'adattatore può comparire qualche secondo dopo l'avvio
     property bool bluetoothDone: false
     onAdapterChanged: applyBluetooth()
 

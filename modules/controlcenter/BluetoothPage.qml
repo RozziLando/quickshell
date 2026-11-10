@@ -3,7 +3,6 @@ import Quickshell.Bluetooth
 import qs.services
 import qs.widgets
 
-// Pagina Bluetooth: dispositivi connessi, associati e trovati nelle vicinanze
 SubPage {
     id: page
 
@@ -13,10 +12,8 @@ SubPage {
     onSwitchToggled: if (adapter) adapter.enabled = !adapter.enabled
 
     readonly property var adapter: Bluetooth.defaultAdapter
-    // Non "enabled": nasconderebbe la proprietà standard degli Item
     readonly property bool btOn: !!(adapter && adapter.enabled)
 
-    // Ricerca di nuovi dispositivi solo mentre la pagina è aperta
     Binding {
         when: page.adapter !== null
         target: page.adapter
@@ -24,12 +21,10 @@ SubPage {
         value: page.visible && page.btOn
     }
 
-    // Dispositivo appena associato da qui: va connesso quando l'associazione finisce
     property var pairingDevice: null
 
     onVisibleChanged: rebuild()
 
-    // ---------- Liste ----------
     property var connectedList: []
     property var pairedList: []
     property var availableList: []
@@ -42,7 +37,7 @@ SubPage {
             var d = devs[i]
             if (d.connected) c.push(d)
             else if (d.paired || d.bonded) p.push(d)
-            else if (d.deviceName !== "") a.push(d)   // senza nome: rumore
+            else if (d.deviceName !== "") a.push(d)
         }
         var byName = function (x, y) { return x.name.localeCompare(y.name) }
         p.sort(byName)
@@ -72,14 +67,13 @@ SubPage {
         function onValuesChanged() { page.rebuild() }
     }
 
-    // Finita l'associazione: rende il dispositivo fidato e lo connette
     Connections {
         target: page.pairingDevice
         function onPairedChanged() {
             var d = page.pairingDevice
             if (d && d.paired) {
                 d.trusted = true
-                BluetoothAuto.markManual(d.address)   // niente notifica
+                BluetoothAuto.markManual(d.address)
                 d.connect()
                 page.pairingDevice = null
             }
@@ -102,11 +96,10 @@ SubPage {
 
     function activate(d) {
         if (d.connected) {
-            // Scollegato da te: niente riconnessione automatica
             BluetoothAuto.markDisconnected(d.address)
             d.disconnect()
         } else if (d.paired || d.bonded) {
-            BluetoothAuto.markManual(d.address)       // niente notifica
+            BluetoothAuto.markManual(d.address)
             d.connect()
         } else {
             pairingDevice = d
@@ -115,7 +108,6 @@ SubPage {
         rebuild()
     }
 
-    // ---------- Contenuto ----------
     Text {
         visible: !page.btOn
         width: parent.width

@@ -2,23 +2,20 @@ import QtQuick
 import Quickshell.Widgets
 import qs.services
 
-// Riga delle pagine di dettaglio: icona, titolo, sottotitolo, icone a destra.
-// Sotto può ospitare altro (barra del volume, campo password): basta metterlo
-// dentro <ListRow> e impostare hasExtra.
 Rectangle {
     id: root
 
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
 
-    property string icon: ""          // nome per LineIcon
-    property string iconSource: ""    // oppure un'immagine (icona dell'app)
-    property int iconLevel: -1        // tacche del Wi-Fi
+    property string icon: ""
+    property string iconSource: ""
+    property int iconLevel: -1
     property string title: ""
     property string subtitle: ""
-    property bool selected: false     // connesso / dispositivo in uso
-    property string trailingIcon: ""  // es. "lock", "check"
-    property bool showRemove: false   // X per dimenticare
+    property bool selected: false
+    property string trailingIcon: ""
+    property bool showRemove: false
     property bool clickable: true
     property bool hasExtra: false
 
@@ -29,7 +26,7 @@ Rectangle {
 
     width: parent ? parent.width : 0
     height: content.implicitHeight + 2 * u(8)
-    radius: u(22)   // come i riquadri del centro di controllo
+    radius: u(22)
     color: area.containsMouse && clickable ? Theme.surface : Theme.card
     border.width: 1
     border.color: Theme.cardBorder
@@ -77,7 +74,6 @@ Rectangle {
                 IconImage {
                     id: rowIcon
                     anchors.centerIn: parent
-                    // Pixel veri del monitor (vedi Theme.px)
                     backer.sourceSize.width: Theme.px(rowIcon.actualSize, rowIcon)
                     backer.sourceSize.height: Theme.px(rowIcon.actualSize, rowIcon)
                     visible: root.iconSource !== ""

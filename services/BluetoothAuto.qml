@@ -3,13 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Bluetooth
 
-// Bluetooth acceso -> si connette da solo ai dispositivi già associati
-// quando sono a portata, e avvisa con una notifica.
-//  - ogni 30 s prova a connettere, uno alla volta, gli associati non connessi
-//    (se non sono a portata il tentativo fallisce in silenzio)
-//  - notifica "Connected to …" per ogni connessione che NON viene dalla
-//    pagina Bluetooth del centro di controllo (quella chiama markManual):
-//    sia quelle fatte da qui sia i dispositivi che si ricollegano da soli
 Singleton {
     id: root
 
@@ -20,8 +13,6 @@ Singleton {
         return adapter && adapter.devices ? adapter.devices.values : []
     }
 
-    // ---------- Connessioni manuali (pagina Bluetooth) ----------
-    // indirizzo -> momento del click: niente notifica per un po'
     property var manual: ({})
     function markManual(address) {
         var m = Object.assign({}, manual)
@@ -32,9 +23,6 @@ Singleton {
         return manual[address] !== undefined && Date.now() - manual[address] < 30000
     }
 
-    // ---------- Scollegati a mano (pagina Bluetooth) ----------
-    // Non si ricollegano da soli finché non li ricolleghi tu (o finché il
-    // Bluetooth non viene spento e riacceso): indirizzo -> true
     property var userDisconnected: ({})
     function markDisconnected(address) {
         var m = Object.assign({}, userDisconnected)
@@ -42,7 +30,6 @@ Singleton {
         userDisconnected = m
     }
 
-    // ---------- Tentativi automatici ----------
     property int nextIndex: 0
 
     function tryOne() {
@@ -53,7 +40,6 @@ Singleton {
                 && !root.userDisconnected[d.address]
         })
         if (list.length === 0) return
-        // A turno, così un dispositivo spento non blocca gli altri
         var d = list[nextIndex % list.length]
         nextIndex++
         d.connect()
@@ -66,7 +52,6 @@ Singleton {
         onTriggered: root.tryOne()
     }
 
-    // Appena acceso il Bluetooth (o all'avvio) prova subito
     onEnabledChanged: {
         userDisconnected = ({})
         if (enabled) firstTry.restart()
@@ -77,8 +62,6 @@ Singleton {
         onTriggered: root.tryOne()
     }
 
-    // ---------- Notifiche ----------
-    // Connessi all'ultimo controllo (all'avvio: quelli già connessi, senza avviso)
     property var connectedBefore: ({})
     property bool baselineDone: false
 
@@ -91,9 +74,6 @@ Singleton {
             root.devices().forEach(function (d) {
                 if (!d.connected) return
                 now[d.address] = true
-                // Ricollegato (da te o dal dispositivo): torna automatico.
-                // Solo per una connessione nuova: subito dopo il click risulta
-                // ancora connesso finché la disconnessione non finisce
                 if (root.userDisconnected[d.address] && !root.connectedBefore[d.address]) {
                     const m = Object.assign({}, root.userDisconnected)
                     delete m[d.address]

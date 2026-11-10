@@ -1,29 +1,20 @@
 import QtQuick
 import qs.services
 
-// Disposizione degli schermi (modalità Extend, pagina Display): ogni schermo
-// acceso è un rettangolo in scala. Si trascina; lasciandolo si aggancia al
-// lato più vicino di un altro schermo (allineato in alto, al centro o in
-// basso se ci si avvicina), senza sovrapposizioni. "Apply" applica con la
-// conferma della pagina Display (torna indietro da sola dopo 15 s).
 Item {
     id: root
-    required property var displayPage   // DisplayPage
+    required property var displayPage
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
 
     height: canvas.height
 
-    // Schermi in coordinate logiche (quelle di Hyprland, scala compresa):
-    // [{ name, label, internal, x, y, w, h }]
     property var layout: []
-    // Spostati ma non ancora applicati
     property bool edited: false
 
     function logicalSize(m) {
         var w = m.scale > 0 ? Math.round(m.width / m.scale) : m.width
         var h = m.scale > 0 ? Math.round(m.height / m.scale) : m.height
-        // Ruotato di 90° o 270°: larghezza e altezza si scambiano
         return m.transform % 2 === 1 ? { w: h, h: w } : { w: w, h: h }
     }
 
@@ -38,20 +29,15 @@ Item {
         edited = false
     }
     Component.onCompleted: reset()
-    // Stato nuovo da Hyprland: si ridisegna (non mentre stai sistemando)
     Connections {
         target: root.displayPage
         function onMonitorsChanged() { if (!root.edited) root.reset() }
     }
 
-    // ---------- Geometria ----------
     function overlaps(a, b) {
         return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
     }
 
-    // Posizione lungo un lato: deve restare a contatto (almeno un po' di
-    // bordo in comune); vicino agli allineamenti (inizio, centro, fine)
-    // ci si aggancia
     function along(p, oStart, oLen, dLen, snapDist) {
         var minOverlap = Math.min(oLen, dLen) / 4
         p = Math.max(oStart - dLen + minOverlap, Math.min(oStart + oLen - minOverlap, p))
@@ -61,20 +47,18 @@ Item {
         return Math.round(p)
     }
 
-    // Schermo "name" lasciato in (px, py): posizione agganciata più vicina
     function snap(name, px, py) {
         var d = null, others = []
         layout.forEach(function (l) { if (l.name === name) d = l; else others.push(l) })
         if (!d || others.length === 0) return null
-        // Aggancio entro ~12 pixel dello schermo del pannello
         var snapDist = u(12) / Math.max(0.0001, k)
         var best = null, bestDist = Infinity
         others.forEach(function (o) {
             var cands = [
-                { x: o.x + o.w, y: along(py, o.y, o.h, d.h, snapDist) },   // a destra
-                { x: o.x - d.w, y: along(py, o.y, o.h, d.h, snapDist) },   // a sinistra
-                { x: along(px, o.x, o.w, d.w, snapDist), y: o.y + o.h },   // sotto
-                { x: along(px, o.x, o.w, d.w, snapDist), y: o.y - d.h }    // sopra
+                { x: o.x + o.w, y: along(py, o.y, o.h, d.h, snapDist) },
+                { x: o.x - d.w, y: along(py, o.y, o.h, d.h, snapDist) },
+                { x: along(px, o.x, o.w, d.w, snapDist), y: o.y + o.h },
+                { x: along(px, o.x, o.w, d.w, snapDist), y: o.y - d.h }
             ]
             cands.forEach(function (c) {
                 var box = { x: c.x, y: c.y, w: d.w, h: d.h }
@@ -86,7 +70,6 @@ Item {
         return best
     }
 
-    // Lasciato dopo il trascinamento (coordinate logiche)
     function drop(name, px, py) {
         var p = snap(name, px, py)
         var next = layout.map(function (l) {
@@ -94,7 +77,6 @@ Item {
             if (p && c.name === name) { c.x = p.x; c.y = p.y }
             return c
         })
-        // Origine in alto a sinistra (0, 0): coordinate pulite per Hyprland
         var mx = Math.min.apply(null, next.map(function (l) { return l.x }))
         var my = Math.min.apply(null, next.map(function (l) { return l.y }))
         next.forEach(function (l) { l.x -= mx; l.y -= my })
@@ -113,7 +95,6 @@ Item {
         displayPage.change(specs)
     }
 
-    // ---------- Scala del disegno ----------
     readonly property var bounds: {
         if (layout.length === 0) return { x: 0, y: 0, w: 1, h: 1 }
         var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
@@ -135,7 +116,6 @@ Item {
         color: Theme.track
         clip: true
 
-        // Disegno centrato nel riquadro
         readonly property real ox: (width - root.bounds.w * root.k) / 2
         readonly property real oy: (height - root.u(24) - root.bounds.h * root.k) / 2
 
@@ -169,7 +149,6 @@ Item {
                 MouseArea {
                     id: area
                     anchors.fill: parent
-                    // Il trascinamento non deve far scorrere la pagina
                     preventStealing: true
                     cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                     drag.target: box
@@ -181,7 +160,6 @@ Item {
                     property real startY: 0
                     onPressed: { startX = box.x; startY = box.y }
                     onReleased: {
-                        // Un semplice click non sposta niente
                         if (Math.abs(box.x - startX) < 2 && Math.abs(box.y - startY) < 2) return
                         root.drop(box.modelData.name,
                                   (box.x - canvas.ox) / root.k + root.bounds.x,
@@ -191,8 +169,6 @@ Item {
             }
         }
 
-        // Suggerimento in basso, oppure Reset / Apply dopo uno spostamento:
-        // dentro il riquadro, così si vedono insieme agli schermi
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom

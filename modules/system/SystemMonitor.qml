@@ -4,21 +4,16 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import qs.services
 
-// Monitor di sistema: batteria (tempo alla carica / rimanente), CPU, RAM,
-// GPU e temperature. Legge solo file del kernel (/proc, /sys), presenti su ogni
-// distro, e solo mentre è visibile.
 Item {
     id: root
 
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
 
-    // Aggiorna i valori solo mentre è aperto
     property bool active: visible
 
     implicitHeight: column.implicitHeight
 
-    // ---------- Batteria (UPower) ----------
     readonly property var dev: UPower.displayDevice
     readonly property bool hasBattery: !!(dev && dev.ready && dev.isLaptopBattery && dev.isPresent)
     readonly property int batteryPercent: {
@@ -37,18 +32,13 @@ Item {
         return h > 0 ? h + "h " + m + "m" : m + "m"
     }
 
-    // ---------- Consumo medio a batteria ----------
-    // Da collegato la batteria non si scarica, quindi UPower non può stimare
-    // la durata. Mentre sei a batteria la shell registra il consumo medio
-    // (media mobile, ogni 30 s) e lo salva; da collegato la stima è
-    // energia nella batteria / consumo medio.
     FileView {
         id: usageFile
         path: Quickshell.statePath("battery.json")
         onLoadFailed: error => writeAdapter()
         adapter: JsonAdapter {
             id: usage
-            property real avgRate: 0    // watt
+            property real avgRate: 0
         }
     }
 
@@ -58,7 +48,7 @@ Item {
         running: root.hasBattery && UPower.onBattery
         onTriggered: {
             var rate = Math.abs(root.dev.changeRate)
-            if (rate < 0.5) return      // letture non affidabili
+            if (rate < 0.5) return
             usage.avgRate = usage.avgRate > 0 ? usage.avgRate * 0.9 + rate * 0.1 : rate
             usageFile.writeAdapter()
         }
@@ -74,15 +64,12 @@ Item {
         if (charging)
             return dev.timeToFull > 0 ? "Full in " + duration(dev.timeToFull) : "Charging"
         if (plugged) return pluggedEstimate !== "" ? pluggedEstimate : "Plugged in"
-        // Stime oltre 2 giorni non sono affidabili
         if (dev.timeToEmpty > 0 && dev.timeToEmpty < 2 * 24 * 3600)
             return duration(dev.timeToEmpty)
         return "On battery"
     }
 
-    // ---------- Sensori di temperatura (hwmon) ----------
-    // Riconosce i driver standard: CPU Intel/AMD/ARM, GPU, batteria
-    property var sensors: []   // [{ label, path }]
+    property var sensors: []
 
     Process {
         id: sensorProc
@@ -105,7 +92,6 @@ Item {
                     seen[p[0]] = true
                     out.push({ label: p[0], path: p[1] })
                 })
-                // Ordine fisso: CPU, GPU, batteria
                 var order = ["CPU", "GPU", "Battery"]
                 out.sort(function (a, b) { return order.indexOf(a.label) - order.indexOf(b.label) })
                 root.sensors = out
@@ -113,16 +99,8 @@ Item {
         }
     }
 
-    // ---------- Fisso o portatile ----------
-    // Portatile: batteria + temperature di CPU e batteria.
-    // Fisso: uso della GPU + temperature di CPU e GPU.
     readonly property bool desktop: !hasBattery
 
-    // ---------- GPU (solo fisso; una sola: prima la dedicata) ----------
-    // "nvidia": nvidia-smi (driver proprietario)
-    // "busy":   AMD, percentuale del kernel (gpu_busy_percent)
-    // "rc6":    Intel, tempo a riposo (rc6/idle residency): uso = 1 - riposo
-    // ""        nessuna fonte: la riga non compare
     property string gpuKind: ""
     property string gpuPath: ""
 
@@ -148,24 +126,22 @@ Item {
         }
     }
 
-    // Comando che stampa "gpu:<valore>" (in coda alle altre letture)
     readonly property string gpuCmd: !desktop ? ''
         : gpuKind === "nvidia"
         ? ' echo "gpu:$(nvidia-smi --query-gpu=utilization.gpu,temperature.gpu --format=csv,noheader,nounits 2>/dev/null | head -n 1)";'
         : gpuKind !== "" ? ' echo "gpu:$(cat \'' + gpuPath + '\' 2>/dev/null)";' : ''
 
-    property real gpu: 0            // 0..1
+    property real gpu: 0
     property bool gpuReady: false
-    property int gpuTemp: -1        // solo NVIDIA (le altre hanno il sensore hwmon)
-    property var lastRc6: null      // { value, time } per Intel
+    property int gpuTemp: -1
+    property var lastRc6: null
 
-    // ---------- CPU, RAM e temperature ----------
-    property real cpu: 0          // 0..1
-    property bool cpuReady: false // servono due letture per calcolarla
-    property real ramUsed: 0      // GB
-    property real ramTotal: 0     // GB
-    property var temps: ({})      // { etichetta: gradi }
-    property var lastCpu: null    // ultima lettura di /proc/stat
+    property real cpu: 0
+    property bool cpuReady: false
+    property real ramUsed: 0
+    property real ramTotal: 0
+    property var temps: ({})
+    property var lastCpu: null
 
     Process {
         id: statProc
@@ -182,7 +158,6 @@ Item {
         var lines = text.trim().split("\n")
         if (lines.length < 3) return
 
-        // CPU: differenza tra due letture di /proc/stat
         var f = lines[0].trim().split(/\s+/).slice(1).map(Number)
         var idle = f[3] + (f[4] || 0)
         var total = f.reduce(function (a, b) { return a + b }, 0)
@@ -192,20 +167,17 @@ Item {
         }
         lastCpu = { idle: idle, total: total }
 
-        // RAM: usata = totale - disponibile
         var memTotal = parseInt(lines[1].split(/\s+/)[1])
         var memAvail = parseInt(lines[2].split(/\s+/)[1])
         ramTotal = memTotal / 1048576
         ramUsed = (memTotal - memAvail) / 1048576
 
-        // Temperature (millesimi di grado), per etichetta
         var t = {}
         for (var i = 0; i < sensors.length; i++) {
             var v = parseInt(lines[3 + i])
             if (!isNaN(v)) t[sensors[i].label] = Math.round(v / 1000)
         }
 
-        // GPU (ultima riga, "gpu:...")
         var g = lines.filter(function (l) { return l.indexOf("gpu:") === 0 })[0]
         if (g !== undefined) {
             g = g.substring(4).trim()
@@ -232,12 +204,10 @@ Item {
         temps = t
     }
 
-    // Riquadri delle temperature: sensori hwmon + GPU NVIDIA (che non ne ha)
     readonly property var tempCards: {
         var out = sensors.map(function (s) {
             return { label: s.label, value: temps[s.label] !== undefined ? temps[s.label] : null }
         })
-        // Portatile: CPU e batteria; fisso: CPU e GPU
         out = out.filter(function (c) { return c.label !== (desktop ? "Battery" : "GPU") })
         var hasGpu = out.some(function (c) { return c.label === "GPU" })
         if (desktop && gpuKind === "nvidia" && !hasGpu)
@@ -255,13 +225,11 @@ Item {
         onTriggered: statProc.running = true
     }
 
-    // ---------- Interfaccia ----------
-    // Riga: titolo a sinistra, valore a destra, barra sotto (opzionale)
     component StatRow: Column {
         id: stat
         property string title: ""
         property string value: ""
-        property real fraction: -1    // -1 = niente barra
+        property real fraction: -1
         property bool warn: false
         width: parent ? parent.width : 0
         spacing: Theme.s(4)
@@ -339,7 +307,6 @@ Item {
             warn: root.ramTotal > 0 && root.ramUsed / root.ramTotal > 0.9
         }
 
-        // Temperature, una accanto all'altra
         Row {
             visible: root.tempCards.length > 0
             width: parent.width
@@ -349,7 +316,6 @@ Item {
                 model: root.tempCards
                 delegate: Rectangle {
                     required property var modelData
-                    // Valore letto (null finché non arriva la prima lettura)
                     readonly property bool hot: modelData.value !== null && modelData.value >= 85
                     width: (parent.width - root.u(8) * (root.tempCards.length - 1)) / root.tempCards.length
                     height: root.u(34)

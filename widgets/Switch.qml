@@ -1,7 +1,6 @@
 import QtQuick
 import qs.services
 
-// Interruttore on/off
 Rectangle {
     id: root
 

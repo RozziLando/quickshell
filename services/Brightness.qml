@@ -3,10 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Luminosità di schermo e tastiera, condivisa da centro di controllo e OSD.
-// brightnessctl serve solo a trovare il dispositivo (nome, classe, massimo);
-// il valore poi si legge dal file del kernel in /sys, che avvisa subito
-// quando cambia (anche se lo cambiano i tasti funzione).
 Singleton {
     id: root
 
@@ -18,12 +14,10 @@ Singleton {
     property real keyboardLevel: 0
     property bool keyboardAvailable: false
 
-    // Cambi arrivati da fuori (tasti, altri programmi), non dalle nostre barre
     signal displayChangedExternally()
     signal keyboardChangedExternally()
 
     function parseInfo(text) {
-        // formato: nome,classe,valore,percentuale%,massimo
         var f = text.trim().split("\n")[0].split(",")
         if (f.length < 5) return null
         var max = parseInt(f[4])
@@ -66,12 +60,9 @@ Singleton {
         }
     }
 
-    // Prima lettura completata: da lì in poi i cambi contano come "esterni"
     property bool displayReady: false
     property bool keyboardReady: false
 
-    // Dopo un cambio dalle nostre barre, la prima lettura riporta il valore
-    // arrotondato dal kernel: va preso senza considerarlo un cambio esterno
     property bool displayAbsorb: false
     property bool keyboardAbsorb: false
 
@@ -83,7 +74,6 @@ Singleton {
         onLoaded: {
             var v = parseInt(text())
             if (isNaN(v) || root.displayMax <= 0 || justSet.running) return
-            // Scala percettiva, come i tasti (brightnessctl -e4)
             var level = Math.pow(v / root.displayMax, 1 / root.displayExponent)
             var changed = Math.abs(level - root.displayLevel) > 0.001
             root.displayLevel = level
@@ -112,15 +102,12 @@ Singleton {
         }
     }
 
-    // Cerca i dispositivi (all'avvio e quando lo chiede il centro di controllo)
     function refresh() {
         displayProc.running = true
         keyboardProc.running = true
     }
     Component.onCompleted: refresh()
 
-    // Rete di sicurezza: su alcuni portatili è il firmware a cambiare la
-    // luminosità e il file non avvisa. Rilettura del file (nessun processo)
     Timer {
         interval: 1000
         repeat: true
@@ -131,24 +118,17 @@ Singleton {
         }
     }
 
-    // Dopo un cambio dalle nostre barre ignora per un attimo le letture,
-    // altrimenti le scritture intermedie del trascinamento farebbero
-    // "saltare" la barra (e non sono cambi esterni)
     Timer {
         id: justSet
         interval: 600
     }
 
-    // Schermo su scala percettiva, come i tasti di Hyprland (modules/keybindings.lua)
-    // ("brightnessctl -e4"): ogni pressione sposta la barra di un passo
-    // uguale, sia sui valori bassi sia su quelli alti
     readonly property int displayExponent: 4
 
     function setDisplay(value) {
         displayLevel = value
         displayAbsorb = true
         justSet.restart()
-        // Minimo 1%: a 0% lo schermo potrebbe spegnersi del tutto
         var pct = Math.max(1, Math.round(value * 100))
         Quickshell.execDetached(["brightnessctl", "-e" + displayExponent, "-c", displayClass,
                                  "set", pct + "%"])

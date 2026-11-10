@@ -1,15 +1,11 @@
 import QtQuick
 import qs.services
 
-// Forma dell'isola: attaccata al bordo alto dello schermo con due raccordi
-// curvi (topRadius) e angoli arrotondati in basso (bottomRadius).
-// Usata dalla pillola e dai quadratini ai lati.
 Canvas {
     id: canvas
 
     property real topRadius: Theme.s(10)
     property real bottomRadius: Theme.s(15)
-    // Bordo disegnato (false: niente bordo, si usa l'alone SoftGlow)
     property bool outline: true
 
     onWidthChanged: requestPaint()
@@ -18,7 +14,6 @@ Canvas {
     onBottomRadiusChanged: requestPaint()
     onOutlineChanged: requestPaint()
 
-    // Ridisegna se cambiano colori o scala da theme.json
     Connections {
         target: Theme
         function onScaleChanged() { canvas.requestPaint() }
@@ -34,10 +29,8 @@ Canvas {
         var w = width;
         var h = height;
         var r_top = topRadius;
-        // Il raggio in basso non può superare metà del corpo
         var r_bottom = Math.min(bottomRadius, (w - 2 * r_top) / 2, h / 2);
 
-        // Vetro: sfondo traslucido e bordo chiaro
         ctx.fillStyle = Theme.panel;
         ctx.strokeStyle = Theme.glass ? Theme.glassEdge : Theme.border;
         ctx.lineWidth = 1;

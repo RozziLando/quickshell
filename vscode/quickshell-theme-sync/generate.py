@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""VS Code color theme from a Quickshell palette (themes/<id>.json).
-
-For shell themes that have no official VS Code theme (e.g. midnight):
-
-    python3 generate.py midnight
-
-writes themes/<id>.json in this extension. Then add it to "contributes.themes"
-in package.json (label "<Name> (Quickshell)") and put the same label in the
-shell theme file: "vscode": { "theme": "<Name> (Quickshell)", "extension": "" }.
-
-Interface colors come from the shell palette (same look as the island), the
-terminal from the theme's 16 ANSI colors, syntax colors from the ANSI ones.
-"""
 import json
 import os
 import sys
@@ -19,11 +6,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SHELL = os.path.normpath(os.path.join(HERE, "..", ".."))
 
-
 def alpha(color, a):
-    """#rrggbb + transparency (0..1) -> #rrggbbaa"""
     return color[:7] + "%02x" % round(a * 255)
-
 
 def build(t):
     c, term = t["colors"], t["terminal"]
@@ -212,7 +196,6 @@ def build(t):
         "tokenColors": tokens,
     }
 
-
 def main():
     if len(sys.argv) != 2:
         sys.exit("usage: generate.py <shell theme id>")
@@ -226,7 +209,6 @@ def main():
         json.dump(theme, f, indent=2, ensure_ascii=False)
         f.write("\n")
     print("written", out, "-", theme["name"])
-
 
 if __name__ == "__main__":
     main()

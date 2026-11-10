@@ -1,27 +1,9 @@
 .pragma library
-// Theme that best matches a wallpaper.
-//
-// 1. palette(): the image (a few thousand RGBA pixels, drawn small) is
-//    reduced with k-means to its main colors, in OKLab (a color space where
-//    distances match how different two colors look): for each color its
-//    share of the image, lightness and chroma.
-// 2. score(): how well a theme fits that palette (lower = better):
-//    - accent: the theme accent should look like one of the vivid colors of
-//      the image, better if that color is a large part of it;
-//    - coverage: every color of the image should have a similar color in
-//      the theme (accent + the 6 ANSI colors), weighted by its share;
-//    - tint: the theme background tint (bluish, greenish, warm grey...)
-//      should follow the general tint of the image;
-//    - vividness: a pale image wants a theme with soft colors, a vivid one
-//      a theme with saturated colors.
-// Pure JavaScript (no Qt): also runs under node for tests.
 
-// ---------- Colors ----------
 function srgbToLinear(c) {
     return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
 }
 
-// r, g, b in 0..1 -> [L, a, b] OKLab
 function oklab(r, g, b) {
     r = srgbToLinear(r); g = srgbToLinear(g); b = srgbToLinear(b)
     var l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
@@ -32,7 +14,6 @@ function oklab(r, g, b) {
             0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s]
 }
 
-// "#rrggbb" or "#aarrggbb" -> OKLab
 function hexLab(hex) {
     var h = String(hex || "").replace("#", "")
     if (h.length === 8) h = h.substring(2)
@@ -43,17 +24,12 @@ function hexLab(hex) {
 
 function chroma(c) { return Math.sqrt(c[1] * c[1] + c[2] * c[2]) }
 
-// Difference of hue and chroma, lightness counts less: theme colors are
-// light (text on a dark background), the same color in a photo often darker
 function colorDist(x, y, lw) {
     var dl = (x[0] - y[0]) * (lw === undefined ? 0.35 : lw)
     var da = x[1] - y[1], db = x[2] - y[2]
     return Math.sqrt(dl * dl + da * da + db * db)
 }
 
-// ---------- Image palette ----------
-// data: RGBA bytes (Canvas getImageData().data or a raw dump), k colors
-// -> { colors: [{ lab, weight, chroma }], meanL, meanChroma, tint: [a, b] }
 function palette(data, k) {
     k = k || 6
     var px = []
@@ -70,10 +46,6 @@ function palette(data, k) {
     }
     meanL /= n; meanA /= n; meanB /= n; meanC /= n
 
-    // Hue map: for every hue (36 steps of 10 degrees) how much of the image
-    // shows it, counting how vivid each pixel is. Greys, near-black and
-    // near-white pixels add nothing: a big grey area does not make a small
-    // pink detail less pink. Smoothed so that close hues help each other
     var bins = 36, raw = []
     for (i = 0; i < bins; i++) raw.push(0)
     var colorful = 0
@@ -96,10 +68,6 @@ function palette(data, k) {
     for (i = 0; i < bins; i++) top = Math.max(top, hues[i])
     for (i = 0; i < bins; i++) hues[i] = top > 0 ? hues[i] / top : 0
 
-    // Starting centers, always the same for the same image (k-means++
-    // without randomness): each one the pixel farthest from those chosen.
-    // Chroma counts double, so a small vivid detail (a red roof in the
-    // snow) gets its own color instead of vanishing into the grey
     function sep(x, y) {
         var dl = x[0] - y[0], da = (x[1] - y[1]) * 2, db = (x[2] - y[2]) * 2
         return dl * dl + da * da + db * db
@@ -110,7 +78,7 @@ function palette(data, k) {
     while (centers.length < k) {
         var far = 0
         for (i = 1; i < n; i++) if (near[i] > near[far]) far = i
-        if (near[far] < 1e-6) break     // fewer distinct colors than k
+        if (near[far] < 1e-6) break
         var c = px[far].slice()
         centers.push(c)
         for (i = 0; i < n; i++) near[i] = Math.min(near[i], sep(px[i], c))
@@ -150,8 +118,6 @@ function palette(data, k) {
              hues: hues, colorful: colorful / n }
 }
 
-// ---------- Theme signature ----------
-// { accent, bg, swatches: [accent + ANSI 1..6], chroma }
 function signature(theme) {
     var c = theme.colors || {}
     var accent = hexLab(c.accent), bg = hexLab(c.card || c.background)
@@ -167,8 +133,6 @@ function signature(theme) {
     return { accent: accent, bg: bg, swatches: sw, chroma: ch / sw.length }
 }
 
-// ---------- Fit of a theme to a palette (lower = better) ----------
-// Hue of a color in the hue map (0..1: share of the strongest hue)
 function hueSupport(pal, c) {
     var h = Math.atan2(c[2], c[1]) / (2 * Math.PI)
     var x = ((h + 1) % 1) * pal.hues.length - 0.5
@@ -177,18 +141,11 @@ function hueSupport(pal, c) {
 }
 
 function score(pal, sig) {
-    // How colored the image is: 0 grey / black and white, 1 colorful.
-    // Few colors (a pink detail on a black image) are still enough for the
-    // accent to follow them
     var colored = Math.min(1, pal.colorful / 0.012)
 
-    // 1. Accent: its hue must be one the image really shows, the main one
-    //    best. A black and white image says nothing about the accent
     var accC = chroma(sig.accent)
     var acc = colored * (1 - hueSupport(pal, sig.accent)) * Math.min(1, accC / 0.06)
 
-    // 2. Coverage: the colors of the image (only the colored ones, by their
-    //    share) against the closest color of the theme
     var cols = pal.colors, cov = 0, cw = 0
     for (var i = 0; i < cols.length; i++) {
         var w = cols[i].weight * Math.min(1, cols[i].chroma / 0.06)
@@ -200,26 +157,20 @@ function score(pal, sig) {
     }
     cov = cov / (cw + 0.05)
 
-    // 3. Background tint: theme background against the tint of the image,
-    //    scaled down (theme backgrounds are almost grey). It decides for
-    //    black and white images: neutral background, no blue or violet cast
     var ta = pal.tint[0] * 0.4, tb = pal.tint[1] * 0.4
     var da = sig.bg[1] - ta, db = sig.bg[2] - tb
     var tint = Math.sqrt(da * da + db * db)
 
-    // 4. Vividness: soft themes for pale images, saturated for vivid ones
     var viv = Math.abs(Math.min(0.16, pal.meanChroma * 1.6 + 0.04) - sig.chroma)
 
     return 0.5 * acc + 0.8 * cov + (1.2 + 3 * (1 - colored)) * tint + 0.5 * viv
 }
 
-// themes: [{ id, colors, terminal }] -> id of the best one ("" if none)
 function best(data, themes) {
     var r = rank(data, themes)
     return r.length > 0 ? r[0].id : ""
 }
 
-// All themes with their score, best first (for tests)
 function rank(data, themes) {
     var pal = palette(data, 6)
     if (!pal) return []

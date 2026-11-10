@@ -1,14 +1,13 @@
 import QtQuick
 import qs.services
 
-// Barra del volume compatta per le pagine di dettaglio
 Item {
     id: root
 
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
 
-    property real value: 0              // 0..1
+    property real value: 0
     property bool muted: false
     property string icon: "volume"
     property bool showPercent: true
@@ -19,10 +18,6 @@ Item {
     property bool dragging: false
     property real dragValue: 0
     readonly property real shownValue: Math.max(0, Math.min(1, dragging ? dragValue : value))
-    // Valore mostrato, animato: i cambi dai tasti scorrono fluidi. Si anima
-    // il valore e non la larghezza, così all'apertura (barra che passa da
-    // larghezza 0 a quella vera) non parte dal fondo. Trascinando o da
-    // nascosta segue subito
     property real animValue: shownValue
     Behavior on animValue {
         enabled: !root.dragging && root.visible
@@ -79,7 +74,6 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            // Il trascinamento orizzontale non deve far scorrere la lista
             preventStealing: true
             onPressed: mouse => {
                 root.dragging = true
@@ -99,7 +93,6 @@ Item {
             }
         }
 
-        // Click sull'icona: muto
         MouseArea {
             anchors.left: parent.left
             anchors.top: parent.top

@@ -21,54 +21,34 @@ Item {
     readonly property string ownerId: "control"
     readonly property bool shown: island.owner === ownerId
 
-    // ---------- Impostazioni ----------
-    // true: il pannello prende la tastiera quando si apre, così basta iniziare
-    // a scrivere per passare al launcher. false: serve prima un click su Search
     property bool typeToSearch: true
-    // Screenshot di una regione, solo negli appunti (nessun file salvato).
-    // grim + slurp + wl-copy: repo ufficiali di Arch e Fedora.
     property string screenshotCommand:
         'g="$(slurp)" || exit 0; grim -g "$g" - | wl-copy --type image/png'
 
-    // ---------- Dimensioni (scalate) ----------
-    // Dimensione del pannello: 1 = misura originale, 0.8 = 20% più piccolo
     readonly property real sizeFactor: 0.79
     function u(value) { return Theme.s(value * sizeFactor) }
 
-    readonly property int openWidth: root.u(436)   // era 472, poi 456
-    // Stesso spazio tra contenuto e bordo su tutti i lati. Ai lati si aggiunge
-    // la parte trasparente della pillola (topRadius), che non si vede
+    readonly property int openWidth: root.u(436)
     readonly property int edgePad: root.u(14)
     readonly property int sidePad: edgePad + island.topRadius
     readonly property int topPad: edgePad
     readonly property int bottomPad: edgePad
     readonly property int gap: root.u(10)
     readonly property int tileH: root.u(54)
-    // Cerchi screenshot / power: un pelo più piccoli delle tile
     readonly property int circleSize: root.u(48)
     readonly property int sliderCardH: root.u(60)
-    // Senza notifiche il riquadro è solo la riga del titolo
     readonly property bool hasNotifications: notifications.history.count > 0
     readonly property int notifItemH: root.u(56)
     readonly property int notifSpacing: root.u(6)
-    // Notifiche visibili: 1, 2, poi al massimo due e mezza (la mezza fa capire
-    // che si può scorrere per le altre)
     readonly property real notifVisible: Math.min(notifications.history.count, 2.5)
     readonly property int notifListH: Math.round(notifVisible * notifItemH
         + Math.max(0, Math.ceil(notifVisible) - 1) * notifSpacing)
-    // Riquadro: titolo + lista (con una notifica è alto come prima, u(100))
     readonly property int notifCardH: hasNotifications ? root.u(100) - notifItemH + notifListH
                                                        : root.u(38)
-    // Alta il doppio del raggio dei riquadri: stessa curva di tutto il resto
     readonly property int searchH: 2 * cardRadius
     readonly property int cardRadius: root.u(22)
-    // Angoli dell'isola concentrici con i riquadri: raggio interno + margine
     readonly property int panelRadius: cardRadius + edgePad
 
-    // ---------- Computer fisso o portatile (riconosciuto da solo) ----------
-    // Fisso = nessuna batteria. Sul fisso solo la barra del volume (niente
-    // luminosità di schermo e tastiera); senza Bluetooth, al posto della sua
-    // tile i cerchi App e Temi
     readonly property var batteryDevice: UPower.displayDevice
     readonly property bool desktop: !(batteryDevice && batteryDevice.ready
                                       && batteryDevice.isLaptopBattery && batteryDevice.isPresent)
@@ -76,23 +56,17 @@ Item {
     readonly property bool showDisplay: !desktop
     readonly property bool showKeyboard: !desktop && keyboardAvailable
 
-    // tile + barre + notifiche + search, con uno spazio tra ogni elemento
     readonly property int sliderCount: 1 + (showDisplay ? 1 : 0) + (showKeyboard ? 1 : 0)
     readonly property int openHeight: topPad + tileH + sliderCount * sliderCardH
         + notifCardH + searchH + (sliderCount + 2) * gap + bottomPad
 
-    // Se cambia l'altezza mentre il pannello è aperto, adatta l'isola
-    // (senza togliere la tastiera se l'aveva chiesta una pagina, es. la password Wi-Fi)
     onOpenHeightChanged: if (shown) island.open(ownerId, openWidth, openHeight,
                                                 typeToSearch || island.wantsKeyboard)
 
-    // ---------- Stato ----------
-    // Wi-Fi e Bluetooth: moduli nativi di Quickshell (D-Bus), niente polling
     readonly property bool wifiOn: Networking.wifiEnabled
     readonly property var btAdapter: Bluetooth.defaultAdapter
     readonly property bool bluetoothOn: !!(btAdapter && btAdapter.enabled)
 
-    // Scheda Wi-Fi presente? Su un fisso senza Wi-Fi si mostra la rete cablata
     readonly property bool hasWifi: {
         var devices = Networking.devices.values
         for (var i = 0; i < devices.length; i++)
@@ -110,7 +84,6 @@ Item {
         return wiredConnected ? "Connected" : "Offline"
     }
 
-    // Testo sotto i titoli delle tile
     readonly property string wifiStatus: {
         if (!wifiOn) return "Off"
         var devices = Networking.devices.values
@@ -131,24 +104,19 @@ Item {
         if (names.length === 0) return "On"
         return names.length === 1 ? names[0] : names[0] + " +" + (names.length - 1)
     }
-    // Luminosità: condivisa con l'OSD (vedi Brightness.qml)
     readonly property real displayLevel: Brightness.displayLevel
     readonly property bool displayAvailable: Brightness.displayAvailable
     readonly property real keyboardLevel: Brightness.keyboardLevel
     readonly property bool keyboardAvailable: Brightness.keyboardAvailable
 
-    // Audio (PipeWire, nativo in Quickshell)
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property bool audioAvailable: !!(sink && sink.audio)
     PwObjectTracker { objects: root.sink ? [root.sink] : [] }
 
-    // Non chiudere mentre stai trascinando una barra
     readonly property bool busy: volumeSlider.dragging
         || displaySlider.dragging || keyboardSlider.dragging
         || wifiPage.busy || audioPage.busy || displayPage.busy
 
-    // ---------- Pagine di dettaglio ----------
-    // "" = pagina principale, oppure "wifi", "bluetooth", "audio", "display"
     property string page: ""
 
     function openPage(name) {
@@ -161,7 +129,6 @@ Item {
         focusTimer.restart()
     }
 
-    // La pagina prende la tastiera, così Esc torna indietro
     Timer {
         id: pageFocusTimer
         interval: 60
@@ -173,13 +140,10 @@ Item {
         }
     }
 
-    // Per scrivere la password serve la tastiera anche se typeToSearch è false
     function requestKeyboard() {
         if (shown) island.open(ownerId, openWidth, openHeight, true)
     }
 
-    // ---------- Lettura dello stato ----------
-    // Ricontrolla i dispositivi a ogni apertura (nel caso cambino)
     function refresh() {
         Brightness.refresh()
     }
@@ -189,17 +153,13 @@ Item {
             refresh()
             focusTimer.restart()
         } else {
-            // Alla prossima apertura si riparte dalla pagina principale
             page = ""
-            // Chiuso (Esc, click, scorciatoia) col puntatore ancora sopra:
-            // non si riapre finché il puntatore non esce e rientra
             if (island.openHovered) reopenBlocked = true
         }
     }
 
     property bool reopenBlocked: false
 
-    // ---------- Azioni ----------
     function toggleWifi() {
         Networking.wifiEnabled = !Networking.wifiEnabled
     }
@@ -210,7 +170,6 @@ Item {
 
     function takeScreenshot() {
         island.close(ownerId)
-        // Piccolo ritardo: l'isola deve sparire prima dello scatto
         Quickshell.execDetached(["sh", "-c", "sleep 0.5; " + screenshotCommand])
     }
 
@@ -231,10 +190,8 @@ Item {
         Brightness.setKeyboard(value)
     }
 
-    // ---------- Apertura/chiusura con l'hover ----------
     Connections {
         target: root.island
-        // Restare sopra l'isola la tiene aperta, uscirne la chiude
         function onHoveredChanged() {
             if (root.island.hovered) {
                 closeTimer.stop()
@@ -243,22 +200,16 @@ Item {
                 if (root.shown) closeTimer.restart()
             }
         }
-        // Apertura: tutta la pillola (staccata) o solo il bordo alto (attaccata)
         function onOpenHoveredChanged() {
             if (!root.island.openHovered) root.reopenBlocked = false
             else if (root.island.owner === "" && !root.reopenBlocked) openTimer.restart()
         }
-        // L'isola torna libera (es. finito l'OSD) mentre sei già sul bordo:
-        // senza questo non si aprirebbe finché non ti sposti
         function onOwnerChanged() {
             if (root.island.owner === "" && root.island.openHovered && !root.reopenBlocked)
                 openTimer.restart()
         }
     }
 
-    // ---------- Apertura da comando (bind di Hyprland) ----------
-    // qs ipc call controlcenter toggle
-    // Aperto così si chiude con Esc, cliccando fuori o ripetendo il comando
     function toggle() {
         if (shown) {
             island.close(ownerId)
@@ -273,9 +224,6 @@ Item {
         function toggle(): void { root.toggle() }
     }
 
-    // Screenshot da comando (es. scorciatoia di Hyprland), negli appunti:
-    //   qs ipc call screenshot region   regione scelta col mouse (come il pulsante)
-    //   qs ipc call screenshot screen   tutto lo schermo sotto il mouse
     IpcHandler {
         target: "screenshot"
         function region(): void { root.takeScreenshot() }
@@ -286,9 +234,17 @@ Item {
                 'sleep 0.5; grim ' + (mon !== "" ? '-o "$1" ' : '') + '- | wl-copy --type image/png',
                 "sh", mon])
         }
+        function save(): void {
+            root.island.close(root.ownerId)
+            var mon = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+            Quickshell.execDetached(["sh", "-c",
+                'sleep 0.5; d=$(xdg-user-dir PICTURES 2>/dev/null); [ -n "$d" ] && [ "$d" != "$HOME" ] || d="$HOME/Pictures"; '
+                + 'mkdir -p "$d"; f="$d/Screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"; '
+                + 'grim ' + (mon !== "" ? '-o "$1" ' : '') + '"$f" && wl-copy --type image/png < "$f"',
+                "sh", mon])
+        }
     }
 
-    // Piccola attesa per evitare aperture accidentali
     Timer {
         id: openTimer
         interval: 250
@@ -308,14 +264,12 @@ Item {
         }
     }
 
-    // La tastiera arriva alla barra Search dopo che il compositor ha dato il focus
     Timer {
         id: focusTimer
         interval: 60
         onTriggered: if (root.typeToSearch) searchInput.forceActiveFocus()
     }
 
-    // ---------- Interfaccia ----------
     Column {
         anchors {
             fill: parent
@@ -326,25 +280,20 @@ Item {
         }
         spacing: root.gap
 
-        // Si nasconde di colpo, compare in dissolvenza
         visible: root.shown && root.page === ""
-        // Si nasconde subito, ricompare in dissolvenza dopo una pausa
         FadeIn { active: (root.shown && root.page === ""); pause: 160; duration: 220 }
 
-        // ----- Tile Wi-Fi / Bluetooth + cerchi screenshot / power -----
         Row {
             id: topRow
             width: parent.width
             height: root.tileH
             spacing: root.gap
 
-            // Tile (rete, Bluetooth se c'è) e cerchi tutti alla stessa distanza
             readonly property int tiles: root.hasBluetooth ? 2 : 1
             readonly property int circles: root.hasBluetooth ? 2 : 4
             readonly property int tileW: (width - circles * root.circleSize
                                           - (tiles + circles - 1) * spacing) / tiles
 
-            // Wi-Fi, oppure rete cablata se il computer non ha il Wi-Fi
             ToggleTile {
                 sizeFactor: root.sizeFactor
                 cornerRadius: root.cardRadius
@@ -370,7 +319,6 @@ Item {
                 onToggled: root.toggleBluetooth()
                 onClicked: root.openPage("bluetooth")
             }
-            // Senza Bluetooth: scorciatoie al launcher (app) e all'aspetto (temi)
             CircleButton {
                 visible: !root.hasBluetooth
                 kind: "grid"
@@ -399,7 +347,6 @@ Item {
             }
         }
 
-        // ----- Barre -----
         ControlSlider {
             sizeFactor: root.sizeFactor
             id: volumeSlider
@@ -444,7 +391,6 @@ Item {
             onMoved: value => root.setKeyboard(value)
         }
 
-        // ----- Centro notifiche (compatto) -----
         Card {
             width: parent.width
             height: root.notifCardH
@@ -488,7 +434,6 @@ Item {
                 }
             }
 
-            // Mostra una notifica alla volta, le altre si scorrono con la rotella
             ListView {
                 id: notifList
                 visible: root.hasNotifications
@@ -518,12 +463,10 @@ Item {
 
                     width: ListView.view.width
                     height: root.notifItemH
-                    // Concentrico con il riquadro delle notifiche (margine u(10))
                     radius: root.cardRadius - root.u(10)
                     color: entryArea.containsMouse ? Theme.highlight : Theme.surface
                     border.color: "transparent"
 
-                    // Click sulla voce: torna all'app che l'ha mandata
                     MouseArea {
                         id: entryArea
                         anchors.fill: parent
@@ -534,7 +477,6 @@ Item {
                         }
                     }
 
-                    // Avatar: icona dell'app, oppure la lettera iniziale
                     Item {
                         id: avatar
                         width: root.u(30)
@@ -561,8 +503,6 @@ Item {
                             }
                         }
 
-                        // Avatar (immagine della notifica) ritagliato a
-                        // cerchio; logo dell'app così com'è
                         ClippingRectangle {
                             id: iconBox
                             anchors.fill: parent
@@ -574,7 +514,6 @@ Item {
                                 id: iconImage
                                 anchors.fill: parent
                                 source: entry.icon
-                                // Pixel veri del riquadro (u(30)) sul monitor
                                 sourceSize.width: Theme.px(root.u(30), iconImage)
                                 sourceSize.height: Theme.px(root.u(30), iconImage)
                                 fillMode: entry.rounded ? Image.PreserveAspectCrop : Image.PreserveAspectFit
@@ -622,7 +561,6 @@ Item {
                         }
                     }
 
-                    // X: toglie questa notifica dall'elenco
                     Item {
                         id: closeButton
                         width: root.u(16)
@@ -649,7 +587,6 @@ Item {
                 }
             }
 
-            // Senza notifiche: scritta a destra nella riga del titolo
             Text {
                 anchors.right: notifTop.right
                 anchors.verticalCenter: notifTop.verticalCenter
@@ -661,7 +598,6 @@ Item {
             }
         }
 
-        // ----- Barra Search (passa al launcher) -----
         Card {
             width: parent.width
             height: root.searchH
@@ -691,7 +627,6 @@ Item {
                 font.family: Theme.fontFamily
                 clip: true
 
-                // Appena scrivi qualcosa, passa al launcher con il testo già inserito
                 onTextChanged: {
                     if (text !== "") {
                         var typed = text
@@ -713,7 +648,6 @@ Item {
                 font.family: Theme.fontFamily
             }
 
-            // Click: passa al launcher
             MouseArea {
                 anchors.fill: parent
                 onClicked: root.launcher.openWithText("")
@@ -721,7 +655,6 @@ Item {
         }
     }
 
-    // ---------- Pagine (stessa area della pagina principale) ----------
     WifiPage {
         id: wifiPage
         anchors {

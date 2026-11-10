@@ -5,18 +5,13 @@ import Quickshell.Hyprland
 import qs.services
 import qs.widgets
 
-// Pagina Display: monitor collegati, modalità (estendi / duplica / solo uno)
-// e accensione dei singoli schermi. Le modifiche passano da hyprctl e restano
-// fino al prossimo riavvio o ricaricamento della config di Hyprland.
 SubPage {
     id: page
 
     title: "Display"
 
-    // In attesa di conferma il pannello non deve chiudersi
     readonly property bool busy: pendingRevert !== null
 
-    // ---------- Stato dei monitor (hyprctl monitors all) ----------
     property var monitors: []
 
     Process {
@@ -33,7 +28,6 @@ SubPage {
 
     onVisibleChanged: if (visible) refresh()
 
-    // Monitor collegati o scollegati: aggiorna
     Connections {
         target: Hyprland
         function onRawEvent(event) {
@@ -43,7 +37,6 @@ SubPage {
         }
     }
 
-    // Hyprland applica le modifiche con un attimo di ritardo: rilegge due volte
     Timer {
         id: refreshLater
         interval: 400
@@ -58,7 +51,6 @@ SubPage {
         onTriggered: page.refresh()
     }
 
-    // ---------- Informazioni utili ----------
     function isInternal(m) {
         return /^(eDP|LVDS|DSI)/.test(m.name)
     }
@@ -101,7 +93,6 @@ SubPage {
             + Math.round(m.scale * 100) + "%"
     }
 
-    // Modalità attuale (per evidenziarla)
     readonly property string currentMode: {
         if (!multi) return ""
         for (var i = 0; i < monitors.length; i++)
@@ -114,10 +105,6 @@ SubPage {
         return "extend"
     }
 
-    // ---------- Applicazione delle impostazioni ----------
-    // Ogni voce: { output, disabled } oppure
-    // { output, mode, position, scale, transform, mirror }. La rotazione
-    // (transform) va sempre indicata: con "keyword monitor" se manca si azzera
     function current(m) {
         if (m.disabled) return { output: m.name, disabled: true }
         return {
@@ -143,9 +130,6 @@ SubPage {
 
     function off(m) { return { output: m.name, disabled: true } }
 
-    // Hyprland con config Lua (0.5x) usa hl.monitor; le versioni precedenti
-    // "keyword monitor". Prima si accendono gli schermi, poi si spengono:
-    // così non c'è mai un momento con tutti gli schermi spenti.
     function apply(specs) {
         specs = specs.filter(function (s) { return !s.disabled })
                      .concat(specs.filter(function (s) { return s.disabled }))
@@ -154,7 +138,6 @@ SubPage {
             cmd = ["hyprctl", "eval", specs.map(function (s) {
                 if (s.disabled)
                     return 'hl.monitor({ output = "' + s.output + '", disabled = true })'
-                // mirror va sempre indicato: se manca resta quello di prima
                 return 'hl.monitor({ output = "' + s.output + '", mode = "' + s.mode
                     + '", position = "' + s.position + '", scale = "' + s.scale
                     + '", transform = ' + (s.transform || 0)
@@ -172,12 +155,8 @@ SubPage {
         refreshLater.restart()
     }
 
-    // Applica, ma ricorda com'era: se non confermi entro pochi secondi torna indietro
     property var pendingRevert: null
     property int countdown: 0
-    // La richiesta di conferma sta in cima: se la pagina era scorsa in basso
-    // (es. Apply dalla disposizione) non si vedrebbe e tutto tornerebbe
-    // indietro da solo dopo 15 s
     onPendingRevertChanged: if (pendingRevert !== null) scrollToTop()
 
     function change(specs) {
@@ -209,18 +188,11 @@ SubPage {
         }
     }
 
-    // ---------- Modalità ----------
-    // Larghezza "logica" (quella che occupa nel layout, scala compresa).
-    // hyprctl dà la risoluzione non ruotata: ruotato di 90° o 270°
-    // (transform dispari) in orizzontale occupa l'altezza
     function logicalWidth(m) {
         var w = m.transform % 2 === 1 ? m.height : m.width
         return w > 0 && m.scale > 0 ? Math.round(w / m.scale) : 0
     }
 
-    // Affianca gli schermi da sinistra a destra. Le posizioni sono esplicite
-    // perché "auto" impostato da Lua non li dispone affiancati. Quelli spenti
-    // (larghezza ignota) vanno in fondo, così non si sovrappongono.
     function rowLayout(list) {
         var known = list.filter(function (m) { return !m.disabled && logicalWidth(m) > 0 })
         var unknown = list.filter(function (m) { return m.disabled || logicalWidth(m) === 0 })
@@ -248,23 +220,18 @@ SubPage {
         if (specs) change(specs)
     }
 
-    // Accende/spegne un singolo schermo (mai l'ultimo acceso)
     function toggle(m) {
         var enabled = monitors.filter(function (x) { return !x.disabled })
         if (!m.disabled) {
             if (enabled.length <= 1) return
             change([off(m)])
         } else {
-            // A destra di quelli già accesi
             var right = 0
             enabled.forEach(function (x) { right = Math.max(right, x.x + logicalWidth(x)) })
             change([on(m, right + "x0")])
         }
     }
 
-    // ---------- Contenuto ----------
-
-    // Conferma dopo una modifica
     Rectangle {
         visible: page.pendingRevert !== null
         width: parent.width
@@ -327,7 +294,6 @@ SubPage {
         }
     }
 
-    // Modalità (solo con più di uno schermo)
     SectionTitle {
         visible: page.multi
         sizeFactor: page.sizeFactor
@@ -394,7 +360,6 @@ SubPage {
         }
     }
 
-    // Extend: disposizione grafica (rettangoli da trascinare)
     SectionTitle {
         visible: arrangement.visible
         sizeFactor: page.sizeFactor
@@ -408,7 +373,6 @@ SubPage {
         sizeFactor: page.sizeFactor
     }
 
-    // Elenco degli schermi
     SectionTitle {
         sizeFactor: page.sizeFactor
         text: "Displays"
@@ -422,7 +386,6 @@ SubPage {
             title: page.label(modelData)
             subtitle: page.details(modelData)
             selected: !modelData.disabled
-            // Click: accende/spegne (solo con più schermi)
             clickable: page.multi
             onClicked: page.toggle(modelData)
         }

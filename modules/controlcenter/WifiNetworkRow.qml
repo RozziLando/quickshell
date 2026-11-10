@@ -3,11 +3,10 @@ import Quickshell.Networking
 import qs.services
 import qs.widgets
 
-// Riga di una rete nella pagina Wi-Fi (con campo password)
 ListRow {
     id: row
     required property var modelData
-    required property var owner   // la WifiPage
+    required property var owner
     readonly property var net: modelData
 
     sizeFactor: row.owner.sizeFactor
@@ -19,9 +18,6 @@ ListRow {
     hasExtra: row.owner.passwordFor === net
     onClicked: row.owner.activate(net)
 
-    // Connessione fallita per la password (sbagliata o mancante): la chiede.
-    // Non per gli altri motivi (rete persa, disconnessione): lì una password
-    // nuova non serve. Le reti aziendali non usano una password semplice
     Connections {
         target: row.net
         function onConnectionFailed(reason) {
@@ -41,8 +37,6 @@ ListRow {
         radius: height / 2
         color: Theme.track
 
-        // Riaperto (es. password sbagliata): campo vuoto, così si legge
-        // l'avviso "Wrong password" e non resta la password di prima
         onVisibleChanged: if (visible) { pwInput.text = ""; focusLater.restart() }
         Timer {
             id: focusLater
@@ -70,8 +64,6 @@ ListRow {
             Keys.onEscapePressed: event => {
                 row.owner.passwordFor = null
                 event.accepted = true
-                // Il campo sparisce: la tastiera torna alla pagina, così un
-                // altro Esc torna indietro
                 row.owner.forceActiveFocus()
             }
         }

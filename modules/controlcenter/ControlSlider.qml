@@ -5,17 +5,16 @@ import qs.widgets
 Card {
     id: root
 
-    // Fattore di dimensione impostato da chi lo usa (1 = misura normale)
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
 
     property string title: ""
     property string icon: ""
-    property real value: 0              // 0..1, letto dal sistema
+    property real value: 0
     property bool available: true
     property bool muted: false
     property bool iconClickable: false
-    property bool showDetails: true     // freccetta per la pagina di dettaglio
+    property bool showDetails: true
 
     signal moved(real value)
     signal iconClicked()
@@ -23,13 +22,7 @@ Card {
 
     property bool dragging: false
     property real dragValue: 0
-    // Limitato a 0..1: il volume può superare il 100% (es. pactl 150%) e la
-    // barra uscirebbe dal suo riquadro
     readonly property real shownValue: Math.max(0, Math.min(1, dragging ? dragValue : value))
-    // Valore mostrato, animato: i cambi dai tasti scorrono fluidi. Si anima
-    // il valore e non la larghezza, così all'apertura (barra che passa da
-    // larghezza 0 a quella vera) non parte dal fondo. Trascinando o da
-    // nascosta segue subito
     property real animValue: shownValue
     Behavior on animValue {
         enabled: !root.dragging && root.visible
@@ -44,18 +37,14 @@ Card {
         if (!throttle.running) throttle.start()
     }
 
-    // Invia il valore durante il trascinamento (al massimo ogni 100 ms)
     Timer {
         id: throttle
         interval: 100
         onTriggered: root.moved(root.dragValue)
     }
 
-    // Fascia sopra la barra (dal bordo alto della card all'inizio della
-    // barra): titolo e freccetta ci stanno centrati in verticale
     readonly property real headerH: track.y
 
-    // ----- Titolo -----
     Text {
         anchors {
             left: parent.left
@@ -71,9 +60,6 @@ Card {
         font.family: Theme.fontFamily
     }
 
-    // ----- Freccetta (menu avanzato, da collegare) -----
-    // Centrata in verticale nella fascia sopra la barra: stesso spazio
-    // verso il bordo alto della card e verso la barra
     Rectangle {
         visible: root.showDetails
         width: root.u(18)
@@ -102,7 +88,6 @@ Card {
         }
     }
 
-    // ----- Barra -----
     Rectangle {
         id: track
         anchors {
@@ -131,7 +116,6 @@ Card {
             anchors.verticalCenter: parent.verticalCenter
             size: root.u(13)
             kind: root.icon
-            // Scura quando è sopra la parte colorata
             color: fill.width > root.u(28) ? Theme.background : Theme.text
         }
 
@@ -156,7 +140,6 @@ Card {
             }
         }
 
-        // Click sull'icona (es. muto per il volume)
         MouseArea {
             visible: root.iconClickable
             anchors {
@@ -169,9 +152,6 @@ Card {
         }
     }
 
-    // Rotella del mouse: 5% a scatto. Il touchpad manda tanti eventi piccoli:
-    // si sommano e conta ogni scatto intero (120), altrimenti un solo gesto
-    // portava la barra da 0 a 100
     property real wheelAcc: 0
     WheelHandler {
         enabled: root.available

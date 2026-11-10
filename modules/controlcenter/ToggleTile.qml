@@ -2,21 +2,18 @@ import QtQuick
 import qs.services
 import qs.widgets
 
-// Tile a pillola: icona in un cerchio + titolo + stato (es. Wi-Fi / nome rete)
 Card {
     id: root
 
-    // Fattore di dimensione impostato da chi lo usa (1 = misura normale)
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
     property string kind: ""
     property string title: ""
     property string subtitle: ""
     property bool active: false
-    signal clicked()   // click sulla tile: apre la pagina di dettaglio
-    signal toggled()   // click sul cerchio: accende/spegne
+    signal clicked()
+    signal toggled()
 
-    // Raggio degli angoli (il centro di controllo usa quello dei riquadri)
     property real cornerRadius: height / 2
     radius: Math.min(cornerRadius, height / 2)
     color: area.containsMouse ? Theme.surface : Theme.card
@@ -45,7 +42,6 @@ Card {
             color: root.active ? Theme.background : Theme.text
         }
 
-        // Sopra l'area della tile, così il cerchio ha il suo click
         z: 1
         MouseArea {
             id: badgeArea

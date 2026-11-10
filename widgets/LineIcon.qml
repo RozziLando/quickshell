@@ -1,15 +1,11 @@
 import QtQuick
 import qs.services
 
-// Icone della shell: carattere del font Phosphor (services/Icons.qml).
-// Se il font non ha l'icona (o non è ancora caricato) si usa il disegno a
-// mano qui sotto, che resta come ripiego.
 Canvas {
     id: root
     property string kind: ""
     property color color: Theme.text
     property int size: Theme.s(20)
-    // Solo per "wifi": tacche di segnale accese (0-3), -1 = tutte
     property int level: -1
 
     width: size
@@ -36,7 +32,7 @@ Canvas {
     onPaint: {
         var ctx = getContext("2d")
         ctx.reset()
-        if (root.glyph !== "") return     // c'è il carattere del font
+        if (root.glyph !== "") return
         ctx.scale(width / 24, height / 24)
 
         var c = color.toString()
@@ -50,7 +46,6 @@ Canvas {
 
         switch (kind) {
         case "wifi":
-            // Le tacche oltre "level" sono disegnate in trasparenza
             for (i = 0; i < 3; i++) {
                 ctx.globalAlpha = (level < 0 || i < level) ? 1 : 0.2
                 ctx.beginPath(); ctx.arc(12, 19, 5.5 + 4 * i, 1.25 * Math.PI, 1.75 * Math.PI); ctx.stroke()
@@ -119,7 +114,7 @@ Canvas {
             ctx.beginPath(); ctx.arc(10.5, 10.5, 6.5, 0, 2 * Math.PI); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(15.3, 15.3); ctx.lineTo(20.5, 20.5); ctx.stroke()
             break
-        
+
         case "chevron":
             ctx.beginPath(); ctx.moveTo(9, 5); ctx.lineTo(16, 12); ctx.lineTo(9, 19); ctx.stroke()
             break
@@ -143,7 +138,6 @@ Canvas {
             break
 
         case "ethernet":
-            // Tre nodi collegati (rete cablata)
             ctx.beginPath(); ctx.rect(9, 3, 6, 5); ctx.stroke()
             ctx.beginPath(); ctx.rect(3, 16, 6, 5); ctx.stroke()
             ctx.beginPath(); ctx.rect(15, 16, 6, 5); ctx.stroke()
@@ -189,7 +183,6 @@ Canvas {
             break
 
         case "extend":
-            // Due schermi affiancati
             ctx.beginPath(); ctx.rect(2, 6, 9, 9); ctx.stroke()
             ctx.beginPath(); ctx.rect(13, 6, 9, 9); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(6.5, 15); ctx.lineTo(6.5, 18.5); ctx.stroke()
@@ -197,7 +190,6 @@ Canvas {
             break
 
         case "mirror":
-            // Due schermi sovrapposti (stessa immagine)
             ctx.beginPath(); ctx.rect(7, 3, 14, 10); ctx.stroke()
             ctx.beginPath(); ctx.rect(3, 9, 14, 10); ctx.fill()
             ctx.globalCompositeOperation = "destination-out"
@@ -206,7 +198,6 @@ Canvas {
             break
 
         case "sleep":
-            // Luna
             ctx.beginPath()
             ctx.arc(12, 12, 8, 0.3 * Math.PI, 1.7 * Math.PI, false)
             ctx.arc(15.5, 9, 6, 1.5 * Math.PI, 0.55 * Math.PI, true)
@@ -214,7 +205,6 @@ Canvas {
             break
 
         case "reboot":
-            // Freccia circolare
             ctx.beginPath(); ctx.arc(12, 12, 7.5, -0.35 * Math.PI, 1.45 * Math.PI, false); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(14.5, 2.8); ctx.lineTo(18.6, 4.9); ctx.lineTo(16.3, 8.8); ctx.stroke()
             break
@@ -243,7 +233,6 @@ Canvas {
             break
 
         case "headphones":
-            // Archetto + due padiglioni
             ctx.beginPath(); ctx.arc(12, 13, 8, Math.PI, 2 * Math.PI); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(4, 13); ctx.lineTo(4, 18); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(20, 13); ctx.lineTo(20, 18); ctx.stroke()
@@ -252,7 +241,6 @@ Canvas {
             break
 
         case "palette":
-            // Tavolozza: contorno con incavo e tre gocce di colore
             ctx.beginPath()
             ctx.arc(12, 12, 9, 0.15 * Math.PI, 1.85 * Math.PI)
             ctx.quadraticCurveTo(17, 11, 18.5, 13.5)
@@ -263,7 +251,6 @@ Canvas {
             ctx.beginPath(); ctx.arc(9, 15, 1.4, 0, 2 * Math.PI); ctx.fill()
             break
         case "cpu":
-            // Chip: corpo, nucleo e tre piedini per lato
             ctx.beginPath(); ctx.roundedRect(6, 6, 12, 12, 2, 2); ctx.stroke()
             ctx.fillRect(9.5, 9.5, 5, 5)
             for (i = 0; i < 3; i++) {

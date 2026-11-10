@@ -1,7 +1,6 @@
 import QtQuick
 import qs.services
 
-// Titoletto di sezione nelle pagine di dettaglio (es. "Saved")
 Item {
     id: root
 

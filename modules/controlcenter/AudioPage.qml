@@ -4,32 +4,27 @@ import Quickshell.Services.Pipewire
 import qs.services
 import qs.widgets
 
-// Pagina Audio: uscite e ingressi selezionabili (con volume) e volume per app
 SubPage {
     id: page
 
     title: "Audio"
 
-    // Mentre si trascina una barra il pannello non deve chiudersi
     property int dragCount: 0
     readonly property bool busy: dragCount > 0
     onVisibleChanged: if (!visible) dragCount = 0
 
     readonly property var nodes: Pipewire.nodes.values
 
-    // Dispositivi d'uscita, d'ingresso e flussi audio delle app
     readonly property var outputs: nodes.filter(function (n) {
         return n.audio && n.isSink && !n.isStream
     })
     readonly property var inputs: nodes.filter(function (n) {
         return n.audio && !n.isSink && !n.isStream
     })
-    // Flussi di riproduzione delle app (Quickshell li vede come "sink")
     readonly property var apps: nodes.filter(function (n) {
         return n.audio && n.isStream && n.isSink
     })
 
-    // Serve per leggere e cambiare volume e proprietà dei nodi
     PwObjectTracker { objects: page.visible ? page.nodes : [] }
 
     function deviceName(n) {
@@ -56,7 +51,6 @@ SubPage {
         return ""
     }
 
-    // ---------- Barra del volume sotto ogni voce ----------
     component VolumeBar: MiniSlider {
         required property var node
         width: parent.width
@@ -66,7 +60,6 @@ SubPage {
         onIconClicked: if (node.audio) node.audio.muted = !node.audio.muted
     }
 
-    // ---------- Uscite ----------
     SectionTitle {
         sizeFactor: page.sizeFactor
         text: "Output"
@@ -89,14 +82,11 @@ SubPage {
                 node: outRow.modelData
                 sizeFactor: page.sizeFactor
                 onDraggingChanged: page.dragCount += dragging ? 1 : -1
-                // Voce sparita mentre la trascini (es. app chiusa): il
-                // pannello non deve restare "occupato" per sempre
                 Component.onDestruction: if (dragging) page.dragCount--
             }
         }
     }
 
-    // ---------- Ingressi ----------
     SectionTitle {
         sizeFactor: page.sizeFactor
         text: "Input"
@@ -134,7 +124,6 @@ SubPage {
         font.family: Theme.fontFamily
     }
 
-    // ---------- App ----------
     SectionTitle {
         sizeFactor: page.sizeFactor
         text: "Applications"

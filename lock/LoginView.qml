@@ -5,50 +5,32 @@ import Quickshell.Widgets
 import qs.services
 import qs.widgets
 
-// Schermata di accesso in stile macOS, condivisa da blocco schermo e login
-// (greetd): sfondo sfocato, data e ora grandi in alto al centro, in basso
-// avatar, nome e campo password. Non sa nulla di PAM o greetd: chi la usa
-// riceve submitted(password) e imposta busy / errorText.
 Item {
     id: root
 
-    // Immagine di sfondo (screenshot del desktop o wallpaper), sfocata
     property url backgroundSource: ""
     property string userName: ""
-    // Foto dell'utente: si prova un file dopo l'altro (es. avatar.png, poi
-    // avatar.jpg); se nessuno c'è, iniziale del nome nel cerchio
     property var avatarSources: []
     property int avatarTry: 0
-    // Nuovo elenco (es. foto cambiata): si riparte dal primo file
     onAvatarSourcesChanged: avatarTry = 0
     property bool busy: false
     property string errorText: ""
-    // Login: pulsanti Sleep / Restart / Shut Down in basso
     property bool showPower: false
-    // Sfondo sfocato (con velo scuro) o nitido: "lockBlur" per il blocco,
-    // "loginBlur" per il login (theme.json)
     property bool blurred: Theme.lockBlur
 
     signal submitted(string password)
     signal powerAction(string action)
 
-    // Dimensione dell'interfaccia: 1 = misura originale (0.765 = -10% e -15%)
     property real sizeFactor: 0.765
 
-    // Proporzioni rispetto allo schermo (vale per ogni risoluzione)
     readonly property real unit: Math.max(0.6, Math.min(width / 1440, height / 900))
     function v(value) { return Math.round(value * unit * Theme.scale * sizeFactor) }
 
     readonly property color fg: "#ffffff"
 
-    // ---------- Caps Lock ----------
-    // Stato letto dai LED delle tastiere (/sys/class/leds/*::capslock): lo
-    // aggiorna il compositor, leggibile senza permessi su ogni distro.
-    // I file si cercano una volta; poi si rileggono senza avviare processi
-    // (prima: un "cat" ogni 400 ms per tutto il tempo del login)
     property bool capsLock: false
     property var capsFiles: []
-    property var capsOn: ({})       // file -> LED acceso
+    property var capsOn: ({})
     Process {
         running: true
         command: ["sh", "-c", 'for f in /sys/class/leds/*::capslock/brightness; do [ -r "$f" ] && echo "$f"; done; true']
@@ -88,7 +70,6 @@ Item {
 
     Component.onCompleted: field.forceActiveFocus()
 
-    // ---------- Sfondo ----------
     Rectangle {
         anchors.fill: parent
         color: "#101014"
@@ -100,9 +81,7 @@ Item {
         source: root.backgroundSource
         fillMode: Image.PreserveAspectCrop
         cache: false
-        // Caricata subito: la schermata compare già con il suo sfondo
         asynchronous: false
-        // Senza sfocatura ("lockBlur": false) si vede l'immagine così com'è
         visible: !root.blurred
     }
 
@@ -117,7 +96,6 @@ Item {
         brightness: -0.08
     }
 
-    // Leggero velo scuro: il testo bianco resta leggibile su ogni sfondo
     Rectangle {
         anchors.fill: parent
         color: "#000000"
@@ -125,7 +103,6 @@ Item {
         visible: root.blurred
     }
 
-    // ---------- Data e ora ----------
     property date now: new Date()
     Timer {
         interval: 1000
@@ -159,27 +136,22 @@ Item {
             font.family: Theme.fontFamily
             font.features: { "tnum": 1 }
 
-            // Leggera sfocatura: effetto "vetro" come su macOS
             layer.enabled: true
             layer.effect: MultiEffect {
                 blurEnabled: true
                 blur: 0.18
-                // In proporzione allo schermo: uguale a login (altra
-                // risoluzione) e blocco
                 blurMax: root.v(16)
                 autoPaddingEnabled: true
             }
         }
     }
 
-    // ---------- Utente e password ----------
     Column {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: parent.height * (root.showPower ? 0.16 : 0.12)
         spacing: root.v(12)
 
-        // Avatar: foto dell'utente, oppure l'iniziale del nome
         ClippingRectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: root.v(56)
@@ -195,7 +167,6 @@ Item {
                 source: root.avatarTry < root.avatarSources.length
                         ? root.avatarSources[root.avatarTry] : ""
                 onStatusChanged: if (status === Image.Error) root.avatarTry++
-                // Pixel veri del cerchio (v(56)) sul monitor
                 sourceSize.width: Theme.px(root.v(56), avatar)
                 sourceSize.height: Theme.px(root.v(56), avatar)
                 fillMode: Image.PreserveAspectCrop
@@ -214,10 +185,8 @@ Item {
             }
         }
 
-        // Più spazio tra l'avatar e il campo password
         Item { width: 1; height: root.v(10) }
 
-        // Campo password (pillola traslucida)
         Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: root.v(230)
@@ -232,7 +201,6 @@ Item {
                 border.width: 1
                 border.color: field.activeFocus ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(1, 1, 1, 0.22)
 
-                // Scossa quando la password è sbagliata
                 SequentialAnimation {
                     id: shake
                     loops: 1
@@ -274,7 +242,6 @@ Item {
                     }
                 }
 
-                // Freccia di invio / attesa
                 Rectangle {
                     anchors.right: parent.right
                     anchors.rightMargin: root.v(4)
@@ -303,8 +270,6 @@ Item {
             }
         }
 
-        // Messaggio d'errore, o avviso Caps Lock (o spazio vuoto, così il
-        // layout non salta)
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             height: root.v(16)
@@ -317,14 +282,11 @@ Item {
         }
     }
 
-    // ---------- Sleep / Restart / Shut Down (solo login) ----------
     Row {
         visible: root.showPower
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: parent.height * 0.04
-        // Colonne tutte larghe uguali: i cerchi restano equidistanti anche se
-        // le etichette hanno lunghezze diverse
         spacing: root.v(12)
 
         Repeater {

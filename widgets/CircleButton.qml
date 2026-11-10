@@ -5,9 +5,7 @@ Card {
     id: root
     property string kind: ""
     property bool active: false
-    // Colore da attivo (accento; es. rosso per una conferma)
     property color activeColor: Theme.accent
-    // Colore dell'icona (scura sull'accento, chiara sul fondo)
     property color iconColor: active ? Theme.background : Theme.text
     property int size: Theme.s(52)
     readonly property bool hovered: area.containsMouse
