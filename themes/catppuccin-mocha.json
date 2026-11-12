@@ -1,6 +1,7 @@
 {
   "name": "Catppuccin Mocha",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "purple",
   "gnomeAccent": "purple",
   "colors": {

@@ -1,6 +1,7 @@
 {
   "name": "Nord",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "blue",
   "gnomeAccent": "blue",
   "colors": {

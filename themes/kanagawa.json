@@ -1,6 +1,7 @@
 {
   "name": "Kanagawa",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "prussiangreen",
   "gnomeAccent": "teal",
   "colors": {

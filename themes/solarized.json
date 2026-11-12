@@ -1,6 +1,7 @@
 {
   "name": "Solarized",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "blue",
   "gnomeAccent": "blue",
   "colors": {

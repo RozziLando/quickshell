@@ -1,6 +1,7 @@
 {
   "name": "Dracula",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "purple",
   "gnomeAccent": "purple",
   "colors": {

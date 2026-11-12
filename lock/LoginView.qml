@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
 import qs.services
@@ -16,6 +17,11 @@ Item {
     property bool busy: false
     property string errorText: ""
     property bool showPower: false
+    property bool showLogin: true
+    property bool takeFocus: showLogin
+    property string sharedText: ""
+    signal textTyped(string text)
+    onSharedTextChanged: if (field.text !== sharedText) field.text = sharedText
     property bool blurred: Theme.lockBlur
 
     signal submitted(string password)
@@ -23,7 +29,17 @@ Item {
 
     property real sizeFactor: 0.765
 
-    readonly property real unit: Math.max(0.6, Math.min(width / 1440, height / 900))
+    readonly property var referenceScreen: {
+        var list = Quickshell.screens
+        for (var i = 0; i < list.length; i++)
+            if (Theme.monitor !== "" && list[i].name === Theme.monitor) return list[i]
+        for (i = 0; i < list.length; i++)
+            if (/^(eDP|LVDS|DSI)/.test(list[i].name)) return list[i]
+        return list.length > 0 ? list[0] : null
+    }
+    readonly property real referenceLong: referenceScreen ? Math.max(referenceScreen.width, referenceScreen.height) : Math.max(width, height)
+    readonly property real referenceShort: referenceScreen ? Math.min(referenceScreen.width, referenceScreen.height) : Math.min(width, height)
+    readonly property real unit: Math.max(0.6, Math.min(referenceLong / 1440, referenceShort / 900))
     function v(value) { return Math.round(value * unit * Theme.scale * sizeFactor) }
 
     readonly property color fg: "#ffffff"
@@ -68,39 +84,57 @@ Item {
         field.forceActiveFocus()
     }
 
-    Component.onCompleted: field.forceActiveFocus()
+    Component.onCompleted: if (takeFocus) field.forceActiveFocus()
 
-    Rectangle {
+    Item {
+        id: backdrop
         anchors.fill: parent
-        color: "#101014"
-    }
 
-    Image {
-        id: bg
-        anchors.fill: parent
-        source: root.backgroundSource
-        fillMode: Image.PreserveAspectCrop
-        cache: false
-        asynchronous: false
-        visible: !root.blurred
-    }
+        Rectangle {
+            anchors.fill: parent
+            color: "#101014"
+        }
 
-    MultiEffect {
-        anchors.fill: parent
-        source: bg
-        visible: root.blurred && bg.status === Image.Ready
-        blurEnabled: true
-        blur: 1.0
-        blurMax: 64
-        saturation: 0.15
-        brightness: -0.08
-    }
+        Image {
+            id: bg
+            anchors.fill: parent
+            source: root.blurred ? "" : root.backgroundSource
+            fillMode: Image.PreserveAspectCrop
+            cache: false
+            asynchronous: false
+            mipmap: true
+            visible: !root.blurred
+        }
 
-    Rectangle {
-        anchors.fill: parent
-        color: "#000000"
-        opacity: 0.22
-        visible: root.blurred
+        Image {
+            id: bgSmall
+            anchors.fill: parent
+            source: root.blurred ? root.backgroundSource : ""
+            sourceSize.width: Math.max(64, Math.round(root.width / 8))
+            fillMode: Image.PreserveAspectCrop
+            cache: false
+            asynchronous: false
+            smooth: true
+            visible: false
+        }
+
+        MultiEffect {
+            anchors.fill: parent
+            source: bgSmall
+            visible: root.blurred && bgSmall.status === Image.Ready
+            blurEnabled: true
+            blur: 1.0
+            blurMax: 64
+            saturation: 0.15
+            brightness: -0.08
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: 0.22
+            visible: root.blurred
+        }
     }
 
     property date now: new Date()
@@ -111,50 +145,90 @@ Item {
         onTriggered: root.now = new Date()
     }
 
-    Column {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height * 0.1
-        spacing: root.v(2)
+    Text {
+        id: dateText
+        visible: root.showLogin
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round(parent.height * 0.08)
+        text: root.now.toLocaleDateString(Qt.locale("en_US"), "ddd d MMMM")
+        color: root.fg
+        opacity: 0.9
+        font.pixelSize: root.v(24)
+        font.weight: Font.DemiBold
+        font.styleName: ""
+        font.family: Theme.fontFamily
+    }
+
+    Item {
+        id: timeBox
+        visible: root.showLogin
+        x: Math.round((parent.width - width) / 2)
+        y: dateText.y + dateText.height - root.v(6)
+        width: digits.implicitWidth
+        height: digits.implicitHeight
+
+        readonly property string timeText: Qt.formatTime(root.now, "hh:mm")
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.now.toLocaleDateString(Qt.locale("en_US"), "dddd d MMMM")
-            color: root.fg
-            opacity: 0.9
-            font.pixelSize: root.v(22)
-            font.weight: Font.DemiBold
-            font.family: Theme.fontFamily
+            id: digits
+            visible: false
+            renderType: Text.CurveRendering
+            layer.enabled: true
+            layer.smooth: true
+            layer.textureSize: Qt.size(width * 2, height * 2)
+            text: timeBox.timeText
+            color: "white"
+            font.pixelSize: root.v(192)
+            font.weight: Font.Bold
+            font.styleName: ""
+            font.family: Qt.fontFamilies().indexOf("Inter Display") >= 0 ? "Inter Display" : Theme.fontFamily
+            font.letterSpacing: -root.v(1)
+            font.features: { "tnum": 1 }
+        }
+
+        ShaderEffectSource {
+            id: behind
+            anchors.fill: parent
+            visible: false
+            sourceItem: backdrop
+            sourceRect: Qt.rect(timeBox.x, timeBox.y, timeBox.width, timeBox.height)
+            live: true
+        }
+
+        MultiEffect {
+            anchors.fill: parent
+            source: behind
+            autoPaddingEnabled: false
+            blurEnabled: true
+            blur: 1.0
+            blurMax: 48
+            brightness: 0.32
+            saturation: 0.35
+            maskEnabled: true
+            maskSource: digits
+            maskThresholdMin: 0.5
+            maskSpreadAtMin: 0.1
         }
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatTime(root.now, "hh:mm")
-            color: root.fg
-            opacity: 0.92
-            font.pixelSize: root.v(132)
-            font.weight: Font.Bold
-            font.family: Theme.fontFamily
-            font.features: { "tnum": 1 }
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                blurEnabled: true
-                blur: 0.18
-                blurMax: root.v(16)
-                autoPaddingEnabled: true
-            }
+            anchors.fill: parent
+            text: timeBox.timeText
+            color: Qt.rgba(1, 1, 1, 0.3)
+            renderType: Text.CurveRendering
+            font: digits.font
         }
     }
 
     Column {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: parent.height * (root.showPower ? 0.16 : 0.12)
+        id: loginColumn
+        opacity: root.showLogin ? 1 : 0
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round(parent.height * (root.showPower ? 0.84 : 0.88) - height)
         spacing: root.v(12)
 
         ClippingRectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: root.v(56)
+            x: Math.round((parent.width - width) / 2)
+            width: root.v(88)
             height: width
             radius: width / 2
             color: Qt.rgba(1, 1, 1, 0.18)
@@ -167,8 +241,9 @@ Item {
                 source: root.avatarTry < root.avatarSources.length
                         ? root.avatarSources[root.avatarTry] : ""
                 onStatusChanged: if (status === Image.Error) root.avatarTry++
-                sourceSize.width: Theme.px(root.v(56), avatar)
-                sourceSize.height: Theme.px(root.v(56), avatar)
+                sourceSize.width: Theme.px(root.v(88), avatar)
+                sourceSize.height: Theme.px(root.v(88), avatar)
+                smooth: false
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 visible: status === Image.Ready
@@ -179,7 +254,7 @@ Item {
                 visible: !avatar.visible
                 text: root.userName.length > 0 ? root.userName[0].toUpperCase() : ""
                 color: root.fg
-                font.pixelSize: root.v(23)
+                font.pixelSize: root.v(36)
                 font.weight: Font.DemiBold
                 font.family: Theme.fontFamily
             }
@@ -188,9 +263,9 @@ Item {
         Item { width: 1; height: root.v(10) }
 
         Item {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: root.v(230)
-            height: root.v(34)
+            x: Math.round((parent.width - width) / 2)
+            width: root.v(247)
+            height: root.v(37)
 
             Rectangle {
                 id: pill
@@ -214,50 +289,52 @@ Item {
                 TextInput {
                     id: field
                     anchors.fill: parent
-                    anchors.leftMargin: root.v(16)
-                    anchors.rightMargin: root.v(36)
+                    anchors.leftMargin: root.v(17)
+                    anchors.rightMargin: root.v(39)
                     verticalAlignment: TextInput.AlignVCenter
                     echoMode: TextInput.Password
                     passwordCharacter: "●"
                     color: root.fg
                     selectionColor: Theme.accent
-                    font.pixelSize: root.v(13)
+                    font.pixelSize: root.v(14)
                     font.family: Theme.fontFamily
                     font.letterSpacing: root.v(1)
                     enabled: !root.busy
                     focus: true
                     clip: true
 
-                    onTextEdited: root.errorText = ""
+                    onTextEdited: {
+                        root.errorText = ""
+                        root.textTyped(text)
+                    }
                     onAccepted: if (text.length > 0) root.submitted(text)
 
                     Text {
-                        anchors.verticalCenter: parent.verticalCenter
+                        y: Math.round((parent.height - height) / 2)
                         visible: field.text.length === 0
                         text: "Enter Password"
                         color: root.fg
                         opacity: 0.55
-                        font.pixelSize: root.v(13)
+                        font.pixelSize: root.v(14)
                         font.family: Theme.fontFamily
                     }
                 }
 
                 Rectangle {
-                    anchors.right: parent.right
-                    anchors.rightMargin: root.v(4)
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.height - root.v(8)
+                    x: parent.width - width - root.v(4)
+                    y: Math.round((parent.height - height) / 2)
+                    width: parent.height - root.v(9)
                     height: width
                     radius: width / 2
                     color: Qt.rgba(1, 1, 1, field.text.length > 0 ? 0.28 : 0.12)
                     opacity: root.busy ? 0.5 : 1
 
                     Text {
-                        anchors.centerIn: parent
-                        anchors.verticalCenterOffset: -root.v(1)
+                        x: Math.round((parent.width - width) / 2)
+                        y: Math.round((parent.height - height) / 2) - root.v(1)
                         text: root.busy ? "…" : "→"
                         color: root.fg
-                        font.pixelSize: root.v(14)
+                        font.pixelSize: root.v(15)
                         font.family: Theme.fontFamily
                     }
 
@@ -271,7 +348,7 @@ Item {
         }
 
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
+            x: Math.round((parent.width - width) / 2)
             height: root.v(16)
             text: root.errorText !== "" ? root.errorText
                 : root.capsLock ? "Caps Lock is on" : ""
@@ -283,10 +360,9 @@ Item {
     }
 
     Row {
-        visible: root.showPower
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: parent.height * 0.04
+        visible: root.showPower && root.showLogin
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round(parent.height * 0.96 - height)
         spacing: root.v(12)
 
         Repeater {
@@ -303,7 +379,7 @@ Item {
                 spacing: root.v(6)
 
                 Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    x: Math.round((parent.width - width) / 2)
                     width: root.v(40)
                     height: width
                     radius: width / 2
@@ -326,7 +402,7 @@ Item {
                 }
 
                 Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    x: Math.round((parent.width - width) / 2)
                     text: action.modelData.label
                     color: root.fg
                     opacity: 0.85

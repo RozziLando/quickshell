@@ -1,6 +1,7 @@
 {
   "name": "One Dark",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "blue",
   "gnomeAccent": "blue",
   "colors": {

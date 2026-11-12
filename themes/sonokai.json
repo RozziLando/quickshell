@@ -1,6 +1,7 @@
 {
   "name": "Sonokai",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "prussiangreen",
   "gnomeAccent": "teal",
   "colors": {

@@ -2,7 +2,7 @@
   "name": "quickshell-theme-sync",
   "displayName": "Quickshell Theme Sync",
   "description": "Follows the Quickshell island theme: when the shell theme changes, the matching VS Code color theme is applied.",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "publisher": "local",
   "engines": {
     "vscode": "^1.60.0"
@@ -20,6 +20,11 @@
         "label": "Midnight (Quickshell)",
         "uiTheme": "vs-dark",
         "path": "./themes/midnight.json"
+      },
+      {
+        "label": "Cloudy Quasar (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/cloudy-quasar.json"
       }
     ],
     "configuration": {

@@ -146,11 +146,41 @@ Singleton {
         if (t.terminal) kittyFile.setText(kittyConf(t))
         gtkFile.setText(gtkCss(t))
 
-        var wallpaper = t.wallpaper && !keepWallpaper ? Theme.wallpaperDir + "/" + t.wallpaper : ""
-        applyProc.command = ["sh", "-c", applyScript, "sh",
-                             t.yaru || "", t.gnomeAccent || ""]
+        var name = keepWallpaper ? "" : pickDefaultWallpaper(t)
+        runApplyScript([t.yaru || "", t.gnomeAccent || ""])
+        if (name !== "") setWallpaper(Theme.wallpaperDir + "/" + name)
+        return name
+    }
+
+    property var queuedApply: null
+    function runApplyScript(args) {
+        if (applyProc.running) {
+            queuedApply = args
+            return
+        }
+        applyProc.command = ["sh", "-c", applyScript, "sh"].concat(args)
         applyProc.running = true
-        if (wallpaper !== "") setWallpaper(wallpaper)
+    }
+
+    function wallpaperFile(entry) {
+        for (var i = 0; i < wallpapers.length; i++) {
+            var n = wallpapers[i].name
+            if (n === entry || n.replace(/\.[^.]*$/, "") === entry) return n
+        }
+        return ""
+    }
+
+    function wallpaperNames(value) {
+        var list = typeof value === "string" ? [value] : Array.isArray(value) ? value : []
+        return list.map(function (w) { return String(w || "").trim().split("/").pop() })
+                   .filter(function (w) { return w !== "" })
+    }
+
+    function pickDefaultWallpaper(t) {
+        var list = wallpaperNames(t.defaultWallpapers)
+        var found = list.map(wallpaperFile).filter(function (w) { return w !== "" })
+        if (found.length > 0) list = found
+        return list.length > 0 ? list[Math.floor(Math.random() * list.length)] : ""
     }
 
     FileView {
@@ -172,7 +202,14 @@ Singleton {
         printErrors: false
     }
 
-    Process { id: applyProc }
+    Process {
+        id: applyProc
+        onExited: if (root.queuedApply) Qt.callLater(function () {
+            var args = root.queuedApply
+            root.queuedApply = null
+            if (args) root.runApplyScript(args)
+        })
+    }
 
     readonly property string applyScript: '
         y="$1"; acc="$2"
@@ -283,11 +320,30 @@ Singleton {
             + defs.join("\n") + "\n\n:root {\n" + vars.join("\n") + "\n}\n"
     }
 
-    function bestThemeFor(pixels, path) {
+    function favoriteThemeFor(path) {
         var file = String(path || "").split("/").pop()
-        for (var i = 0; file !== "" && i < themes.length; i++)
-            if (themes[i].wallpaper === file) return themes[i].id
-        return WallMatch.best(pixels, themes)
+        if (file === "") return ""
+        var stem = file.replace(/\.[^.]*$/, "")
+        var ids = []
+        for (var i = 0; i < themes.length; i++) {
+            var list = themes[i].preferredBy
+            if (typeof list === "string") list = [list]
+            if (!Array.isArray(list)) continue
+            for (var j = 0; j < list.length; j++) {
+                var w = String(list[j] || "").trim().split("/").pop()
+                if (w !== "" && (w === file || w === stem)) { ids.push(themes[i].id); break }
+            }
+        }
+        if (ids.length > 0) return ids[Math.floor(Math.random() * ids.length)]
+        for (i = 0; i < themes.length; i++) {
+            var defaults = wallpaperNames(themes[i].defaultWallpapers)
+            if (defaults.indexOf(file) >= 0 || defaults.indexOf(stem) >= 0) return themes[i].id
+        }
+        return ""
+    }
+
+    function bestThemeFor(pixels, path) {
+        return favoriteThemeFor(path) || WallMatch.best(pixels, themes)
     }
 
     IpcHandler {

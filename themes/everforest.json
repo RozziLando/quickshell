@@ -1,6 +1,7 @@
 {
   "name": "Everforest",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "sage",
   "gnomeAccent": "green",
   "colors": {

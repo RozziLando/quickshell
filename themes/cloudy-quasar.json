@@ -1,0 +1,54 @@
+{
+  "name": "Cloudy Quasar",
+  "defaultWallpapers": [],
+  "preferredBy": [],
+  "yaru": "purple",
+  "gnomeAccent": "purple",
+  "colors": {
+    "background": "#16161e",
+    "border": "#2a2b45",
+    "surface": "#24283b",
+    "highlight": "#2c2e4a",
+    "selection": "#45427a",
+    "card": "#1a1b26",
+    "cardBorder": "#2c2e4a",
+    "track": "#101014",
+    "text": "#c0caf5",
+    "textSoft": "#a9b1d6",
+    "textSecondary": "#a79bd0",
+    "textMuted": "#7f84ad",
+    "textDisabled": "#45475f",
+    "accent": "#bb9af7",
+    "warning": "#f7768e",
+    "glow": "#1c7aa2f7"
+  },
+  "terminal": {
+    "foreground": "#c0caf5",
+    "background": "#1a1b26",
+    "cursor": "#7aa2f7",
+    "selectionForeground": "#c0caf5",
+    "selectionBackground": "#45427a",
+    "ansi": [
+      "#15161e",
+      "#f7768e",
+      "#8d79e0",
+      "#e0af68",
+      "#7aa2f7",
+      "#c792ea",
+      "#7dcfff",
+      "#a9b1d6",
+      "#565f89",
+      "#ff899d",
+      "#a995f0",
+      "#e0af68",
+      "#8db0ff",
+      "#d9a9f5",
+      "#a4daff",
+      "#c0caf5"
+    ]
+  },
+  "vscode": {
+    "theme": "Cloudy Quasar (Quickshell)",
+    "extension": ""
+  }
+}

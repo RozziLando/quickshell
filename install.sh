@@ -14,7 +14,8 @@ for arg in "$@"; do
                 "Quickshell island: dependencies (Arch and Fedora)." \
                 "" \
                 "  1. detects Arch or Fedora and installs the dependencies" \
-                "  2. asks whether VS Code should follow the shell theme (scripts/vscode.sh)" \
+                "  2. turns on FastConnectable in /etc/bluetooth/main.conf" \
+                "  3. asks whether VS Code should follow the shell theme (scripts/vscode.sh)" \
                 "" \
                 "  ./install.sh -y             accept the defaults, ask nothing" \
                 "  ./install.sh --no-packages  skip the package installation"
@@ -107,6 +108,26 @@ if [ "$PACKAGES_STEP" = 1 ]; then
     fi
 else
     say "Skipping packages (--no-packages)"
+fi
+
+BT_CONF=${BT_CONF:-/etc/bluetooth/main.conf}
+if [ -f "$BT_CONF" ]; then
+    say "Bluetooth"
+    if grep -Eq '^[[:space:]]*FastConnectable[[:space:]]*=[[:space:]]*true' "$BT_CONF"; then
+        info "FastConnectable already on"
+    else
+        if [ -w "$BT_CONF" ] && [ -w "$(dirname "$BT_CONF")" ]; then AS_ROOT=""; else AS_ROOT=sudo; fi
+        [ -e "$BT_CONF.bak-quickshell" ] || $AS_ROOT cp "$BT_CONF" "$BT_CONF.bak-quickshell"
+        if grep -Eq '^[[:space:]]*#?[[:space:]]*FastConnectable[[:space:]]*=' "$BT_CONF"; then
+            $AS_ROOT sed -i -E '0,/^[[:space:]]*#?[[:space:]]*FastConnectable[[:space:]]*=.*/s//FastConnectable = true/' "$BT_CONF"
+        elif grep -q '^\[General\]' "$BT_CONF"; then
+            $AS_ROOT sed -i '0,/^\[General\]/s//[General]\nFastConnectable = true/' "$BT_CONF"
+        else
+            printf '\n[General]\nFastConnectable = true\n' | $AS_ROOT tee -a "$BT_CONF" >/dev/null
+        fi
+        info "FastConnectable = true in $BT_CONF (old file: $BT_CONF.bak-quickshell)"
+        info "known devices reconnect faster; applied at the next boot or with: sudo systemctl restart bluetooth"
+    fi
 fi
 
 say "VS Code themes"

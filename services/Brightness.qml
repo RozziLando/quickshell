@@ -74,7 +74,7 @@ Singleton {
         onLoaded: {
             var v = parseInt(text())
             if (isNaN(v) || root.displayMax <= 0 || justSet.running) return
-            var level = Math.pow(v / root.displayMax, 1 / root.displayExponent)
+            var level = root.displayFromRaw(v)
             var changed = Math.abs(level - root.displayLevel) > 0.001
             root.displayLevel = level
             if (changed && root.displayReady && !root.displayAbsorb)
@@ -124,14 +124,29 @@ Singleton {
     }
 
     readonly property int displayExponent: 4
+    readonly property int displayMinRaw: displayMax > 20 ? 2 : 1
+    readonly property real displayFloor: displayMax > 0
+        ? Math.pow(Math.min(1, displayMinRaw / displayMax), 1 / displayExponent) : 0
+
+    function displayFromRaw(raw) {
+        if (displayFloor >= 1) return raw >= displayMinRaw ? 1 : 0
+        var curve = Math.pow(Math.max(0, raw) / displayMax, 1 / displayExponent)
+        return Math.max(0, Math.min(1, (curve - displayFloor) / (1 - displayFloor)))
+    }
+
+    function displayToRaw(level) {
+        var curve = displayFloor + Math.max(0, Math.min(1, level)) * (1 - displayFloor)
+        var raw = Math.round(displayMax * Math.pow(curve, displayExponent))
+        return Math.max(displayMinRaw, Math.min(displayMax, raw))
+    }
 
     function setDisplay(value) {
-        displayLevel = value
+        displayLevel = Math.max(0, Math.min(1, value))
         displayAbsorb = true
         justSet.restart()
-        var pct = Math.max(1, Math.round(value * 100))
-        Quickshell.execDetached(["brightnessctl", "-e" + displayExponent, "-c", displayClass,
-                                 "set", pct + "%"])
+        if (displayMax <= 0) return
+        Quickshell.execDetached(["brightnessctl", "-c", displayClass, "set",
+                                 String(displayToRaw(displayLevel))])
     }
 
     function setKeyboard(value) {

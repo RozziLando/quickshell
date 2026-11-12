@@ -101,6 +101,7 @@ Item {
     onShownChanged: {
         if (shown) {
             wallpaperChosen = false
+            startedWith = ""
             search.text = initialText
             search.cursorPosition = search.text.length
             initialText = ""
@@ -113,6 +114,8 @@ Item {
             list.currentIndex = 0
             focusTimer.restart()
         } else {
+            list.pointerX = -1
+            list.pointerY = -1
             grabActive = false
             switchedIn = false
             selectLater.stop()
@@ -247,6 +250,12 @@ Item {
         })
     }
 
+    function selectWallpaper(name) {
+        var r = wallpaperResults
+        for (var i = 0; i < r.length; i++)
+            if (r[i].name === name) { wallpaperList.currentIndex = i; return }
+    }
+
     function selectCurrentWallpaper() {
         Qt.callLater(function () {
             var r = wallpaperResults
@@ -267,11 +276,24 @@ Item {
     property string focusRow: "wallpapers"
 
     property bool wallpaperChosen: false
+    property string startedWith: ""
 
     function applyWallpaper(item) {
         if (!item) return
         wallpaperChosen = true
+        if (startedWith === "") startedWith = "wallpaper"
         ThemeManager.setWallpaper(item.path)
+        if (startedWith === "theme") {
+            analyzer.cancel()
+            return
+        }
+        var fav = ThemeManager.favoriteThemeFor(item.path)
+        if (fav !== "") {
+            analyzer.cancel()
+            ThemeManager.apply(fav, true)
+            selectTheme(fav)
+            return
+        }
         analyzer.analyze(Theme.fileUrl(item.path), item.path)
     }
 
@@ -285,6 +307,7 @@ Item {
         property string path: ""
 
         function analyze(url, file) {
+            if (source !== "" && source !== url) unloadImage(source)
             source = url
             path = file
             if (isImageLoaded(url)) requestPaint()
@@ -345,7 +368,9 @@ Item {
         if (!item) return
         if (item.kind === "theme") {
             analyzer.cancel()
-            ThemeManager.apply(item.id, wallpaperChosen)
+            if (startedWith === "") startedWith = "theme"
+            var wall = ThemeManager.apply(item.id, wallpaperChosen)
+            if (wall) selectWallpaper(wall)
             return
         }
         if (item.kind === "app") {
@@ -521,6 +546,8 @@ Item {
 
             ListView {
                 id: list
+                property real pointerX: -1
+                property real pointerY: -1
                 anchors.fill: parent
                 visible: root.mode === "apps"
                 clip: true
@@ -599,7 +626,13 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: true
-                        onEntered: list.currentIndex = row.index
+                        onPositionChanged: mouse => {
+                            var p = mapToItem(null, mouse.x, mouse.y)
+                            var moved = list.pointerX >= 0 && (p.x !== list.pointerX || p.y !== list.pointerY)
+                            list.pointerX = p.x
+                            list.pointerY = p.y
+                            if (moved) list.currentIndex = row.index
+                        }
                         onClicked: root.launch(row.modelData)
                     }
                 }
@@ -698,7 +731,7 @@ Item {
                                 }
                                 var file = wpCard.modelData.thumb
                                 grabToImage(function (result) { result.saveToFile(file) },
-                                            Qt.size(width, height))
+                                            Qt.size(needW, needH))
                             }
                         }
                     }

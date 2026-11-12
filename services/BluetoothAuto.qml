@@ -30,36 +30,50 @@ Singleton {
         userDisconnected = m
     }
 
-    property int nextIndex: 0
+    property var queue: []
 
-    function tryOne() {
+    function eligible(d) {
+        return (d.paired || d.bonded) && !d.connected && !d.blocked
+            && d.state !== BluetoothDeviceState.Connecting
+            && !root.userDisconnected[d.address]
+    }
+
+    function tryAll() {
         if (!enabled) return
-        var list = devices().filter(function (d) {
-            return (d.paired || d.bonded) && !d.connected && !d.blocked
-                && d.state !== BluetoothDeviceState.Connecting
-                && !root.userDisconnected[d.address]
-        })
-        if (list.length === 0) return
-        var d = list[nextIndex % list.length]
-        nextIndex++
-        d.connect()
+        queue = devices().filter(eligible).map(function (d) { return d.address })
+    }
+
+    function tryNext() {
+        var rest = queue.slice()
+        var address = rest.shift()
+        queue = rest
+        if (!enabled) return
+        var found = devices().filter(function (d) { return d.address === address })[0]
+        if (found && eligible(found)) found.connect()
     }
 
     Timer {
-        interval: 30000
+        interval: 6000
         repeat: true
-        running: root.enabled
-        onTriggered: root.tryOne()
+        triggeredOnStart: true
+        running: root.queue.length > 0
+        onTriggered: root.tryNext()
+    }
+
+    function retry() {
+        if (enabled) firstTry.restart()
     }
 
     onEnabledChanged: {
         userDisconnected = ({})
+        queue = []
         if (enabled) firstTry.restart()
     }
+    Component.onCompleted: retry()
     Timer {
         id: firstTry
         interval: 3000
-        onTriggered: root.tryOne()
+        onTriggered: root.tryAll()
     }
 
     property var connectedBefore: ({})

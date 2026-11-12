@@ -1,6 +1,7 @@
 {
   "name": "Gruvbox",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "",
   "gnomeAccent": "orange",
   "colors": {

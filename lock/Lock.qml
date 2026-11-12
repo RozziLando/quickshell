@@ -21,9 +21,20 @@ Scope {
 
     readonly property bool enabled: Theme.lockScreen
 
+    property string typedText: ""
+    readonly property string mainScreenName: {
+        var list = Quickshell.screens
+        for (var i = 0; i < list.length; i++)
+            if (Theme.monitor !== "" && list[i].name === Theme.monitor) return list[i].name
+        for (i = 0; i < list.length; i++)
+            if (/^(eDP|LVDS|DSI)/.test(list[i].name)) return list[i].name
+        return list.length > 0 ? list[0].name : ""
+    }
+
     function lock() {
         if (!enabled || sessionLock.locked || capture.running) return
         errorText = ""
+        typedText = ""
         GreeterSync.sync()
         shotScreens = []
         capture.command = ["sh", "-c",
@@ -105,15 +116,18 @@ Scope {
         onCompleted: result => {
             root.pendingPassword = ""
             if (result === PamResult.Success) {
+                root.typedText = ""
                 sessionLock.locked = false
                 Quickshell.execDetached(["sh", "-c", 'rm -f "$1"/qs-lock-*.jpg', "sh", root.shotDir])
             } else {
+                root.typedText = ""
                 root.errorText = root.pamNotices.length > 0 ? root.pamNotices.join(" ") : "Incorrect password"
                 root.failed()
             }
         }
         onError: error => {
             root.pendingPassword = ""
+            root.typedText = ""
             root.errorText = "Authentication error"
             root.failed()
         }
@@ -153,6 +167,10 @@ Scope {
                                   && root.shotScreens.indexOf(surface.screen.name) >= 0
                     ? Theme.fileUrl(root.shotPath(surface.screen.name))
                     : root.wallpaperPath !== "" ? Theme.fileUrl(root.wallpaperPath) : ""
+                showLogin: !surface.screen || surface.screen.name === root.mainScreenName
+                takeFocus: true
+                sharedText: root.typedText
+                onTextTyped: text => root.typedText = text
                 userName: root.userName
                 avatarSources: root.avatarFiles.map(Theme.fileUrl)
                 busy: pam.active
@@ -187,6 +205,7 @@ Scope {
         } else {
             sleepPending = false
             inhibitor.running = root.enabled
+            BluetoothAuto.retry()
         }
     }
 

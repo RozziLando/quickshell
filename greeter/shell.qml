@@ -20,12 +20,23 @@ ShellRoot {
     }
 
     property string pendingPassword: ""
+    property var mainView: null
+    function fail(message) { if (mainView) mainView.fail(message) }
+
+    readonly property string mainScreenName: {
+        var list = Quickshell.screens
+        for (var i = 0; i < list.length; i++)
+            if (Theme.monitor !== "" && list[i].name === Theme.monitor) return list[i].name
+        for (i = 0; i < list.length; i++)
+            if (/^(eDP|LVDS|DSI)/.test(list[i].name)) return list[i].name
+        return list.length > 0 ? list[0].name : ""
+    }
     property string pamNotice: ""
     property bool busy: false
 
     function login(password) {
         if (!Greetd.available) {
-            view.fail("Preview: greetd not running")
+            root.fail("Preview: greetd not running")
             return
         }
         pamNotice = ""
@@ -49,13 +60,13 @@ ShellRoot {
             root.busy = false
             root.pendingPassword = ""
             Greetd.cancelSession()
-            view.fail(root.pamNotice !== "" ? root.pamNotice : "Incorrect password")
+            root.fail(root.pamNotice !== "" ? root.pamNotice : "Incorrect password")
         }
         function onError(error) {
             root.busy = false
             root.pendingPassword = ""
             Greetd.cancelSession()
-            view.fail(error)
+            root.fail(error)
         }
         function onReadyToLaunch() {
             fadeOut.start()
@@ -63,25 +74,50 @@ ShellRoot {
     }
 
     FloatingWindow {
+        id: win
         visible: true
         color: "black"
         implicitWidth: 1280
         implicitHeight: 800
 
-        LoginView {
-            id: view
-            anchors.fill: parent
-            backgroundSource: Qt.resolvedUrl(Quickshell.shellPath("wallpaper"))
-            userName: config.user
-            avatarSources: ["file://" + Quickshell.shellPath("avatar")]
-            busy: root.busy
-            showPower: true
-            blurred: Theme.loginBlur
-            onSubmitted: password => root.login(password)
-            onPowerAction: action => {
-                if (action === "sleep") Quickshell.execDetached(["systemctl", "suspend"])
-                else if (action === "reboot") Quickshell.execDetached(["systemctl", "reboot"])
-                else if (action === "poweroff") Quickshell.execDetached(["systemctl", "poweroff"])
+        readonly property var screenList: Quickshell.screens
+        readonly property real layoutX: screenList.length > 0 ? Math.min.apply(null, screenList.map(function (sc) { return sc.x })) : 0
+        readonly property real layoutY: screenList.length > 0 ? Math.min.apply(null, screenList.map(function (sc) { return sc.y })) : 0
+        readonly property real layoutW: screenList.length > 0 ? Math.max.apply(null, screenList.map(function (sc) { return sc.x + sc.width })) - layoutX : 0
+        readonly property real layoutH: screenList.length > 0 ? Math.max.apply(null, screenList.map(function (sc) { return sc.y + sc.height })) - layoutY : 0
+        readonly property bool spanning: screenList.length > 1
+            && Math.abs(width - layoutW) <= 2 && Math.abs(height - layoutH) <= 2
+
+        Repeater {
+            model: win.spanning ? win.screenList : [null]
+
+            delegate: Item {
+                id: area
+                required property var modelData
+                readonly property bool isMain: !modelData || modelData.name === root.mainScreenName
+                x: modelData ? modelData.x - win.layoutX : 0
+                y: modelData ? modelData.y - win.layoutY : 0
+                width: modelData ? modelData.width : win.width
+                height: modelData ? modelData.height : win.height
+
+                LoginView {
+                    id: areaView
+                    anchors.fill: parent
+                    showLogin: area.isMain
+                    backgroundSource: Qt.resolvedUrl(Quickshell.shellPath("wallpaper"))
+                    userName: config.user
+                    avatarSources: ["file://" + Quickshell.shellPath("avatar")]
+                    busy: root.busy
+                    showPower: true
+                    blurred: Theme.loginBlur
+                    onSubmitted: password => root.login(password)
+                    onPowerAction: action => {
+                        if (action === "sleep") Quickshell.execDetached(["systemctl", "suspend"])
+                        else if (action === "reboot") Quickshell.execDetached(["systemctl", "reboot"])
+                        else if (action === "poweroff") Quickshell.execDetached(["systemctl", "poweroff"])
+                    }
+                    Component.onCompleted: if (area.isMain) root.mainView = areaView
+                }
             }
         }
 

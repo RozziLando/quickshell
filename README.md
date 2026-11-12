@@ -36,19 +36,30 @@ chmod +x install.sh
 ```
 
 Run it as your normal user: it asks for the sudo password when needed.
-`install.sh` does only two things:
+`install.sh` does only three things:
 
 1. detects Arch or Fedora and installs the [dependencies](#dependencies).
    Packages that are already installed are skipped (`pacman --needed` on
    Arch; on Fedora it also enables the Hyprland and Quickshell COPRs);
-2. if VS Code is installed, asks whether to install the extensions that make
+2. turns on `FastConnectable` in `/etc/bluetooth/main.conf`, so known
+   Bluetooth devices reconnect faster when they are switched on (the old
+   file is kept as `main.conf.bak-quickshell`; applied at the next boot);
+3. if VS Code is installed, asks whether to install the extensions that make
    VS Code follow the shell theme (see [VS Code themes](#vs-code-themes)).
 
 Everything else is up to you: put (or link) the folder in
 `~/.config/quickshell`, set your options in [`theme.json`](#themejson), add
 the [keybinds](#keybinds) you want to the Hyprland config and start the shell
 with Hyprland (`exec-once = quickshell`, or `hl.exec_cmd("quickshell")` in a
-Lua config). For the login screen run `sudo greeter/install.sh`.
+Lua config).
+
+**Login screen.** `sudo greeter/install.sh` sets it up completely, on Arch
+and Fedora: it installs `greetd` and `cage`, copies the login screen to
+`/etc/greetd/quickshell`, writes `/etc/greetd/config.toml` (the old one is
+kept as `config.toml.bak-<date>`), disables the current display manager
+(sddm, gdm, lightdm, ly...) and enables greetd. Reboot and the login screen
+is there. `--dry-run` shows what it would do without changing anything; at
+the end it prints the command to go back to the previous display manager.
 
 **Profile picture.** To show your photo on the lock screen and the login
 screen, put it in `assets/` named `avatar.png`, `avatar.jpg` or
@@ -78,7 +89,7 @@ hand on each PC.
 | Login screen copy | `diffutils` | `diffutils` |
 | .webp wallpapers | `qt6-imageformats` | `qt6-qtimageformats` |
 | Fonts | `inter-font` `noto-fonts-emoji` `noto-fonts-cjk` | `rsms-inter-fonts` `google-noto-color-emoji-fonts` `google-noto-sans-cjk-fonts` |
-| Login screen (optional) | `greetd` `cage` | `greetd` `cage` |
+| Login screen (installed by `greeter/install.sh`) | `greetd` `cage` | `greetd` `cage` |
 
 `install.sh` installs all of them. The icon font (Phosphor) ships with the
 shell in `assets/fonts/`.
@@ -144,7 +155,7 @@ color theme, live. `install.sh` asks for it; later you can run
   (`theme` is the exact name shown in VS Code);
 - `vscode/quickshell-theme-sync`: the extension that follows the shell
   (it watches `theme.json`), plus the themes made for the shell
-  (Midnight). It acts only when the shell theme changes, so a theme picked
+  (Midnight, Cloudy Quasar). It acts only when the shell theme changes, so a theme picked
   by hand in VS Code stays until the next one. `"vscodeThemeSync": false`
   in `theme.json` turns it off;
 - `vscode/xcode`: Xcode Dark, which is not on the marketplace.
@@ -188,12 +199,32 @@ as the file is saved.
 | `lockBlur` | `true` / `false` | lock screen: blurred screen contents, or the plain wallpaper |
 | `loginBlur` | `true` / `false` | login screen: blurred or plain wallpaper |
 | `lockScreen` | `true` / `false` | lock screen (shortcut, inactivity, before sleep) |
-| `loginScreen` | `true` / `false` | `false`: automatic login into Hyprland (applied by `sudo greeter/install.sh`) |
+| `loginScreen` | `true` / `false` | `false`: automatic login into Hyprland (run `sudo greeter/install.sh` again after changing it) |
 | `sleepEnabled` | `true` / `false` | sleep from the power menu and after inactivity |
 | `idleLockMinutes` | minutes, `0` = never | lock after this much inactivity |
 | `idleSleepMinutes` | minutes, `0` = never | sleep after this much inactivity |
 | `bluetoothOnStartup` | `true` / `false` | Bluetooth on or off at the first shell start after boot |
-| `theme` | theme id | `catppuccin-mocha`, `dracula`, `everforest`, `gruvbox`, `iceberg`, `kanagawa`, `midnight`, `night-owl`, `nord`, `one-dark`, `rose-pine`, `solarized`, `sonokai`, `tokyo-night`, `xcode` (files in `themes/`) |
+| `theme` | theme id | `catppuccin-mocha`, `cloudy-quasar`, `dracula`, `everforest`, `gruvbox`, `iceberg`, `kanagawa`, `midnight`, `night-owl`, `nord`, `one-dark`, `rose-pine`, `solarized`, `sonokai`, `tokyo-night`, `xcode` (files in `themes/`) |
 | `wallpaperDir` | folder | wallpapers shown in the launcher (`Tab` switches to themes and wallpapers) |
 | `wallpaperTransition` | `grow`, `outer`, `wave`, `wipe`, `fade`, `left`, `right`, `top`, `bottom`, `random`, `simple` | wallpaper change animation (awww) |
 | `vscodeThemeSync` | `true` / `false` | VS Code follows the shell theme (needs the [VS Code extensions](#vs-code-themes)); `false`: VS Code keeps its own theme |
+
+## Wallpapers and themes
+
+When you pick a wallpaper in the launcher, the shell also applies the theme
+that matches its colors. To choose the theme yourself for some wallpapers,
+list them in `preferredBy` in `themes/<id>.json`:
+
+```json
+"preferredBy": ["miku.png", "yuki.png"]
+```
+
+- a wallpaper listed in a theme always gets that theme, without the color
+  match;
+- a wallpaper listed in more than one theme gets one of them at random;
+- `[]` (empty): automatic choice by colors, as before;
+- names are the file names in `wallpaperDir` (`"miku"` without the
+  extension works too).
+
+`"defaultWallpapers"` is something else: the wallpapers set when that theme
+is applied (one at random if there are more, `[]` = keep the current one).

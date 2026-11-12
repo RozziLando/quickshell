@@ -1,6 +1,7 @@
 {
   "name": "Rosé Pine",
-  "wallpaper": "",
+  "defaultWallpapers": [],
+  "preferredBy": [],
   "yaru": "magenta",
   "gnomeAccent": "pink",
   "colors": {
