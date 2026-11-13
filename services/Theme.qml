@@ -84,6 +84,7 @@ Singleton {
     readonly property bool bluetoothOnStartup: data.bluetoothOnStartup
     readonly property real idleLockMinutes: data.idleLockMinutes
     readonly property real idleSleepMinutes: data.idleSleepMinutes
+    readonly property bool networkMonitor: data.networkMonitor
 
     FileView {
         id: settingsFile
@@ -119,6 +120,7 @@ Singleton {
             property string wallpaperDir: "~/Wallpapers"
             property string wallpaperTransition: "grow"
             property bool vscodeThemeSync: true
+            property bool networkMonitor: false
         }
     }
 

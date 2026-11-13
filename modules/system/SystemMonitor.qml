@@ -143,11 +143,35 @@ Item {
     property var temps: ({})
     property var lastCpu: null
 
+    readonly property bool showNetwork: Theme.networkMonitor
+    property real netDown: 0
+    property real netUp: 0
+    property bool netReady: false
+    property var lastNet: null
+
+    function resetNetwork() {
+        lastNet = null
+        netReady = false
+    }
+    onActiveChanged: if (!active) resetNetwork()
+    onShowNetworkChanged: resetNetwork()
+
+    function rate(bytes) {
+        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB/s"
+        if (bytes >= 1024) return Math.round(bytes / 1024) + " KB/s"
+        return Math.round(bytes) + " B/s"
+    }
+
+    readonly property string netCmd: !showNetwork ? ''
+        : ' rx=0; tx=0; for n in /sys/class/net/*; do [ -e "$n/device" ] || continue;'
+        + ' rx=$((rx + $(cat "$n/statistics/rx_bytes" 2>/dev/null || echo 0)));'
+        + ' tx=$((tx + $(cat "$n/statistics/tx_bytes" 2>/dev/null || echo 0))); done; echo "net:$rx $tx";'
+
     Process {
         id: statProc
         command: ["sh", "-c",
             'head -n 1 /proc/stat; grep -E "^(MemTotal|MemAvailable):" /proc/meminfo;'
-            + ' for f in "$@"; do cat "$f" 2>/dev/null || echo -; done;' + root.gpuCmd, "sh"]
+            + ' for f in "$@"; do cat "$f" 2>/dev/null || echo -; done;' + root.gpuCmd + root.netCmd, "sh"]
             .concat(root.sensors.map(function (s) { return s.path }))
         stdout: StdioCollector {
             onStreamFinished: root.parseStats(text)
@@ -201,6 +225,22 @@ Item {
                 }
             }
         }
+
+        var n = lines.filter(function (l) { return l.indexOf("net:") === 0 })[0]
+        if (n !== undefined) {
+            var q = n.substring(4).trim().split(/\s+/).map(Number)
+            var nowNet = Date.now()
+            if (!isNaN(q[0]) && !isNaN(q[1])) {
+                if (lastNet && nowNet > lastNet.time) {
+                    var dt = (nowNet - lastNet.time) / 1000
+                    netDown = Math.max(0, (q[0] - lastNet.rx) / dt)
+                    netUp = Math.max(0, (q[1] - lastNet.tx) / dt)
+                    netReady = true
+                }
+                lastNet = { rx: q[0], tx: q[1], time: nowNet }
+            }
+        }
+
         temps = t
     }
 
@@ -305,6 +345,12 @@ Item {
             value: root.ramUsed.toFixed(1) + " / " + root.ramTotal.toFixed(1) + " GB"
             fraction: root.ramTotal > 0 ? root.ramUsed / root.ramTotal : 0
             warn: root.ramTotal > 0 && root.ramUsed / root.ramTotal > 0.9
+        }
+
+        StatRow {
+            visible: root.showNetwork
+            title: "Network"
+            value: root.netReady ? "↓ " + root.rate(root.netDown) + "   ↑ " + root.rate(root.netUp) : "--"
         }
 
         Row {
