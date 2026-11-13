@@ -65,7 +65,7 @@ SubPage {
         text: "Output"
     }
     Repeater {
-        model: page.outputs
+        model: ScriptModel { values: page.outputs }
         delegate: ListRow {
             id: outRow
             required property var modelData
@@ -92,7 +92,7 @@ SubPage {
         text: "Input"
     }
     Repeater {
-        model: page.inputs
+        model: ScriptModel { values: page.inputs }
         delegate: ListRow {
             id: inRow
             required property var modelData
@@ -129,7 +129,7 @@ SubPage {
         text: "Applications"
     }
     Repeater {
-        model: page.apps
+        model: ScriptModel { values: page.apps }
         delegate: ListRow {
             id: appRow
             required property var modelData

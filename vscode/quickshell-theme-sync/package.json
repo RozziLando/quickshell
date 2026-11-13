@@ -2,7 +2,7 @@
   "name": "quickshell-theme-sync",
   "displayName": "Quickshell Theme Sync",
   "description": "The themes of the Quickshell island, and the sync that applies the matching one when the shell theme changes.",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "publisher": "local",
   "license": "MIT",
   "engines": {

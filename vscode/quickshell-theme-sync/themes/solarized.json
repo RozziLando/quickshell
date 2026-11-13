@@ -245,21 +245,12 @@
     "editorBracketHighlight.foreground3": "#d33682"
   },
   "tokenColors": [
-    // {
-    //   "scope": "comment",
-    //   "settings": {
-    //     "foreground": "#268bd2"
-    //   }
-    // },
-    // {
-    //   "scope": "comment.block.documentation",
-    //   "settings": {
-    //     "foreground": "#657b83"
-    //   }
-    // },
     {
       "name": "Comments",
-      "scope": ["comment", "comment.block.documentation"],
+      "scope": [
+        "comment",
+        "comment.block.documentation"
+      ],
       "settings": {
         "foreground": "#586e75"
       }
@@ -268,12 +259,10 @@
       "name": "Constants: String, Character, Number, Boolean, Float",
       "scope": [
         "constant",
-        // strings
         "string",
         "meta.preprocessor.string",
         "meta.embedded.assembly",
         "keyword.other.unit",
-        // object property
         "meta.object-literal.key"
       ],
       "settings": {
@@ -283,25 +272,14 @@
     {
       "name": "Identifier: Variable name, function name, class method name, tag name",
       "scope": [
-        // "variable.other",
-        // "variable - variable.other.constant",
-        // "variable.css",
-        // "variable.parameter",
-        // "variable.other.object",
-        // "meta.definition.variable variable.other.constant", // const FOO = 1;
         "variable.language.special.self.python",
-
-        // function names
         "meta.definition.function entity.name.function",
         "variable.other.constant entity.name.function",
         "entity.name.function.python",
         "support.function.magic.python",
-        // "entity.name.function", // TODO: decide if this is wanted
-        // method names
         "entity.name.method",
         "meta.definition.method entity.name.function",
-        "meta.method.declaration storage.type", //ctor
-        // tag
+        "meta.method.declaration storage.type",
         "entity.name.tag",
         "entity.other.attribute-name.class"
       ],
@@ -330,7 +308,6 @@
         "storage.type",
         "storage.modifier",
         "meta.export.default keyword.control.export",
-        // css
         "entity.name.tag.css"
       ],
       "settings": {
@@ -352,7 +329,10 @@
     },
     {
       "name": "Special",
-      "scope": ["string.regexp", "constant.regexp"],
+      "scope": [
+        "string.regexp",
+        "constant.regexp"
+      ],
       "settings": {
         "foreground": "#dc322f"
       }
@@ -384,7 +364,6 @@
     {
       "name": "Built-In",
       "scope": [
-        // "variable.other.object", // TODO: undo blue on global imports or not
         "variable.other.readwrite.alias"
       ],
       "settings": {
@@ -412,14 +391,12 @@
     {
       "scope": "markup.bold",
       "settings": {
-        // "foreground": "#859900",
         "fontStyle": "bold"
       }
     },
     {
       "scope": "markup.heading",
       "settings": {
-        // "foreground": "#859900",
         "fontStyle": "bold"
       }
     },
@@ -435,30 +412,6 @@
         "fontStyle": "strikethrough"
       }
     },
-    // {
-    //   "scope": "markup.inserted",
-    //   "settings": {
-    //     "foreground": "#2aa198"
-    //   }
-    // },
-    // {
-    //   "scope": "markup.deleted",
-    //   "settings": {
-    //     "foreground": "#2aa198"
-    //   }
-    // },
-    // {
-    //   "scope": "markup.changed",
-    //   "settings": {
-    //     "foreground": "#859900"
-    //   }
-    // },
-    // {
-    //   "scope": "markup.inline.raw",
-    //   "settings": {
-    //     "foreground": "#2aa198"
-    //   }
-    // },
     {
       "scope": "token.info-token",
       "settings": {

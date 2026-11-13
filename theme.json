@@ -3,7 +3,7 @@
   "monitor": "",
   "fontFamily": "Inter",
   "iconFont": "phosphor",
-  "islandStyle": "float",
+  "islandStyle": "floating",
   "minimal": false,
   "autoHide": false,
   "glowEnabled": false,
@@ -21,5 +21,6 @@
   "theme": "dracula",
   "wallpaperDir": "~/Wallpapers",
   "wallpaperTransition": "grow",
-  "vscodeThemeSync": true
+  "vscodeThemeSync": true,
+  "networkMonitor": false
 }

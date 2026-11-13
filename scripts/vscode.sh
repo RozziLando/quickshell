@@ -24,26 +24,29 @@ run_editor() {
     esac
 }
 
-CANDIDATES=""
-for c in $NATIVE; do
-    command -v "$c" >/dev/null 2>&1 && CANDIDATES="$CANDIDATES $c"
-done
-if command -v flatpak >/dev/null 2>&1; then
-    for f in $FLATPAK; do
-        flatpak info "$f" >/dev/null 2>&1 && CANDIDATES="$CANDIDATES flatpak:$f"
+EDITORS=""
+if [ "$MODE" != pack ]; then
+    CANDIDATES=""
+    for c in $NATIVE; do
+        command -v "$c" >/dev/null 2>&1 && CANDIDATES="$CANDIDATES $c"
+    done
+    if command -v flatpak >/dev/null 2>&1; then
+        for f in $FLATPAK; do
+            flatpak info "$f" >/dev/null 2>&1 && CANDIDATES="$CANDIDATES flatpak:$f"
+        done
+    fi
+
+    SEEN=""
+    for c in $CANDIDATES; do
+        version=$(run_editor "$c" --version 2>/dev/null | head -n 2) || true
+        printf '%s\n' "$version" | head -n 1 | grep -Eq '^[0-9]+\.[0-9]+' || continue
+        product=$(run_editor "$c" --help 2>/dev/null | head -n 1) || true
+        key=$(printf '%s%s' "$product" "$version" | tr -d ' \n')
+        case " $SEEN " in *" $key "*) continue ;; esac
+        SEEN="$SEEN $key"
+        EDITORS="$EDITORS $c"
     done
 fi
-
-EDITORS=""
-SEEN=""
-for c in $CANDIDATES; do
-    version=$(run_editor "$c" --version 2>/dev/null | head -n 2) || true
-    printf '%s\n' "$version" | head -n 1 | grep -Eq '^[0-9]+\.[0-9]+' || continue
-    key=$(printf '%s' "$version" | tr -d ' \n')
-    case " $SEEN " in *" $key "*) continue ;; esac
-    SEEN="$SEEN $key"
-    EDITORS="$EDITORS $c"
-done
 
 if [ "$MODE" = list ]; then
     for c in $EDITORS; do echo "$c"; done

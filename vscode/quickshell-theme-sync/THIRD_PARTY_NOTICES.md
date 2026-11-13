@@ -1,8 +1,9 @@
 # Third-party themes
 
 The files below in `themes/` are copies of the color themes of these VS Code
-extensions, unchanged. Each one keeps the license of its extension, reproduced
-here. Midnight, Cloudy Quasar and Xcode are made for Quickshell.
+extensions, with the same colors and rules; only the code comments of the
+Nord, Solarized and Tokyo Night files were removed. Each one keeps the
+license of its extension, reproduced here. Midnight, Cloudy Quasar and Xcode are made for Quickshell.
 
 | File | Extension | Version | Theme |
 |---|---|---|---|
