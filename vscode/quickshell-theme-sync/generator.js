@@ -1,31 +1,29 @@
-#!/usr/bin/env python3
-import json
-import os
-import sys
+function alpha(color, a) {
+    return color.slice(0, 7) + Math.round(a * 255).toString(16).padStart(2, "0");
+}
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-SHELL = os.path.normpath(os.path.join(HERE, "..", ".."))
+function tok(scope, foreground, fontStyle) {
+    const settings = { foreground };
+    if (fontStyle) settings.fontStyle = fontStyle;
+    return { scope, settings };
+}
 
-def alpha(color, a):
-    return color[:7] + "%02x" % round(a * 255)
+function build(t, label) {
+    const c = t.colors, term = t.terminal, a = term.ansi;
+    const [red, green, yellow, blue, magenta, cyan] = a.slice(1, 7);
+    const orange = a[9].toLowerCase() !== red.toLowerCase() ? a[9] : yellow;
+    const bg = c.background, card = c.card, surface = c.surface, border = c.border;
+    const text = c.text, muted = c.textMuted, accent = c.accent;
 
-def build(t):
-    c, term = t["colors"], t["terminal"]
-    a = term["ansi"]
-    red, green, yellow, blue, magenta, cyan = a[1], a[2], a[3], a[4], a[5], a[6]
-    orange = a[9] if a[9].lower() != red.lower() else yellow
-    bg, card, surface, border = c["background"], c["card"], c["surface"], c["border"]
-    text, muted, accent = c["text"], c["textMuted"], c["accent"]
-
-    colors = {
-        "foreground": c["textSecondary"],
+    const colors = {
+        "foreground": c.textSecondary,
         "focusBorder": accent,
         "selection.background": alpha(accent, 0.35),
         "widget.shadow": "#00000066",
-        "errorForeground": c["warning"],
+        "errorForeground": c.warning,
         "textLink.foreground": accent,
         "textLink.activeForeground": accent,
-        "icon.foreground": c["textSecondary"],
+        "icon.foreground": c.textSecondary,
         "button.background": accent,
         "button.foreground": bg,
         "button.hoverBackground": alpha(accent, 0.85),
@@ -44,9 +42,9 @@ def build(t):
         "dropdown.foreground": text,
         "checkbox.background": surface,
         "checkbox.border": border,
-        "scrollbarSlider.background": alpha(c["highlight"], 0.6),
-        "scrollbarSlider.hoverBackground": c["highlight"],
-        "scrollbarSlider.activeBackground": c["selection"],
+        "scrollbarSlider.background": alpha(c.highlight, 0.6),
+        "scrollbarSlider.hoverBackground": c.highlight,
+        "scrollbarSlider.activeBackground": c.selection,
         "titleBar.activeBackground": bg,
         "titleBar.activeForeground": text,
         "titleBar.inactiveBackground": bg,
@@ -60,20 +58,20 @@ def build(t):
         "activityBarBadge.background": accent,
         "activityBarBadge.foreground": bg,
         "sideBar.background": bg,
-        "sideBar.foreground": c["textSecondary"],
+        "sideBar.foreground": c.textSecondary,
         "sideBar.border": border,
         "sideBarTitle.foreground": text,
         "sideBarSectionHeader.background": bg,
         "sideBarSectionHeader.foreground": text,
         "sideBarSectionHeader.border": border,
-        "list.activeSelectionBackground": c["highlight"],
+        "list.activeSelectionBackground": c.highlight,
         "list.activeSelectionForeground": text,
         "list.inactiveSelectionBackground": surface,
         "list.inactiveSelectionForeground": text,
-        "list.hoverBackground": alpha(c["highlight"], 0.6),
+        "list.hoverBackground": alpha(c.highlight, 0.6),
         "list.focusOutline": accent,
         "list.highlightForeground": accent,
-        "list.errorForeground": c["warning"],
+        "list.errorForeground": c.warning,
         "list.warningForeground": yellow,
         "editorGroupHeader.tabsBackground": bg,
         "editorGroupHeader.tabsBorder": border,
@@ -89,20 +87,20 @@ def build(t):
         "breadcrumb.focusForeground": text,
         "editor.background": card,
         "editor.foreground": text,
-        "editorCursor.foreground": term["cursor"],
+        "editorCursor.foreground": term.cursor,
         "editor.lineHighlightBackground": alpha(surface, 0.6),
         "editor.lineHighlightBorder": "#00000000",
-        "editor.selectionBackground": c["selection"],
-        "editor.inactiveSelectionBackground": alpha(c["selection"], 0.6),
+        "editor.selectionBackground": c.selection,
+        "editor.inactiveSelectionBackground": alpha(c.selection, 0.6),
         "editor.selectionHighlightBackground": alpha(accent, 0.18),
         "editor.wordHighlightBackground": alpha(accent, 0.18),
         "editor.findMatchBackground": alpha(yellow, 0.45),
         "editor.findMatchHighlightBackground": alpha(yellow, 0.22),
-        "editorLineNumber.foreground": c["textDisabled"],
-        "editorLineNumber.activeForeground": c["textSecondary"],
+        "editorLineNumber.foreground": c.textDisabled,
+        "editorLineNumber.activeForeground": c.textSecondary,
         "editorIndentGuide.background1": alpha(border, 0.9),
-        "editorIndentGuide.activeBackground1": c["highlight"],
-        "editorWhitespace.foreground": c["textDisabled"],
+        "editorIndentGuide.activeBackground1": c.highlight,
+        "editorWhitespace.foreground": c.textDisabled,
         "editorBracketMatch.background": alpha(accent, 0.2),
         "editorBracketMatch.border": alpha(accent, 0.6),
         "editorError.foreground": red,
@@ -115,7 +113,7 @@ def build(t):
         "editorWidget.border": border,
         "editorSuggestWidget.background": surface,
         "editorSuggestWidget.border": border,
-        "editorSuggestWidget.selectedBackground": c["highlight"],
+        "editorSuggestWidget.selectedBackground": c.highlight,
         "editorHoverWidget.background": surface,
         "editorHoverWidget.border": border,
         "peekView.border": accent,
@@ -125,7 +123,7 @@ def build(t):
         "panelTitle.activeForeground": text,
         "panelTitle.inactiveForeground": muted,
         "statusBar.background": bg,
-        "statusBar.foreground": c["textSecondary"],
+        "statusBar.foreground": c.textSecondary,
         "statusBar.border": border,
         "statusBar.noFolderBackground": bg,
         "statusBar.debuggingBackground": accent,
@@ -133,10 +131,10 @@ def build(t):
         "statusBarItem.remoteBackground": accent,
         "statusBarItem.remoteForeground": bg,
         "quickInput.background": surface,
-        "quickInputList.focusBackground": c["highlight"],
+        "quickInputList.focusBackground": c.highlight,
         "menu.background": surface,
         "menu.foreground": text,
-        "menu.selectionBackground": c["highlight"],
+        "menu.selectionBackground": c.highlight,
         "menu.border": border,
         "notifications.background": surface,
         "notifications.border": border,
@@ -145,39 +143,33 @@ def build(t):
         "gitDecoration.deletedResourceForeground": red,
         "gitDecoration.untrackedResourceForeground": cyan,
         "gitDecoration.ignoredResourceForeground": muted,
-        "terminal.background": term["background"],
-        "terminal.foreground": term["foreground"],
-        "terminalCursor.foreground": term["cursor"],
-        "terminal.selectionBackground": term["selectionBackground"],
-    }
-    names = ["Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White"]
-    for i, n in enumerate(names):
-        colors["terminal.ansi" + n] = a[i]
-        colors["terminal.ansiBright" + n] = a[i + 8]
+        "terminal.background": term.background,
+        "terminal.foreground": term.foreground,
+        "terminalCursor.foreground": term.cursor,
+        "terminal.selectionBackground": term.selectionBackground,
+    };
+    ["Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White"].forEach((n, i) => {
+        colors["terminal.ansi" + n] = a[i];
+        colors["terminal.ansiBright" + n] = a[i + 8];
+    });
 
-    def tok(scope, fg, style=None):
-        s = {"foreground": fg}
-        if style:
-            s["fontStyle"] = style
-        return {"scope": scope, "settings": s}
-
-    tokens = [
+    const tokenColors = [
         tok(["comment", "punctuation.definition.comment"], muted, "italic"),
         tok(["keyword", "storage.type", "storage.modifier", "keyword.operator.new",
-             "keyword.operator.expression", "keyword.control"], magenta),
-        tok(["keyword.operator", "punctuation"], c["textSecondary"]),
+            "keyword.operator.expression", "keyword.control"], magenta),
+        tok(["keyword.operator", "punctuation"], c.textSecondary),
         tok(["string", "punctuation.definition.string"], green),
         tok(["constant.character.escape", "string.regexp"], cyan),
         tok(["constant.numeric", "constant.language", "constant.other"], orange),
         tok(["entity.name.function", "support.function", "meta.function-call"], blue),
         tok(["entity.name.type", "entity.name.class", "support.type", "support.class",
-             "entity.other.inherited-class"], yellow),
+            "entity.other.inherited-class"], yellow),
         tok(["variable", "meta.definition.variable"], text),
-        tok(["variable.parameter"], c["textSoft"], "italic"),
+        tok(["variable.parameter"], c.textSoft, "italic"),
         tok(["variable.language", "variable.other.constant"], red),
         tok(["entity.name.tag"], red),
         tok(["entity.other.attribute-name", "variable.other.property",
-             "variable.other.object.property", "support.type.property-name"], cyan),
+            "variable.other.object.property", "support.type.property-name"], cyan),
         tok(["entity.name.namespace", "entity.name.module"], yellow),
         tok(["markup.heading", "entity.name.section"], blue, "bold"),
         tok(["markup.bold"], text, "bold"),
@@ -186,29 +178,23 @@ def build(t):
         tok(["markup.underline.link", "string.other.link"], accent),
         tok(["markup.inserted"], green),
         tok(["markup.deleted"], red),
-        tok(["invalid"], c["warning"]),
-    ]
+        tok(["invalid"], c.warning),
+    ];
+
     return {
-        "name": t.get("name", "") + " (Quickshell)",
-        "type": "dark",
-        "semanticHighlighting": True,
-        "colors": colors,
-        "tokenColors": tokens,
-    }
+        name: label || (t.name || "") + " (Quickshell)",
+        type: "dark",
+        semanticHighlighting: true,
+        colors,
+        tokenColors,
+    };
+}
 
-def main():
-    if len(sys.argv) != 2:
-        sys.exit("usage: generate.py <shell theme id>")
-    tid = sys.argv[1]
-    src = os.path.join(SHELL, "themes", tid + ".json")
-    with open(src) as f:
-        theme = build(json.load(f))
-    out = os.path.join(HERE, "themes", tid + ".json")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    with open(out, "w") as f:
-        json.dump(theme, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-    print("written", out, "-", theme["name"])
+function usable(t) {
+    return !!(t && t.colors && t.terminal && Array.isArray(t.terminal.ansi) && t.terminal.ansi.length >= 16
+        && ["background", "card", "surface", "border", "text", "textSoft", "textSecondary", "textMuted",
+            "textDisabled", "highlight", "selection", "accent", "warning"].every(k => typeof t.colors[k] === "string")
+        && ["foreground", "background", "cursor", "selectionBackground"].every(k => typeof t.terminal[k] === "string"));
+}
 
-if __name__ == "__main__":
-    main()
+module.exports = { build, usable };

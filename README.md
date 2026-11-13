@@ -44,8 +44,9 @@ Run it as your normal user: it asks for the sudo password when needed.
 2. turns on `FastConnectable` in `/etc/bluetooth/main.conf`, so known
    Bluetooth devices reconnect faster when they are switched on (the old
    file is kept as `main.conf.bak-quickshell`; applied at the next boot);
-3. if VS Code is installed, asks whether to install the extensions that make
-   VS Code follow the shell theme (see [VS Code themes](#vs-code-themes)).
+3. if VS Code, VSCodium or Code - OSS is installed, asks whether to install
+   the local extension that makes it follow the shell theme (see
+   [VS Code themes](#vs-code-themes)).
 
 Everything else is up to you: put (or link) the folder in
 `~/.config/quickshell`, set your options in [`theme.json`](#themejson), add
@@ -146,37 +147,42 @@ need to restart the shell.
 ## VS Code themes
 
 Optional: when the shell theme changes, VS Code switches to the matching
-color theme, live. `install.sh` asks for it; later you can run
-`scripts/vscode.sh` (also to update it). It installs:
+color theme, live. Everything is in one local extension,
+`vscode/quickshell-theme-sync`, with nothing to download: `install.sh` asks
+for it, and `scripts/vscode.sh` installs or updates it later.
 
-- the VS Code theme of every shell theme, from the marketplace. Each
-  `themes/<id>.json` says which one:
-  `"vscode": { "theme": "Dracula Theme", "extension": "dracula-theme.theme-dracula" }`
-  (`theme` is the exact name shown in VS Code);
-- `vscode/quickshell-theme-sync`: the extension that follows the shell
-  (it watches `theme.json`), plus the themes made for the shell
-  (Midnight, Cloudy Quasar). It acts only when the shell theme changes, so a theme picked
-  by hand in VS Code stays until the next one. `"vscodeThemeSync": false`
-  in `theme.json` turns it off;
-- `vscode/xcode`: Xcode Dark, which is not on the marketplace.
+- `themes/`: the VS Code theme of every shell theme, as written files.
+  Catppuccin Mocha, Dracula, Everforest, Gruvbox, Iceberg, Kanagawa, Night
+  Owl, Nord, One Dark, Rosé Pine, Solarized, Sonokai and Tokyo Night are
+  exact copies of their official VS Code themes (licenses and versions in
+  `THIRD_PARTY_NOTICES.md`); Midnight, Cloudy Quasar and Xcode are made for
+  the shell. In VS Code they are called `<name> (Quickshell)`, e.g.
+  `Dracula (Quickshell)`.
+- `Quickshell Custom`: for a shell theme without a file in `themes/` (a
+  theme you made) or whose file cannot be read, the extension generates a
+  theme from the shell colors and applies it. The command
+  *Quickshell: Generate Theme From Shell Colors* does the same for the
+  current theme on request. When a generated theme replaces another
+  generated one, VS Code asks to reload the window.
 
-**Installing by hand.** Each local extension folder also holds its ready
-package, rebuilt by every run of the script (`scripts/vscode.sh --pack`
-only rebuilds them):
+The extension acts only when the shell theme changes, so a theme picked by
+hand in VS Code stays until the next one. `"vscodeThemeSync": false` in
+`theme.json` turns it off. The shell never depends on the editor.
 
-- `vscode/quickshell-theme-sync/local.quickshell-theme-sync-<version>.vsix`
-- `vscode/xcode/local.xcode-<version>.vsix`
+It works the same in every editor built on VS Code.
 
-If the script does not work, install them with
-`code --install-extension <file>.vsix`, or in VS Code: Extensions view →
-`…` menu → *Install from VSIX…*. The marketplace themes can be installed
-from the Extensions view, searching the `extension` id of each theme file.
-Then reload VS Code.
+**Installing by hand.** The ready package is
+`vscode/quickshell-theme-sync/local.quickshell-theme-sync-<version>.vsix`,
+rebuilt by every run of the script (`scripts/vscode.sh --pack` only
+rebuilds it). Install it with `code --install-extension <file>.vsix`, or in
+VS Code: Extensions view → `…` menu → *Install from VSIX…*, then reload the
+window.
 
-For a new shell theme without an official VS Code theme:
-`python3 vscode/quickshell-theme-sync/generate.py <id>`, then add the theme
-to that extension's `package.json` and to the `vscode` field of the shell
-theme, and run `scripts/vscode.sh`.
+**A new shell theme** needs nothing: `Quickshell Custom` covers it. To ship
+a written theme for it, put the VS Code theme in
+`vscode/quickshell-theme-sync/themes/<id>.json` (`<id>` as in `themes/`),
+add it to `contributes.themes` in that extension's `package.json` with the
+label `<name> (Quickshell)`, raise `version` and run `scripts/vscode.sh`.
 
 ## theme.json
 

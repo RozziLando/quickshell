@@ -46,9 +46,5 @@
       "#94e2d5",
       "#a6adc8"
     ]
-  },
-  "vscode": {
-    "theme": "Catppuccin Mocha",
-    "extension": "catppuccin.catppuccin-vsc"
   }
 }

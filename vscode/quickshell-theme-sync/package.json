@@ -1,9 +1,10 @@
 {
   "name": "quickshell-theme-sync",
   "displayName": "Quickshell Theme Sync",
-  "description": "Follows the Quickshell island theme: when the shell theme changes, the matching VS Code color theme is applied.",
-  "version": "1.3.0",
+  "description": "The themes of the Quickshell island, and the sync that applies the matching one when the shell theme changes.",
+  "version": "2.0.4",
   "publisher": "local",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -11,20 +12,105 @@
     "Themes"
   ],
   "main": "./extension.js",
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
   "contributes": {
     "themes": [
+      {
+        "label": "Catppuccin Mocha (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/catppuccin-mocha.json"
+      },
+      {
+        "label": "Cloudy Quasar (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/cloudy-quasar.json"
+      },
+      {
+        "label": "Dracula (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dracula.json"
+      },
+      {
+        "label": "Everforest (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/everforest.json"
+      },
+      {
+        "label": "Gruvbox (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/gruvbox.json"
+      },
+      {
+        "label": "Iceberg (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/iceberg.json"
+      },
+      {
+        "label": "Kanagawa (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/kanagawa.json"
+      },
       {
         "label": "Midnight (Quickshell)",
         "uiTheme": "vs-dark",
         "path": "./themes/midnight.json"
       },
       {
-        "label": "Cloudy Quasar (Quickshell)",
+        "label": "Night Owl (Quickshell)",
         "uiTheme": "vs-dark",
-        "path": "./themes/cloudy-quasar.json"
+        "path": "./themes/night-owl.json"
+      },
+      {
+        "label": "Nord (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/nord.json"
+      },
+      {
+        "label": "One Dark (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/one-dark.json"
+      },
+      {
+        "label": "Rosé Pine (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/rose-pine.json"
+      },
+      {
+        "label": "Solarized (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/solarized.json"
+      },
+      {
+        "label": "Sonokai (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/sonokai.json"
+      },
+      {
+        "label": "Tokyo Night (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/tokyo-night.json"
+      },
+      {
+        "label": "Xcode (Quickshell)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/xcode.json"
+      },
+      {
+        "label": "Quickshell Custom",
+        "uiTheme": "vs-dark",
+        "path": "./themes/custom.json"
       }
     ],
     "configuration": {
@@ -46,6 +132,10 @@
       {
         "command": "quickshellThemeSync.syncNow",
         "title": "Quickshell: Sync Theme Now"
+      },
+      {
+        "command": "quickshellThemeSync.regenerate",
+        "title": "Quickshell: Generate Theme From Shell Colors"
       }
     ]
   }

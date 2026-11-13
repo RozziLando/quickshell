@@ -15,7 +15,7 @@ for arg in "$@"; do
                 "" \
                 "  1. detects Arch or Fedora and installs the dependencies" \
                 "  2. turns on FastConnectable in /etc/bluetooth/main.conf" \
-                "  3. asks whether VS Code should follow the shell theme (scripts/vscode.sh)" \
+                "  3. asks whether VS Code and its forks should follow the shell theme (scripts/vscode.sh)" \
                 "" \
                 "  ./install.sh -y             accept the defaults, ask nothing" \
                 "  ./install.sh --no-packages  skip the package installation"
@@ -131,13 +131,11 @@ if [ -f "$BT_CONF" ]; then
 fi
 
 say "VS Code themes"
-VSCODE_BIN=""
-for c in code codium code-oss; do
-    if command -v "$c" >/dev/null 2>&1; then VSCODE_BIN=$c; break; fi
-done
-if [ -z "$VSCODE_BIN" ]; then
-    info "VS Code not found (code, codium or code-oss): skipped"
-elif [ "$(ask_yn "Install the VS Code extensions so VS Code follows the shell theme?" false)" = true ]; then
+EDITORS=$(sh "$SRC/scripts/vscode.sh" --list | tr '\n' ' ' | sed 's/ *$//')
+if [ -z "$EDITORS" ]; then
+    info "no editor found (VS Code, VSCodium, Code - OSS, Cursor, Windsurf...): skipped"
+    info "the extension can be installed by hand, see README"
+elif [ "$(ask_yn "Install the Quickshell theme extension so the editor follows the shell theme ($EDITORS)?" false)" = true ]; then
     sh "$SRC/scripts/vscode.sh" || warn "VS Code themes: something went wrong (see above)"
 else
     info "skipped (run scripts/vscode.sh later to add it)"

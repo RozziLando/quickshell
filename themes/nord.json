@@ -46,9 +46,5 @@
       "#8fbcbb",
       "#eceff4"
     ]
-  },
-  "vscode": {
-    "theme": "Nord",
-    "extension": "arcticicestudio.nord-visual-studio-code"
   }
 }

@@ -46,9 +46,5 @@
       "#95c4ce",
       "#d2d4de"
     ]
-  },
-  "vscode": {
-    "theme": "Iceberg",
-    "extension": "cocopon.iceberg-theme"
   }
 }
