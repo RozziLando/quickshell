@@ -391,5 +391,10 @@ Item {
                 }
             }
         }
+
+        BackgroundApps {
+            sizeFactor: root.sizeFactor
+            active: root.active
+        }
     }
 }

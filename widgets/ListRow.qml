@@ -13,6 +13,7 @@ Rectangle {
     property int iconLevel: -1
     property string title: ""
     property string subtitle: ""
+    property color subtitleColor: Theme.textSecondary
     property bool selected: false
     property string trailingIcon: ""
     property bool showRemove: false
@@ -104,7 +105,7 @@ Rectangle {
                     width: parent.width
                     visible: root.subtitle !== ""
                     text: root.subtitle
-                    color: Theme.textSecondary
+                    color: root.subtitleColor
                     font.pixelSize: root.u(9)
                     font.family: Theme.fontFamily
                     elide: Text.ElideRight

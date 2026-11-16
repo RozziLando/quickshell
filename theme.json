@@ -22,5 +22,6 @@
   "wallpaperDir": "~/Wallpapers",
   "wallpaperTransition": "grow",
   "vscodeThemeSync": true,
-  "networkMonitor": false
+  "networkMonitor": false,
+  "backgroundApps": true
 }
