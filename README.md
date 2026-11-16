@@ -215,7 +215,7 @@ as the file is saved.
 | `wallpaperTransition` | `grow`, `outer`, `wave`, `wipe`, `fade`, `left`, `right`, `top`, `bottom`, `random`, `simple` | wallpaper change animation (awww) |
 | `vscodeThemeSync` | `true` / `false` | VS Code follows the shell theme (needs the [VS Code extension](#vs-code-themes)); `false`: VS Code keeps its own theme |
 | `networkMonitor` | `true` / `false` | system monitor (right click on the island): also shows the network speed, download and upload of all the network cards |
-| `backgroundApps` | `true` / `false` | system monitor: the "Background apps" list under the temperatures (apps with open windows; the × closes all the processes of that app). Windows moved to the `special:minimized` workspace show as minimized: a click brings them back to the current workspace |
+| `backgroundApps` | `true` / `false` | system monitor: the "Background apps" list under the temperatures (apps with open windows; the × closes all the processes of that app). A click on an app takes you to its most recent window |
 
 ## Wallpapers and themes
 

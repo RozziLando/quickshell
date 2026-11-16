@@ -21,8 +21,6 @@ Rectangle {
     property string signature: ""
     property bool refreshQueued: false
 
-    readonly property string minimizedWorkspace: "special:minimized"
-
     readonly property int pad: u(8)
     readonly property int headerH: u(30)
 
@@ -77,28 +75,25 @@ Rectangle {
                     var key = cls.toLowerCase()
                     if (!groups[key]) {
                         var info = root.appInfo(cls)
-                        groups[key] = { key: key, name: info.name, icon: info.icon, pids: [], titles: [], minimized: [] }
+                        groups[key] = { key: key, name: info.name, icon: info.icon, pids: [], titles: [],
+                                        focus: "", focusRank: -1 }
                         order.push(key)
                     }
                     var g = groups[key]
                     if (g.pids.indexOf(c.pid) < 0) g.pids.push(c.pid)
                     g.titles.push(c.title || "")
-                    if (c.workspace && c.workspace.name === root.minimizedWorkspace)
-                        g.minimized.push(c.address)
+                    var rank = c.focusHistoryID >= 0 ? c.focusHistoryID : 1e6
+                    if (g.focus === "" || rank < g.focusRank) {
+                        g.focus = c.address
+                        g.focusRank = rank
+                    }
                 })
                 var out = order.map(function (k) {
                     var g = groups[k]
-                    var n = g.titles.length, m = g.minimized.length
-                    if (m === 0) g.subtitle = n > 1 ? n + " windows" : g.titles[0]
-                    else if (m === n) g.subtitle = n > 1 ? n + " windows · minimized" : "Minimized"
-                    else g.subtitle = n + " windows · " + m + " minimized"
+                    g.subtitle = g.titles.length > 1 ? g.titles.length + " windows" : g.titles[0]
                     return g
                 })
-                out.sort(function (a, b) {
-                    var am = a.minimized.length > 0, bm = b.minimized.length > 0
-                    if (am !== bm) return am ? -1 : 1
-                    return a.name.localeCompare(b.name)
-                })
+                out.sort(function (a, b) { return a.name.localeCompare(b.name) })
                 var sig = JSON.stringify(out)
                 if (sig === root.signature) return
                 root.signature = sig
@@ -129,22 +124,12 @@ Rectangle {
         onTriggered: root.refresh()
     }
 
-    function restore(app) {
-        if (app.minimized.length === 0) return
-        var mon = Hyprland.focusedMonitor
-        var ws = mon && mon.activeWorkspace ? mon.activeWorkspace : Hyprland.focusedWorkspace
-        if (!ws) return
-        Quickshell.execDetached(["sh", "-c",
-            'lua=$1; ws=$2; shift 2; last="";'
-            + ' for a in "$@"; do'
-            + '  if [ "$lua" = 1 ]; then hyprctl dispatch "hl.dsp.window.move({ workspace = \\"$ws\\", follow = false, window = \\"address:$a\\" })";'
-            + '  else hyprctl dispatch movetoworkspacesilent "$ws,address:$a"; fi;'
-            + '  last=$a;'
-            + ' done;'
-            + ' if [ "$lua" = 1 ]; then hyprctl dispatch "hl.dsp.focus({ window = \\"address:$last\\" })";'
-            + ' else hyprctl dispatch focuswindow "address:$last"; fi',
-            "sh", Hyprland.usingLua ? "1" : "0", String(ws.id)].concat(app.minimized))
-        refreshLater.restart()
+    function focusApp(app) {
+        if (app.focus === "") return
+        if (Hyprland.usingLua)
+            Quickshell.execDetached(["hyprctl", "dispatch", 'hl.dsp.focus({ window = "address:' + app.focus + '" })'])
+        else
+            Quickshell.execDetached(["hyprctl", "dispatch", "focuswindow", "address:" + app.focus])
     }
 
     function quit(app) {
@@ -263,16 +248,14 @@ Rectangle {
             delegate: ListRow {
                 required property string modelData
                 readonly property var app: root.appMap[modelData] || null
-                readonly property bool minimized: !!app && app.minimized.length > 0
                 width: ListView.view ? ListView.view.width : 0
                 sizeFactor: root.sizeFactor
                 icon: "app"
                 iconSource: app ? app.icon : ""
                 title: app ? app.name : ""
                 subtitle: app ? app.subtitle : ""
-                subtitleColor: minimized ? Theme.accent : Theme.textSecondary
-                clickable: minimized
-                onClicked: if (app) root.restore(app)
+                clickable: !!app
+                onClicked: if (app) root.focusApp(app)
                 showRemove: true
                 onRemoveClicked: if (app) root.quit(app)
             }
