@@ -53,7 +53,7 @@ Item {
     readonly property bool desktop: !(batteryDevice && batteryDevice.ready
                                       && batteryDevice.isLaptopBattery && batteryDevice.isPresent)
     readonly property bool hasBluetooth: !!btAdapter
-    readonly property bool showDisplay: !desktop
+    readonly property bool showDisplay: !desktop || Theme.displayOnDesktop
     readonly property bool showKeyboard: !desktop && keyboardAvailable
 
     readonly property int sliderCount: 1 + (showDisplay ? 1 : 0) + (showKeyboard ? 1 : 0)

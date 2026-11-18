@@ -86,6 +86,7 @@ Singleton {
     readonly property real idleSleepMinutes: data.idleSleepMinutes
     readonly property bool networkMonitor: data.networkMonitor
     readonly property bool backgroundApps: data.backgroundApps
+    readonly property bool displayOnDesktop: data.displayOnDesktop
 
     FileView {
         id: settingsFile
@@ -123,6 +124,7 @@ Singleton {
             property bool vscodeThemeSync: true
             property bool networkMonitor: false
             property bool backgroundApps: true
+            property bool displayOnDesktop: false
         }
     }
 

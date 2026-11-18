@@ -23,5 +23,6 @@
   "wallpaperTransition": "grow",
   "vscodeThemeSync": true,
   "networkMonitor": false,
-  "backgroundApps": true
+  "backgroundApps": true,
+  "displayOnDesktop": false
 }

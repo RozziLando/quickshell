@@ -30,16 +30,32 @@ Singleton {
     property string keyboardPath: ""
     property int keyboardMax: 0
 
+    property bool backlightChecked: false
+    readonly property bool ddcWanted: Theme.displayOnDesktop === true
+    property bool ddc: false
+    property var ddcBuses: []
+    property int ddcMax: 100
+    property int ddcPending: -1
+    property real ddcLastDetect: 0
+
     Process {
         id: displayProc
-        command: ["brightnessctl", "-m", "-c", root.displayClass, "info"]
+        command: ["sh", "-c", 'command -v brightnessctl >/dev/null 2>&1 && brightnessctl -m -c "$1" info',
+                  "sh", root.displayClass]
         stdout: StdioCollector {
             onStreamFinished: {
                 var info = root.parseInfo(text)
-                root.displayAvailable = info !== null
+                root.backlightChecked = true
                 if (info) {
+                    root.ddc = false
+                    root.ddcBuses = []
                     root.displayMax = info.max
                     root.displayPath = info.path
+                    root.displayAvailable = true
+                } else {
+                    root.displayPath = ""
+                    root.displayMax = 0
+                    root.updateDdc(true)
                 }
             }
         }
@@ -47,7 +63,8 @@ Singleton {
 
     Process {
         id: keyboardProc
-        command: ["brightnessctl", "-m", "-d", root.keyboardDevice, "info"]
+        command: ["sh", "-c", 'command -v brightnessctl >/dev/null 2>&1 && brightnessctl -m -d "$1" info',
+                  "sh", root.keyboardDevice]
         stdout: StdioCollector {
             onStreamFinished: {
                 var info = root.parseInfo(text)
@@ -58,6 +75,107 @@ Singleton {
                 }
             }
         }
+    }
+
+    function updateDdc(opening) {
+        if (!backlightChecked || displayPath !== "") return
+        if (!ddcWanted) {
+            ddc = false
+            ddcBuses = []
+            ddcPending = -1
+            displayAvailable = false
+            return
+        }
+        if (!ddc) detectDdc()
+        else if (opening && ddcBuses.length < Quickshell.screens.length
+                 && Date.now() - ddcLastDetect > 60000) detectDdc()
+        else readDdc()
+    }
+
+    onDdcWantedChanged: updateDdc(false)
+
+    function detectDdc() {
+        if (ddcDetect.running) return
+        ddcLastDetect = Date.now()
+        ddcDetect.running = true
+    }
+
+    Process {
+        id: ddcDetect
+        command: ["sh", "-c", "command -v ddcutil >/dev/null 2>&1 && ddcutil detect --terse 2>/dev/null"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!root.ddcWanted || root.displayPath !== "") return
+                var buses = []
+                text.split(/\n\s*\n/).forEach(function (block) {
+                    if (!/^\s*Display \d+/.test(block)) return
+                    var m = block.match(/I2C bus:\s*\/dev\/i2c-(\d+)/)
+                    if (m) buses.push(m[1])
+                })
+                root.ddcBuses = buses
+                root.ddc = buses.length > 0
+                if (root.ddc) root.readDdc()
+                else root.displayAvailable = false
+            }
+        }
+    }
+
+    function readDdc() {
+        if (!ddc || ddcRead.running || ddcWrite.running || justSet.running) return
+        ddcRead.command = ["sh", "-c",
+            'for b in "$@"; do for i in 1 2 3; do'
+            + ' out=$(ddcutil getvcp 10 --brief --bus "$b" 2>/dev/null)'
+            + ' && case "$out" in "VCP 10 C "*) echo "$out"; exit 0;; esac;'
+            + ' done; done; exit 1', "sh"].concat(ddcBuses)
+        ddcRead.running = true
+    }
+
+    Process {
+        id: ddcRead
+        onRunningChanged: if (!running) root.writeDdc()
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!root.ddc) return
+                var f = text.trim().split(/\s+/)
+                var cur = parseInt(f[3]), max = parseInt(f[4])
+                if (f[0] !== "VCP" || isNaN(cur) || isNaN(max) || max <= 0) {
+                    root.displayAvailable = false
+                    return
+                }
+                root.ddcMax = max
+                root.displayAvailable = true
+                if (!justSet.running && !ddcWrite.running && root.ddcPending < 0)
+                    root.displayLevel = Math.max(0, Math.min(1, cur / max))
+            }
+        }
+    }
+
+    function writeDdc() {
+        if (!ddc || ddcPending < 0 || ddcWrite.running || ddcRead.running) return
+        ddcWrite.command = ["sh", "-c",
+            'v=$1; shift; for b in "$@"; do (for i in 1 2 3 4; do'
+            + ' ddcutil setvcp 10 "$v" --bus "$b" --noverify >/dev/null 2>&1 && break; done) & done; wait',
+            "sh", String(ddcPending)].concat(ddcBuses)
+        ddcPending = -1
+        ddcWrite.running = true
+    }
+
+    Process {
+        id: ddcWrite
+        onRunningChanged: if (!running) root.writeDdc()
+    }
+
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            if (root.ddcWanted && root.backlightChecked && root.displayPath === "") redetect.restart()
+        }
+    }
+
+    Timer {
+        id: redetect
+        interval: 2000
+        onTriggered: if (root.ddcWanted && root.displayPath === "") root.detectDdc()
     }
 
     property bool displayReady: false
@@ -111,7 +229,7 @@ Singleton {
     Timer {
         interval: 1000
         repeat: true
-        running: true
+        running: root.displayPath !== "" || root.keyboardPath !== ""
         onTriggered: {
             if (root.displayPath !== "") displayFile.reload()
             if (root.keyboardPath !== "") keyboardFile.reload()
@@ -144,6 +262,11 @@ Singleton {
         displayLevel = Math.max(0, Math.min(1, value))
         displayAbsorb = true
         justSet.restart()
+        if (ddc) {
+            ddcPending = Math.round(displayLevel * ddcMax)
+            writeDdc()
+            return
+        }
         if (displayMax <= 0) return
         Quickshell.execDetached(["brightnessctl", "-c", displayClass, "set",
                                  String(displayToRaw(displayLevel))])

@@ -5,10 +5,13 @@ SRC=$(cd "$(dirname "$0")" && pwd -P)
 
 YES=0
 PACKAGES_STEP=1
+FORM=""
 for arg in "$@"; do
     case "$arg" in
         -y|--yes) YES=1 ;;
         --no-packages) PACKAGES_STEP=0 ;;
+        --laptop) FORM=laptop ;;
+        --desktop) FORM=desktop ;;
         -h|--help)
             printf '%s\n' \
                 "Quickshell island: dependencies (Arch and Fedora)." \
@@ -16,10 +19,15 @@ for arg in "$@"; do
                 "  1. detects Arch or Fedora and installs the dependencies" \
                 "  2. makes Wi-Fi and Bluetooth work: firmware, drivers, NetworkManager and bluetooth services" \
                 "  3. turns on FastConnectable in /etc/bluetooth/main.conf" \
-                "  4. asks whether VS Code and its forks should follow the shell theme (scripts/vscode.sh)" \
+                "  4. creates the wallpaper folder (wallpaperDir in theme.json) if it is missing" \
+                "  5. asks whether VS Code and its forks should follow the shell theme (scripts/vscode.sh)" \
                 "" \
                 "  ./install.sh -y             accept the defaults, ask nothing" \
-                "  ./install.sh --no-packages  skip the package installation"
+                "  ./install.sh --no-packages  skip the package installation" \
+                "  ./install.sh --laptop       install the laptop packages (brightnessctl, upower)" \
+                "  ./install.sh --desktop      install the desktop packages (ddcutil, monitor brightness)" \
+                "" \
+                "Without --laptop / --desktop the script detects the computer (battery, built-in screen)."
             exit 0 ;;
         *) echo "Unknown option: $arg (see ./install.sh --help)"; exit 1 ;;
     esac
@@ -66,7 +74,6 @@ ARCH_PACKAGES=(
     bluez bluez-utils
     linux-firmware wireless-regdb
     pipewire pipewire-pulse wireplumber libpulse
-    brightnessctl upower
     playerctl
     grim slurp wl-clipboard
     libnotify
@@ -75,14 +82,15 @@ ARCH_PACKAGES=(
     qt6-imageformats
     inter-font noto-fonts-emoji noto-fonts-cjk
 )
-FEDORA_FIRMWARE=(
+FEDORA_OPTIONAL=(
     linux-firmware iwlwifi-mvm-firmware iwlwifi-dvm-firmware realtek-firmware
     atheros-firmware brcmfmac-firmware mt7xxx-firmware
+    webp-pixbuf-loader
 )
 FEDORA_PACKAGES=(
     quickshell hyprland swaybg NetworkManager NetworkManager-wifi bluez wireless-regdb
     pipewire pipewire-pulseaudio wireplumber pulseaudio-utils
-    brightnessctl upower playerctl
+    playerctl
     grim slurp wl-clipboard libnotify glib2 diffutils
     qt6-qtimageformats rsms-inter-fonts google-noto-color-emoji-fonts google-noto-sans-cjk-fonts
 )
@@ -100,6 +108,22 @@ broadcom_wl_needed() {
     return 1
 }
 
+LAPTOP_PACKAGES=(brightnessctl upower)
+DESKTOP_PACKAGES=(ddcutil)
+
+detect_form() {
+    local b t
+    for b in "$SYS"/class/power_supply/*; do
+        [ "$(cat "$b/type" 2>/dev/null)" = Battery ] || continue
+        [ "$(cat "$b/scope" 2>/dev/null)" = Device ] && continue
+        echo laptop; return
+    done
+    if ls "$SYS"/class/backlight/* >/dev/null 2>&1; then echo laptop; return; fi
+    t=$(cat "$SYS"/class/dmi/id/chassis_type 2>/dev/null || true)
+    case "$t" in 8|9|10|11|14|30|31|32) echo laptop; return ;; esac
+    echo desktop
+}
+
 install_packages() {
     if [ "$DISTRO" = arch ]; then
         local opts=(--needed)
@@ -112,10 +136,18 @@ install_packages() {
     fi
 }
 
+[ -n "$FORM" ] || FORM=$(detect_form)
+if [ "$FORM" = laptop ]; then FORM_PACKAGES=("${LAPTOP_PACKAGES[@]}"); else FORM_PACKAGES=("${DESKTOP_PACKAGES[@]}"); fi
+
 if [ "$PACKAGES_STEP" = 1 ]; then
+    if [ "$FORM" = laptop ]; then
+        say "Laptop detected: brightnessctl and upower for screen brightness and battery"
+    else
+        say "Desktop detected: ddcutil for the brightness of the monitors (displayOnDesktop in theme.json)"
+    fi
     if [ "$DISTRO" = arch ]; then
         say "Arch Linux detected: installing dependencies (pacman --needed, installed ones are skipped)"
-        install_packages "${ARCH_PACKAGES[@]}"
+        install_packages "${ARCH_PACKAGES[@]}" "${FORM_PACKAGES[@]}"
         if broadcom_wl_needed; then
             say "Broadcom Wi-Fi without an open driver: installing broadcom-wl-dkms"
             HEADERS=()
@@ -131,12 +163,18 @@ if [ "$PACKAGES_STEP" = 1 ]; then
         fi
         sudo dnf copr enable -y errornointernet/quickshell
         sudo dnf copr enable -y solopasha/hyprland
-        install_packages "${FEDORA_PACKAGES[@]}"
+        install_packages "${FEDORA_PACKAGES[@]}" "${FORM_PACKAGES[@]}"
         if dnf --version 2>/dev/null | grep -qi dnf5; then SKIP=(--skip-unavailable); else SKIP=(--setopt=strict=0); fi
-        install_packages "${SKIP[@]}" "${FEDORA_FIRMWARE[@]}" || warn "some Wi-Fi/Bluetooth firmware packages could not be installed"
+        install_packages "${SKIP[@]}" "${FEDORA_OPTIONAL[@]}" || warn "some firmware or image packages could not be installed"
         if broadcom_wl_needed; then
             warn "Broadcom Wi-Fi without an open driver: install akmod-wl from RPM Fusion (nonfree) to use it"
         fi
+    fi
+    if [ "$FORM" = desktop ] && ! ls "$SYS"/class/i2c-dev/i2c-* >/dev/null 2>&1; then
+        if ! grep -qsE '^[[:space:]]*i2c[-_]dev[[:space:]]*$' /etc/modules-load.d/*.conf /usr/lib/modules-load.d/*.conf; then
+            echo i2c-dev | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null
+        fi
+        sudo modprobe i2c-dev || warn "could not load i2c-dev: monitor brightness works after a reboot"
     fi
 else
     say "Skipping packages (--no-packages)"
@@ -232,6 +270,23 @@ if [ -f "$BT_CONF" ]; then
         info "known devices reconnect faster; applied at the next boot or with: sudo systemctl restart bluetooth"
     fi
 fi
+
+say "Wallpapers"
+WALL_DIR=$(sed -n 's/.*"wallpaperDir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SRC/theme.json" 2>/dev/null | head -n 1)
+WALL_DIR=${WALL_DIR:-~/Wallpapers}
+WALL_DIR=${WALL_DIR/#\~/$HOME}
+if [ ! -d "$WALL_DIR" ]; then
+    mkdir -p "$WALL_DIR"
+    info "created $WALL_DIR: put your wallpapers there (png, jpg, webp)"
+else
+    WALL_COUNT=$(find "$WALL_DIR" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) | wc -l)
+    if [ "$WALL_COUNT" -eq 0 ]; then
+        info "$WALL_DIR has no images yet: put your wallpapers there (png, jpg, webp)"
+    else
+        info "$WALL_COUNT wallpapers in $WALL_DIR"
+    fi
+fi
+info "at the first start the shell applies one of them; then pick them in the launcher (Tab)"
 
 say "VS Code themes"
 EDITORS=$(sh "$SRC/scripts/vscode.sh" --list | tr '\n' ' ' | sed 's/ *$//')

@@ -29,18 +29,27 @@ lock screen and login screen. Works on **Arch** and **Fedora**.
 
 ```sh
 [ -d ~/.config/quickshell ] && mv ~/.config/quickshell ~/.config/quickshell_backup
-git clone https://github.com/RozziLando/quickshell.git ~/.config/quickshell
+mkdir -p ~/.config/quickshell
+curl -L https://github.com/RozziLando/quickshell/archive/refs/heads/main.tar.gz \
+    | tar -xz --strip-components=1 -C ~/.config/quickshell
 cd ~/.config/quickshell
-chmod +x install.sh
 ./install.sh
 ```
 
 Run it as your normal user: it asks for the sudo password when needed.
-`install.sh` does only four things:
+
+This downloads only the files of the shell (about 1 MB): a plain
+configuration folder, not a git repository, without the history and without
+the screenshots of this page.
+
+`install.sh` does only five things:
 
 1. detects Arch or Fedora and installs the [dependencies](#dependencies).
    Packages that are already installed are skipped (`pacman --needed` on
-   Arch; on Fedora it also enables the Hyprland and Quickshell COPRs);
+   Arch; on Fedora it also enables the Hyprland and Quickshell COPRs). It
+   also detects a laptop (battery or built-in screen) or a desktop: a laptop
+   gets `brightnessctl` and `upower`, a desktop gets `ddcutil` (brightness of
+   the monitors) and the `i2c-dev` module it needs;
 2. makes Wi-Fi and Bluetooth work on a fresh install: it installs the
    firmware (`linux-firmware`, on Fedora the per-vendor firmware packages and
    `NetworkManager-wifi`), installs `broadcom-wl-dkms` for the Broadcom cards
@@ -52,7 +61,10 @@ Run it as your normal user: it asks for the sudo password when needed.
 3. turns on `FastConnectable` in `/etc/bluetooth/main.conf`, so known
    Bluetooth devices reconnect faster when they are switched on (the old
    file is kept as `main.conf.bak-quickshell`; applied at the next boot);
-4. if VS Code, VSCodium or Code - OSS is installed, asks whether to install
+4. creates the wallpaper folder (`wallpaperDir` in `theme.json`, by default
+   `~/Wallpapers`) if it is missing. The wallpapers are not part of the
+   repository: put your images there (png, jpg, webp);
+5. if VS Code, VSCodium or Code - OSS is installed, asks whether to install
    the local extension that makes it follow the shell theme (see
    [VS Code themes](#vs-code-themes)).
 
@@ -73,13 +85,26 @@ the end it prints the command to go back to the previous display manager.
 **Profile picture.** To show your photo on the lock screen and the login
 screen, put it in `assets/` named `avatar.png`, `avatar.jpg` or
 `avatar.jpeg` (a square image looks best). Without it the circle shows the
-first letter of your user name. The file is ignored by git, so copy it by
-hand on each PC.
+first letter of your user name. The file is not part of the download, so
+copy it by hand on each PC.
 
 | Option | Effect |
 |---|---|
 | `./install.sh -y` | accept the defaults, ask nothing |
 | `./install.sh --no-packages` | skip the package installation |
+| `./install.sh --laptop` / `--desktop` | force the laptop or desktop packages instead of detecting them |
+
+**Updating.** The same command with `--exclude` replaces the files of the
+shell and keeps your `theme.json` (your avatar and wallpapers are not part of
+the download, so they stay too):
+
+```sh
+curl -L https://github.com/RozziLando/quickshell/archive/refs/heads/main.tar.gz \
+    | tar -xz --strip-components=1 -C ~/.config/quickshell --exclude=quickshell-main/theme.json
+```
+
+New options added to `theme.json` by an update use their default value until
+you add them to your file.
 
 ## Dependencies
 
@@ -91,7 +116,8 @@ hand on each PC.
 | Wi-Fi | `networkmanager` `linux-firmware` `wireless-regdb` | `NetworkManager` `NetworkManager-wifi` `wireless-regdb` + firmware packages |
 | Bluetooth | `bluez` `bluez-utils` | `bluez` |
 | Audio | `pipewire` `pipewire-pulse` `wireplumber` `libpulse` | `pipewire` `pipewire-pulseaudio` `wireplumber` `pulseaudio-utils` |
-| Brightness, battery | `brightnessctl` `upower` | `brightnessctl` `upower` |
+| Screen brightness, battery (laptop only) | `brightnessctl` `upower` | `brightnessctl` `upower` |
+| Monitor brightness (desktop only) | `ddcutil` | `ddcutil` |
 | Media keys | `playerctl` | `playerctl` |
 | Screenshots, lock screen | `grim` `slurp` `wl-clipboard` | `grim` `slurp` `wl-clipboard` |
 | Notifications, logind signals | `libnotify` `glib2` | `libnotify` `glib2` |
@@ -224,22 +250,29 @@ as the file is saved.
 | `vscodeThemeSync` | `true` / `false` | VS Code follows the shell theme (needs the [VS Code extension](#vs-code-themes)); `false`: VS Code keeps its own theme |
 | `networkMonitor` | `true` / `false` | system monitor (right click on the island): also shows the network speed, download and upload of all the network cards |
 | `backgroundApps` | `true` / `false` | system monitor: the "Background apps" list under the temperatures (apps with open windows; the × closes all the processes of that app). A click on an app takes you to its most recent window |
+| `displayOnDesktop` | `true` / `false` | desktop PC: show the Display slider and page in the control center too. The slider sets the brightness of the monitors through DDC/CI (`ddcutil`, all monitors together; DDC/CI must be on in the monitor menu). Laptops always have them |
 
 ## Wallpapers and themes
+
+The wallpapers are the images in `wallpaperDir` (by default `~/Wallpapers`);
+the launcher lists them (`Tab` switches to themes and wallpapers). At the
+first start, when no wallpaper was ever set, the shell applies the default
+wallpaper of the current theme or the first image of the folder; after that
+it keeps the last one picked, also when the wallpaper daemon loses it.
 
 When you pick a wallpaper in the launcher, the shell also applies the theme
 that matches its colors. To choose the theme yourself for some wallpapers,
 list them in `preferredBy` in `themes/<id>.json`:
 
 ```json
-"preferredBy": ["miku.png", "yuki.png"]
+"preferredBy": ["a.png", "b.png"]
 ```
 
 - a wallpaper listed in a theme always gets that theme, without the color
   match;
 - a wallpaper listed in more than one theme gets one of them at random;
 - `[]` (empty): automatic choice by colors, as before;
-- names are the file names in `wallpaperDir` (`"miku"` without the
+- names are the file names in `wallpaperDir` (`"a"` without the
   extension works too).
 
 `"defaultWallpapers"` is something else: the wallpapers set when that theme

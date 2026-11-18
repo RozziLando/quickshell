@@ -39,11 +39,17 @@ set)
     fi
     ;;
 restore)
-    if has awww; then daemon awww; exit 0; fi
-    if has swww; then daemon swww; exit 0; fi
+    f=$(cat "$STATE" 2>/dev/null)
+    for w in awww swww; do
+        has "$w" || continue
+        daemon "$w" || exit 0
+        if [ -f "$f" ] && ! "$w" query 2>/dev/null | grep -q "image: "; then
+            exec "$w" img "$f" "$@"
+        fi
+        exit 0
+    done
     has swaybg || exit 0
     pgrep -x -u "$(id -u)" swaybg >/dev/null && exit 0
-    f=$(cat "$STATE" 2>/dev/null)
     [ -f "$f" ] && setsid -f swaybg -m fill -i "$f" >/dev/null 2>&1
     ;;
 esac

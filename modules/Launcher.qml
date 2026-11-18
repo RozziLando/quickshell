@@ -903,7 +903,8 @@ Item {
             Text {
                 anchors.centerIn: wallpaperList
                 visible: root.mode === "themes" && root.wallpaperResults.length === 0
-                text: "No wallpapers found"
+                text: search.text.trim() !== "" ? "No wallpapers found"
+                    : "No wallpapers in " + Theme.wallpaperDir.replace(Quickshell.env("HOME"), "~")
                 color: Theme.textMuted
                 font.pixelSize: root.u(12)
                 font.family: Theme.fontFamily

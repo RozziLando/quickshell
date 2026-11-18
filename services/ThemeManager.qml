@@ -58,6 +58,9 @@ Singleton {
 
     readonly property string thumbDir: Quickshell.cachePath("wallpaper-thumbs")
     property string currentWallpaper: ""
+    property bool wallpapersListed: false
+    property bool currentChecked: false
+    property bool initialDone: false
 
     function refreshWallpapers() {
         wallpaperProc.running = true
@@ -80,12 +83,14 @@ Singleton {
             "sh", Theme.wallpaperDir, root.thumbDir]
         stdout: StdioCollector {
             onStreamFinished: {
+                root.wallpapersListed = true
                 root.wallpapers = text.split("\n").filter(function (l) { return l !== "" })
                     .map(function (l) {
                         var p = l.split("\t")
                         return { name: p[0].split("/").pop(), path: p[0],
                                  thumb: p[1] || "", hasThumb: p[2] === "1" }
                     })
+                root.setInitialWallpaper()
             }
         }
     }
@@ -96,13 +101,27 @@ Singleton {
         id: currentProc
         command: ["sh", root.wallpaperScript, "get"]
         stdout: StdioCollector {
-            onStreamFinished: root.currentWallpaper = text.trim().split("/").pop()
+            onStreamFinished: {
+                root.currentWallpaper = text.trim().split("/").pop()
+                root.currentChecked = true
+                root.setInitialWallpaper()
+            }
         }
     }
 
     Component.onCompleted: {
         Quickshell.execDetached(["sh", wallpaperScript, "restore"])
         refreshWallpapers()
+    }
+
+    function setInitialWallpaper() {
+        if (initialDone || !wallpapersListed || !currentChecked) return
+        initialDone = true
+        if (currentWallpaper !== "" || wallpapers.length === 0) return
+        var t = find(Theme.themeId)
+        var name = t ? pickDefaultWallpaper(t) : ""
+        if (name === "" || wallpaperFile(name) === "") name = wallpapers[0].name
+        setWallpaper(Theme.wallpaperDir + "/" + name)
     }
 
     function transitionArgs() {
@@ -214,9 +233,7 @@ Singleton {
     readonly property string applyScript: '
         y="$1"; acc="$2"
 
-        # kitty: include in fondo (vince sui colori scritti prima) e ricarica
         k="$HOME/.config/kitty/kitty.conf"
-        # kitty installato ma senza kitty.conf (funziona anche così): si crea
         if [ ! -f "$k" ] && command -v kitty >/dev/null 2>&1; then
             mkdir -p "$(dirname "$k")"
             printf "# Colori dal theme switcher di Quickshell\\ninclude quickshell-theme.conf\\n" > "$k"
@@ -227,7 +244,6 @@ Singleton {
         fi
         pkill -USR1 -x kitty 2>/dev/null
 
-        # Nautilus / GTK 4: gtk.css importa i colori del tema
         g="$HOME/.config/gtk-4.0/gtk.css"
         mkdir -p "$(dirname "$g")"
         if ! grep -qs "quickshell-theme.css" "$g"; then
@@ -240,7 +256,6 @@ Singleton {
             fi
         fi
 
-        # Icone Yaru del colore del tema (se installate) e accento GNOME
         if command -v gsettings >/dev/null 2>&1; then
             if [ -n "$y" ]; then icon="Yaru-$y-dark"; else icon="Yaru-dark"; fi
             for d in /usr/share/icons "$HOME/.local/share/icons" "$HOME/.icons"; do
