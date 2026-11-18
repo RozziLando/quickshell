@@ -47,7 +47,8 @@ Item {
             body: n.body,
             icon: historyIconFor(n),
             rounded: historyIconFor(n) === imageFor(n),
-            desktopEntry: n.desktopEntry || ""
+            desktopEntry: n.desktopEntry || "",
+            time: Date.now()
         })
         if (historyModel.count > 30)
             historyModel.remove(30, historyModel.count - 30)

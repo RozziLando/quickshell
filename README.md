@@ -36,15 +36,23 @@ chmod +x install.sh
 ```
 
 Run it as your normal user: it asks for the sudo password when needed.
-`install.sh` does only three things:
+`install.sh` does only four things:
 
 1. detects Arch or Fedora and installs the [dependencies](#dependencies).
    Packages that are already installed are skipped (`pacman --needed` on
    Arch; on Fedora it also enables the Hyprland and Quickshell COPRs);
-2. turns on `FastConnectable` in `/etc/bluetooth/main.conf`, so known
+2. makes Wi-Fi and Bluetooth work on a fresh install: it installs the
+   firmware (`linux-firmware`, on Fedora the per-vendor firmware packages and
+   `NetworkManager-wifi`), installs `broadcom-wl-dkms` for the Broadcom cards
+   without an open driver (BCM4360, BCM4352, BCM43142; on Fedora it points
+   to RPM Fusion), enables NetworkManager (disabling iwd, systemd-networkd or
+   dhcpcd, which would conflict with it) and the bluetooth service when a
+   Bluetooth adapter is present, and removes software rfkill blocks. When a
+   reboot is needed to load drivers or services, it says so;
+3. turns on `FastConnectable` in `/etc/bluetooth/main.conf`, so known
    Bluetooth devices reconnect faster when they are switched on (the old
    file is kept as `main.conf.bak-quickshell`; applied at the next boot);
-3. if VS Code, VSCodium or Code - OSS is installed, asks whether to install
+4. if VS Code, VSCodium or Code - OSS is installed, asks whether to install
    the local extension that makes it follow the shell theme (see
    [VS Code themes](#vs-code-themes)).
 
@@ -80,7 +88,7 @@ hand on each PC.
 | Shell (>= 0.3) | `quickshell` | `quickshell` (COPR `errornointernet/quickshell`) |
 | Compositor | `hyprland` | `hyprland` (COPR `solopasha/hyprland`) |
 | Wallpaper | `awww` | `swaybg` |
-| Wi-Fi | `networkmanager` | `NetworkManager` |
+| Wi-Fi | `networkmanager` `linux-firmware` `wireless-regdb` | `NetworkManager` `NetworkManager-wifi` `wireless-regdb` + firmware packages |
 | Bluetooth | `bluez` `bluez-utils` | `bluez` |
 | Audio | `pipewire` `pipewire-pulse` `wireplumber` `libpulse` | `pipewire` `pipewire-pulseaudio` `wireplumber` `pulseaudio-utils` |
 | Brightness, battery | `brightnessctl` `upower` | `brightnessctl` `upower` |

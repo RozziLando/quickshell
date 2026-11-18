@@ -27,7 +27,7 @@ Item {
     signal submitted(string password)
     signal powerAction(string action)
 
-    property real sizeFactor: 0.765
+    property real sizeFactor: 0.65
 
     readonly property var referenceScreen: {
         var list = Quickshell.screens

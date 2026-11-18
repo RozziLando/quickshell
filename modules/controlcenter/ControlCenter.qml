@@ -119,6 +119,13 @@ Item {
 
     property string page: ""
 
+    function arrivalText(time) {
+        if (!(time > 0)) return ""
+        var d = new Date(time)
+        return d.toDateString() === new Date().toDateString()
+            ? Qt.formatDateTime(d, "hh:mm") : Qt.formatDateTime(d, "dd/MM")
+    }
+
     function openPage(name) {
         page = name
         pageFocusTimer.restart()
@@ -460,6 +467,7 @@ Item {
                     required property string icon
                     required property string desktopEntry
                     required property bool rounded
+                    required property real time
 
                     width: ListView.view.width
                     height: root.notifItemH
@@ -526,7 +534,7 @@ Item {
                         anchors {
                             left: avatar.right
                             leftMargin: root.u(10)
-                            right: closeButton.left
+                            right: timeText.left
                             rightMargin: root.u(6)
                             verticalCenter: parent.verticalCenter
                         }
@@ -559,6 +567,19 @@ Item {
                             font.family: Theme.fontFamily
                             elide: Text.ElideRight
                         }
+                    }
+
+                    Text {
+                        id: timeText
+                        anchors {
+                            right: closeButton.left
+                            rightMargin: root.u(6)
+                            verticalCenter: parent.verticalCenter
+                        }
+                        text: root.arrivalText(entry.time)
+                        color: Theme.textMuted
+                        font.pixelSize: root.u(9)
+                        font.family: Theme.fontFamily
                     }
 
                     Item {
