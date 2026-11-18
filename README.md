@@ -75,12 +75,17 @@ with Hyprland (`exec-once = quickshell`, or `hl.exec_cmd("quickshell")` in a
 Lua config).
 
 **Login screen.** `sudo greeter/install.sh` sets it up completely, on Arch
-and Fedora: it installs `greetd` and `cage`, copies the login screen to
+and Fedora: it installs `greetd`, `cage` and `agreety`, copies the login screen to
 `/etc/greetd/quickshell`, writes `/etc/greetd/config.toml` (the old one is
 kept as `config.toml.bak-<date>`), disables the current display manager
 (sddm, gdm, lightdm, ly...) and enables greetd. Reboot and the login screen
 is there. `--dry-run` shows what it would do without changing anything; at
 the end it prints the command to go back to the previous display manager.
+greetd starts `/usr/local/bin/quickshell-greeter`, which waits for the
+graphics card, starts the login screen and checks that it really appears:
+if it does not (a crash, an error in the configuration) it tries again, and
+after three failures it opens `agreety`, the text login of greetd, which
+starts Hyprland too. So you can always log in, never a black screen.
 
 **Profile picture.** To show your photo on the lock screen and the login
 screen, put it in `assets/` named `avatar.png`, `avatar.jpg` or
@@ -124,7 +129,7 @@ you add them to your file.
 | Login screen copy | `diffutils` | `diffutils` |
 | .webp wallpapers | `qt6-imageformats` | `qt6-qtimageformats` |
 | Fonts | `inter-font` `noto-fonts-emoji` `noto-fonts-cjk` | `rsms-inter-fonts` `google-noto-color-emoji-fonts` `google-noto-sans-cjk-fonts` |
-| Login screen (installed by `greeter/install.sh`) | `greetd` `cage` | `greetd` `cage` |
+| Login screen (installed by `greeter/install.sh`) | `greetd` `greetd-agreety` `cage` | `greetd` `cage` |
 
 `install.sh` installs all of them. The icon font (Phosphor) ships with the
 shell in `assets/fonts/`.

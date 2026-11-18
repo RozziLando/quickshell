@@ -5,6 +5,7 @@ SRC=$(cd "$(dirname "$0")/.." && pwd)
 DEFAULT_DEST=/etc/greetd/quickshell
 DEST=${DEST:-$DEFAULT_DEST}
 SESSION_BIN=/usr/local/bin/quickshell-hyprland-session
+GREETER_BIN=/usr/local/bin/quickshell-greeter
 DRY=0
 YES=0
 USER_NAME=""
@@ -152,9 +153,16 @@ fi
 
 say "Packages"
 if [ "$DISTRO" = arch ]; then
-    run pacman -S --needed --noconfirm greetd cage
+    run pacman -S --needed --noconfirm greetd greetd-agreety cage
 else
     run dnf install -y greetd cage
+    command -v agreety >/dev/null 2>&1 || run dnf install -y greetd-agreety || true
+fi
+if [ "$DRY" = 0 ]; then
+    for c in greetd cage quickshell; do
+        command -v "$c" >/dev/null 2>&1 || { echo "    $c is not installed: the login screen cannot start. Nothing changed in greetd."; exit 1; }
+    done
+    command -v agreety >/dev/null 2>&1 || warn "agreety is not installed: if the login screen ever fails there is no text login to fall back to"
 fi
 
 say "Greeter user"
@@ -187,6 +195,32 @@ printf '\033[2J\033[H\033[?25l'
 exec $HYPR >/dev/null 2>&1
 EOF
 run chmod 755 "$SESSION_BIN"
+write "$GREETER_BIN" <<EOF
+#!/bin/sh
+export XDG_CACHE_HOME=/tmp/greeter-cache XDG_STATE_HOME=/tmp/greeter-state
+mkdir -p "\$XDG_CACHE_HOME" "\$XDG_STATE_HOME"
+export QS_GREETER_READY="\$XDG_STATE_HOME/ready"
+try=0
+while [ "\$try" -lt 3 ]; do
+    try=\$((try + 1))
+    rm -f "\$QS_GREETER_READY"
+    i=0
+    while [ "\$i" -lt 50 ] && ! ls /dev/dri/card* >/dev/null 2>&1; do sleep 0.2; i=\$((i + 1)); done
+    cage -s -d -- quickshell -p "$DEST" &
+    pid=\$!
+    i=0
+    while [ "\$i" -lt 100 ] && [ ! -e "\$QS_GREETER_READY" ] && kill -0 "\$pid" 2>/dev/null; do sleep 0.2; i=\$((i + 1)); done
+    if [ -e "\$QS_GREETER_READY" ]; then
+        wait "\$pid" && exit 0
+    else
+        kill "\$pid" 2>/dev/null; sleep 1; kill -9 "\$pid" 2>/dev/null; wait "\$pid" 2>/dev/null
+    fi
+    sleep 1
+done
+command -v agreety >/dev/null 2>&1 && exec agreety --cmd "$SESSION_BIN"
+exit 1
+EOF
+run chmod 755 "$GREETER_BIN"
 printf '{\n  "user": "%s",\n  "session": ["%s"]\n}\n' "$USER_NAME" "$SESSION_BIN" | write "$DEST/greeter.json"
 run sh "$SRC/greeter/sync.sh" "$DEST" "$WALLPAPER"
 run chown -R "$USER_NAME" "$DEST"
@@ -195,17 +229,20 @@ run chmod 644 "$DEST/greeter.json"
 run chmod -R a+rX "$DEST"
 [ -n "$PREV_DM" ] && [ "$PREV_DM" != greetd ] && printf '%s\n' "$PREV_DM" | write "$DEST/previous-display-manager"
 info "files in $DEST (kept up to date by the shell, see greeter/sync.sh)"
+if [ "$DRY" = 0 ] && ! runuser -u "$GREETER_USER" -- test -r "$DEST/shell.qml" 2>/dev/null; then
+    warn "the user $GREETER_USER cannot read $DEST: the login screen would not start"
+fi
 
 say "greetd configuration"
 run mkdir -p /etc/greetd
-if [ -f /etc/greetd/config.toml ] && ! grep -q "quickshell -p $DEST" /etc/greetd/config.toml; then
+if [ -f /etc/greetd/config.toml ] && ! grep -qE "quickshell -p $DEST|$GREETER_BIN" /etc/greetd/config.toml; then
     run cp /etc/greetd/config.toml "/etc/greetd/config.toml.bak-$(date +%Y%m%d-%H%M%S)"
     info "old config.toml saved as config.toml.bak-<date>"
 fi
 {
     printf '[terminal]\nvt = 1\n\n'
     printf '[default_session]\n'
-    printf 'command = "env XDG_CACHE_HOME=/tmp/greeter-cache XDG_STATE_HOME=/tmp/greeter-state cage -s -d -- quickshell -p %s"\n' "$DEST"
+    printf 'command = "%s"\n' "$GREETER_BIN"
     printf 'user = "%s"\n' "$GREETER_USER"
     if [ "$AUTOLOGIN" = 1 ]; then
         printf '\n[initial_session]\ncommand = "%s"\nuser = "%s"\n' "$SESSION_BIN" "$USER_NAME"
@@ -213,7 +250,7 @@ fi
 } | write /etc/greetd/config.toml
 
 if command -v restorecon >/dev/null 2>&1; then
-    run restorecon -R /etc/greetd "$SESSION_BIN"
+    run restorecon -R /etc/greetd "$SESSION_BIN" "$GREETER_BIN"
 fi
 
 say "Display manager"

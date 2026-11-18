@@ -73,6 +73,13 @@ ShellRoot {
         }
     }
 
+    readonly property string readyFile: Quickshell.env("QS_GREETER_READY") || ""
+    Timer {
+        id: readyTimer
+        interval: 300
+        onTriggered: if (root.readyFile !== "") Quickshell.execDetached(["touch", root.readyFile])
+    }
+
     FloatingWindow {
         id: win
         visible: true
@@ -116,7 +123,10 @@ ShellRoot {
                         else if (action === "reboot") Quickshell.execDetached(["systemctl", "reboot"])
                         else if (action === "poweroff") Quickshell.execDetached(["systemctl", "poweroff"])
                     }
-                    Component.onCompleted: if (area.isMain) root.mainView = areaView
+                    Component.onCompleted: if (area.isMain) {
+                        root.mainView = areaView
+                        readyTimer.start()
+                    }
                 }
             }
         }

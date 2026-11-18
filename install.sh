@@ -184,43 +184,55 @@ say "Wi-Fi and Bluetooth"
 REBOOT_NEEDED=0
 unit_exists() { systemctl cat "$1.service" >/dev/null 2>&1; }
 enabled() { systemctl is-enabled --quiet "$1.service" 2>/dev/null; }
-
-if unit_exists NetworkManager; then
-    if enabled NetworkManager; then
-        info "NetworkManager already enabled"
-    else
-        OTHERS=()
-        for s in iwd systemd-networkd dhcpcd connman netctl wicd; do
-            enabled "$s" && OTHERS+=("$s")
-        done
-        if [ "${#OTHERS[@]}" -gt 0 ]; then
-            sudo systemctl disable "${OTHERS[@]/%/.service}"
-            sudo systemctl enable NetworkManager.service
-            info "NetworkManager enabled, ${OTHERS[*]} disabled (they would fight over the network)"
-            REBOOT_NEEDED=1
-        else
-            sudo systemctl enable --now NetworkManager.service
-            info "NetworkManager enabled and started"
-        fi
-    fi
-else
-    warn "NetworkManager is not installed: the Wi-Fi page of the control center needs it"
+active() { systemctl is-active --quiet "$1.service" 2>/dev/null; }
+KVER=${KVER:-$(uname -r)}
+MODDIR=${MODDIR:-/usr/lib/modules}
+MODULES_OK=1
+if [ ! -d "$MODDIR/$KVER" ]; then
+    MODULES_OK=0
+    warn "the kernel was updated during the installation: new drivers load only after a reboot"
+    REBOOT_NEEDED=1
 fi
 
+WIFI_CARDS=()
+for d in "$SYS"/bus/pci/devices/*; do
+    case "$(cat "$d/class" 2>/dev/null)" in 0x0280*) WIFI_CARDS+=("$d") ;; esac
+done
+wifi_ready() { ls "$1"/ieee80211/* >/dev/null 2>&1; }
 HAS_BT=0
 ls "$SYS"/class/bluetooth/hci* >/dev/null 2>&1 && HAS_BT=1
+USB_BT=0
 for i in "$SYS"/bus/usb/devices/*:*; do
-    [ "$(cat "$i/bInterfaceClass" 2>/dev/null)$(cat "$i/bInterfaceSubClass" 2>/dev/null)$(cat "$i/bInterfaceProtocol" 2>/dev/null)" = e00101 ] && HAS_BT=1
+    [ "$(cat "$i/bInterfaceClass" 2>/dev/null)$(cat "$i/bInterfaceSubClass" 2>/dev/null)$(cat "$i/bInterfaceProtocol" 2>/dev/null)" = e00101 ] && USB_BT=1
 done
-if [ "$HAS_BT" = 0 ]; then
-    info "no Bluetooth adapter found: bluetooth service left as it is"
-elif ! unit_exists bluetooth; then
-    warn "bluez is not installed: Bluetooth will not work"
-elif enabled bluetooth; then
-    info "bluetooth already enabled"
-else
-    sudo systemctl enable --now bluetooth.service
-    info "bluetooth enabled and started"
+[ "$USB_BT" = 1 ] && HAS_BT=1
+
+if [ "$MODULES_OK" = 1 ]; then
+    for d in "${WIFI_CARDS[@]}"; do
+        wifi_ready "$d" && continue
+        if broadcom_wl_needed && [ "$(cat "$d/vendor" 2>/dev/null)" = 0x14e4 ]; then
+            for m in b43 b43legacy bcma ssb brcmsmac brcmfmac; do sudo modprobe -r "$m" 2>/dev/null || true; done
+            MODS="wl"
+        else
+            MODS=$(modprobe -R "$(cat "$d/modalias" 2>/dev/null)" 2>/dev/null || true)
+        fi
+        for m in $MODS; do
+            sudo modprobe -r "$m" 2>/dev/null || true
+            sudo modprobe "$m" 2>/dev/null || warn "could not load the Wi-Fi driver $m"
+        done
+        [ -n "$MODS" ] && info "Wi-Fi driver loaded: $MODS"
+    done
+    if [ "$USB_BT" = 1 ] && ! ls "$SYS"/class/bluetooth/hci* >/dev/null 2>&1; then
+        sudo modprobe -r btusb 2>/dev/null || true
+        sudo modprobe btusb 2>/dev/null && info "Bluetooth driver loaded: btusb"
+    fi
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        ready=1
+        for d in "${WIFI_CARDS[@]}"; do wifi_ready "$d" || ready=0; done
+        [ "$USB_BT" = 1 ] && ! ls "$SYS"/class/bluetooth/hci* >/dev/null 2>&1 && ready=0
+        [ "$ready" = 1 ] && break
+        sleep 0.5
+    done
 fi
 
 for r in "$SYS"/class/rfkill/rfkill*; do
@@ -235,20 +247,66 @@ for r in "$SYS"/class/rfkill/rfkill*; do
     fi
 done
 
-HAS_WIFI_CARD=0
-for d in "$SYS"/bus/pci/devices/*; do
-    case "$(cat "$d/class" 2>/dev/null)" in 0x0280*) HAS_WIFI_CARD=1 ;; esac
-done
-if ls "$SYS"/class/ieee80211/phy* >/dev/null 2>&1; then
-    info "Wi-Fi adapter ready"
-elif [ "$HAS_WIFI_CARD" = 1 ]; then
-    warn "a Wi-Fi card is present but has no driver loaded yet"
-    REBOOT_NEEDED=1
+if unit_exists NetworkManager; then
+    OTHERS=()
+    NM_IWD=0
+    grep -rqsE '^[[:space:]]*wifi\.backend[[:space:]]*=[[:space:]]*iwd' "${NMCONF:-/etc/NetworkManager}/" && NM_IWD=1
+    for s in iwd systemd-networkd dhcpcd connman netctl wicd; do
+        [ "$s" = iwd ] && [ "$NM_IWD" = 1 ] && continue
+        enabled "$s" && OTHERS+=("$s")
+    done
+    if [ "${#OTHERS[@]}" -gt 0 ] && ! enabled NetworkManager; then
+        sudo systemctl disable --now "${OTHERS[@]/%/.service}"
+        info "${OTHERS[*]} stopped and disabled (they would fight with NetworkManager)"
+        case " ${OTHERS[*]} " in *" iwd "*) warn "Wi-Fi networks saved by iwd are not imported: connect again from the Wi-Fi page" ;; esac
+    fi
+    if ! enabled NetworkManager; then
+        sudo systemctl enable --now NetworkManager.service
+        info "NetworkManager enabled and started"
+    elif ! active NetworkManager; then
+        sudo systemctl start NetworkManager.service
+        info "NetworkManager started"
+    else
+        info "NetworkManager already running"
+    fi
+    if [ "${#WIFI_CARDS[@]}" -gt 0 ] && command -v nmcli >/dev/null 2>&1; then
+        nmcli radio wifi on 2>/dev/null || true
+    fi
 else
-    info "no Wi-Fi adapter found"
+    warn "NetworkManager is not installed: the Wi-Fi page of the control center needs it"
+fi
+
+if [ "$HAS_BT" = 0 ]; then
+    info "no Bluetooth adapter found: bluetooth service left as it is"
+elif ! unit_exists bluetooth; then
+    warn "bluez is not installed: Bluetooth will not work"
+elif ! enabled bluetooth; then
+    sudo systemctl enable --now bluetooth.service
+    info "bluetooth enabled and started"
+elif ! active bluetooth; then
+    sudo systemctl start bluetooth.service
+    info "bluetooth started"
+else
+    info "bluetooth already running"
+fi
+
+if [ "${#WIFI_CARDS[@]}" -eq 0 ]; then
+    if ls "$SYS"/class/ieee80211/phy* >/dev/null 2>&1; then info "Wi-Fi ready"; else info "no Wi-Fi adapter found"; fi
+else
+    for d in "${WIFI_CARDS[@]}"; do
+        if wifi_ready "$d"; then
+            info "Wi-Fi ready"
+        else
+            warn "the Wi-Fi card $(basename "$d") has no working driver yet"
+            REBOOT_NEEDED=1
+        fi
+    done
+fi
+if [ "$USB_BT" = 1 ]; then
+    if ls "$SYS"/class/bluetooth/hci* >/dev/null 2>&1; then info "Bluetooth ready"; else warn "the Bluetooth adapter has no working driver yet"; REBOOT_NEEDED=1; fi
 fi
 if [ "$REBOOT_NEEDED" = 1 ]; then
-    warn "reboot to load the new drivers and services; if Wi-Fi is still missing, the card needs a driver not in the kernel"
+    warn "reboot once; if Wi-Fi or Bluetooth are still missing after that, the card needs a driver that is not in the kernel"
 fi
 
 BT_CONF=${BT_CONF:-/etc/bluetooth/main.conf}
