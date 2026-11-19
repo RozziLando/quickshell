@@ -9,6 +9,7 @@ Item {
 
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
+    property int cardRadius: Theme.s(15)
 
     property bool active: visible
 
@@ -364,8 +365,8 @@ Item {
                     required property var modelData
                     readonly property bool hot: modelData.value !== null && modelData.value >= 85
                     width: (parent.width - root.u(8) * (root.tempCards.length - 1)) / root.tempCards.length
-                    height: root.u(34)
-                    radius: root.u(10)
+                    height: root.u(42)
+                    radius: root.cardRadius
                     color: Theme.card
                     border.width: 1
                     border.color: Theme.cardBorder
@@ -393,6 +394,7 @@ Item {
         }
 
         BackgroundApps {
+            radius: root.cardRadius
             sizeFactor: root.sizeFactor
             active: root.active
         }

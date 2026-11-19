@@ -5,18 +5,20 @@ import Quickshell
 Singleton {
     id: root
 
-    readonly property string family: loader.name
-    readonly property bool ready: Theme.iconFont !== "classic" && loader.status === FontLoader.Ready
-
-    readonly property string fontFile: ({
-        "phosphor-light": "Phosphor-Light.ttf",
-        "phosphor-bold": "Phosphor-Bold.ttf",
-        "phosphor-fill": "Phosphor-Fill.ttf"
-    })[Theme.iconFont] || "Phosphor.ttf"
+    readonly property string fontName: {
+        var v = String(Theme.iconFont || "").trim().toLowerCase()
+        if (v === "" || v === "phosphor" || v === "phosphor-regular") return "Phosphor"
+        var m = v.match(/^phosphor-([a-z]+)$/)
+        return m ? "Phosphor-" + m[1].charAt(0).toUpperCase() + m[1].slice(1) : "Phosphor"
+    }
+    readonly property bool installed: Qt.fontFamilies().indexOf(fontName) >= 0
+    readonly property string family: loader.status === FontLoader.Ready ? loader.name : fontName
+    readonly property bool ready: Theme.iconFont !== "classic"
+                                  && (loader.status === FontLoader.Ready || installed)
 
     FontLoader {
         id: loader
-        source: "file://" + Quickshell.shellPath("assets/fonts/" + root.fontFile)
+        source: root.installed ? "" : "file://" + Quickshell.shellPath("assets/fonts/" + root.fontName + ".ttf")
     }
 
     readonly property var codes: ({
@@ -58,7 +60,15 @@ Singleton {
         "headphones": 0xe2a6,
         "close": 0xe4f6,
         "palette": 0xe6c8,
-        "cpu": 0xe610
+        "cpu": 0xe610,
+        "gear": 0xe270,
+        "info": 0xe2ce,
+        "pencil": 0xe3b4,
+        "plus": 0xe3d4,
+        "image": 0xe2ca,
+        "update": 0xe028,
+        "copy": 0xe1ca,
+        "font": 0xe6ee
     })
 
     function glyph(kind, level) {

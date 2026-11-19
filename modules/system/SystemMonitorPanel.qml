@@ -48,6 +48,7 @@ Item {
         y: root.pad
         width: parent.width - 2 * x
         sizeFactor: root.sizeFactor
+        cardRadius: root.island.defaultRadius
         active: root.shown
 
         visible: root.shown

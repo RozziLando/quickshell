@@ -114,6 +114,11 @@ Singleton {
         refreshWallpapers()
     }
 
+    Connections {
+        target: Theme
+        function onWallpaperDirChanged() { root.refreshWallpapers() }
+    }
+
     function setInitialWallpaper() {
         if (initialDone || !wallpapersListed || !currentChecked) return
         initialDone = true
@@ -153,14 +158,7 @@ Singleton {
             return
         }
 
-        settingsFile.reload()
-        var settings
-        try { settings = JSON.parse(settingsFile.text()) } catch (e) {
-            console.warn("theme.json non valido, tema non salvato:", e)
-            return
-        }
-        settings.theme = id
-        settingsFile.setText(JSON.stringify(settings, null, 2) + "\n")
+        if (!Settings.set("theme", id)) return
 
         if (t.terminal) kittyFile.setText(kittyConf(t))
         gtkFile.setText(gtkCss(t))
@@ -189,25 +187,54 @@ Singleton {
         return ""
     }
 
+    function toList(value) {
+        if (typeof value === "string") return [value]
+        if (value && typeof value === "object" && typeof value.length === "number")
+            return Array.prototype.slice.call(value)
+        return []
+    }
+
     function wallpaperNames(value) {
-        var list = typeof value === "string" ? [value] : Array.isArray(value) ? value : []
+        var list = toList(value)
         return list.map(function (w) { return String(w || "").trim().split("/").pop() })
                    .filter(function (w) { return w !== "" })
     }
 
+    function wallpapersFor(id) {
+        var out = []
+        wallpaperNames(Theme.themeWallpapers[id]).forEach(function (n) {
+            var f = root.wallpaperFile(n)
+            if (f !== "" && out.indexOf(f) < 0) out.push(f)
+        })
+        return out
+    }
+
+    function themesFor(file) {
+        var list = toList(Theme.wallpaperThemes[file])
+        var out = []
+        list.forEach(function (id) {
+            id = String(id || "")
+            if (id !== "" && root.find(id) && out.indexOf(id) < 0) out.push(id)
+        })
+        return out
+    }
+
+    function randomOf(list) {
+        return list.length > 0 ? list[Math.floor(Math.random() * list.length)] : ""
+    }
+
+    function chosenWallpaper(id) { return randomOf(wallpapersFor(id)) }
+    function chosenTheme(file) { return randomOf(themesFor(file)) }
+
     function pickDefaultWallpaper(t) {
+        var chosen = chosenWallpaper(t.id)
+        if (chosen !== "") return chosen
         var list = wallpaperNames(t.defaultWallpapers)
         var found = list.map(wallpaperFile).filter(function (w) { return w !== "" })
         if (found.length > 0) list = found
         return list.length > 0 ? list[Math.floor(Math.random() * list.length)] : ""
     }
 
-    FileView {
-        id: settingsFile
-        path: Quickshell.shellPath("theme.json")
-        blockAllReads: true
-        blockWrites: true
-    }
     FileView {
         id: kittyFile
         path: root.home + "/.config/kitty/quickshell-theme.conf"
@@ -338,6 +365,8 @@ Singleton {
     function favoriteThemeFor(path) {
         var file = String(path || "").split("/").pop()
         if (file === "") return ""
+        var chosen = chosenTheme(file)
+        if (chosen !== "") return chosen
         var stem = file.replace(/\.[^.]*$/, "")
         var ids = []
         for (var i = 0; i < themes.length; i++) {

@@ -7,6 +7,7 @@ import qs.modules.media
 import qs.modules.system
 import qs.services
 import qs.lock
+import qs.settings
 
 ShellRoot {
     HyprShadowSync {}
@@ -19,6 +20,10 @@ ShellRoot {
     AudioAutoSwitch {}
 
     readonly property var bluetoothAuto: BluetoothAuto
+    readonly property var settings: Settings
+    readonly property var updater: Updater
+
+    SettingsWindow {}
 
     Lock { id: lockModule }
 

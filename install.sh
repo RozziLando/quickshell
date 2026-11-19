@@ -81,6 +81,7 @@ ARCH_PACKAGES=(
     diffutils
     qt6-imageformats
     inter-font noto-fonts-emoji noto-fonts-cjk
+    zenity curl pciutils
 )
 FEDORA_OPTIONAL=(
     linux-firmware iwlwifi-mvm-firmware iwlwifi-dvm-firmware realtek-firmware
@@ -93,6 +94,7 @@ FEDORA_PACKAGES=(
     playerctl
     grim slurp wl-clipboard libnotify glib2 diffutils
     qt6-qtimageformats rsms-inter-fonts google-noto-color-emoji-fonts google-noto-sans-cjk-fonts
+    zenity curl pciutils
 )
 
 SYS=${SYS:-/sys}

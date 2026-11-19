@@ -23,12 +23,19 @@ Singleton {
     readonly property bool autoHide: data.autoHide
     readonly property string monitor: String(data.monitor || "").trim()
 
+    function isMonitor(screen) {
+        return monitor !== "" && !!screen
+            && (screen.name === monitor || String(screen.model || "").trim() === monitor)
+    }
+
     readonly property string fontFamily: data.fontFamily
     readonly property string iconFont: data.iconFont
 
     readonly property string themeId: data.theme
     readonly property string wallpaperDir: data.wallpaperDir.replace(/^~/, Quickshell.env("HOME"))
     readonly property string wallpaperTransition: data.wallpaperTransition
+    readonly property var themeWallpapers: data.themeWallpapers || ({})
+    readonly property var wallpaperThemes: data.wallpaperThemes || ({})
 
     function fileUrl(path) {
         return "file://" + String(path).split("/").map(encodeURIComponent).join("/")
@@ -87,6 +94,7 @@ Singleton {
     readonly property bool networkMonitor: data.networkMonitor
     readonly property bool backgroundApps: data.backgroundApps
     readonly property bool displayOnDesktop: data.displayOnDesktop
+    readonly property bool vscodeThemeSync: data.vscodeThemeSync
 
     FileView {
         id: settingsFile
@@ -125,6 +133,8 @@ Singleton {
             property bool networkMonitor: false
             property bool backgroundApps: true
             property bool displayOnDesktop: false
+            property var themeWallpapers: ({})
+            property var wallpaperThemes: ({})
         }
     }
 

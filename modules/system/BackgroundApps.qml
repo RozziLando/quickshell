@@ -249,6 +249,7 @@ Rectangle {
                 required property string modelData
                 readonly property var app: root.appMap[modelData] || null
                 width: ListView.view ? ListView.view.width : 0
+                radius: root.radius
                 sizeFactor: root.sizeFactor
                 icon: "app"
                 iconSource: app ? app.icon : ""

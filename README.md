@@ -2,7 +2,8 @@
 
 A Hyprland shell built on Quickshell (>= 0.3): an island at the top of the
 screen with clock, notifications, launcher, media player, control center,
-lock screen and login screen. Works on **Arch** and **Fedora**.
+lock screen, login screen and a settings window. Works on **Arch** and
+**Fedora**.
 
 ## Screenshots
 
@@ -88,10 +89,12 @@ after three failures it opens `agreety`, the text login of greetd, which
 starts Hyprland too. So you can always log in, never a black screen.
 
 **Profile picture.** To show your photo on the lock screen and the login
-screen, put it in `assets/` named `avatar.png`, `avatar.jpg` or
-`avatar.jpeg` (a square image looks best). Without it the circle shows the
-first letter of your user name. The file is not part of the download, so
-copy it by hand on each PC.
+screen, click the circle at the bottom left of the [settings](#settings)
+and pick an image: it is cropped to a square and saved as
+`assets/avatar.png`. By hand, put it in `assets/` named `avatar.png`,
+`avatar.jpg` or `avatar.jpeg` (a square image looks best). Without it the
+circle shows the first letter of your user name. The file is not part of the
+download, so set it on each PC.
 
 | Option | Effect |
 |---|---|
@@ -99,9 +102,16 @@ copy it by hand on each PC.
 | `./install.sh --no-packages` | skip the package installation |
 | `./install.sh --laptop` / `--desktop` | force the laptop or desktop packages instead of detecting them |
 
-**Updating.** The same command with `--exclude` replaces the files of the
-shell and keeps your `theme.json` (your avatar and wallpapers are not part of
-the download, so they stay too):
+**Updating.** When a newer version is on GitHub, the settings window shows
+an **Update** button next to your picture (and in *System*). It downloads
+the new version, replaces the files of the shell, removes the files that an
+earlier update installed and the new version no longer has, keeps
+`theme.json`, the avatar, the wallpapers and the themes you added, then
+restarts the shell. The installed version is in
+`VERSION` (filled in by GitHub in the download). A folder that is a git
+clone is updated with `git pull --ff-only` instead.
+
+By hand, the same command as the installation with `--exclude` does it too:
 
 ```sh
 curl -L https://github.com/RozziLando/quickshell/archive/refs/heads/main.tar.gz \
@@ -109,7 +119,44 @@ curl -L https://github.com/RozziLando/quickshell/archive/refs/heads/main.tar.gz 
 ```
 
 New options added to `theme.json` by an update use their default value until
-you add them to your file.
+you change them.
+
+## Settings
+
+*Quickshell Settings* changes everything in `theme.json` with switches,
+sliders and menus, live. Open it from the app launcher (the shell creates
+`~/.local/share/applications/quickshell-settings.desktop` by itself) or with
+`qs ipc call settings open`. It is a fixed-size floating window, part of the
+shell: nothing to install.
+
+- **General**: scale, main monitor (by name, e.g. `OMEN by HP 25`: it stays
+  the same on any port), Bluetooth on startup (only with a Bluetooth
+  adapter), network monitor, background apps, monitor brightness (only on
+  desktops), VS Code theme sync.
+- **Appearance**: font (every installed font), icons (every Phosphor weight
+  found in `assets/fonts` or installed, or the classic drawn icons), island
+  type, minimal, auto hide, glow, dark shadow, glass and its opacity.
+- **Login & Lock**: login screen and its blur, lock screen and its blur,
+  sleep, lock and sleep after inactivity. The login screen needs
+  `sudo greeter/install.sh` after a change: the page says when and copies the
+  command.
+- **Wallpapers & Themes**: the same wallpaper and theme rows as the launcher.
+  The pencil on the selected wallpaper chooses one or more themes for it
+  (with suggestions from its colors); the pencil on the selected theme
+  chooses one or more wallpapers for it. With more than one, one is picked
+  at random each time. **+**
+  copies new images into the wallpaper folder. Also the folder and the
+  transition.
+- **System**: your system like `fastfetch`, with the logo of the
+  distribution in the color of the theme and the use of memory, swap and
+  disks. The logo is not part of the shell: it is read from the files of the
+  distribution (`LOGO` in `/etc/os-release`, from `/usr/share/pixmaps` or the
+  icon theme) and recolored live; its white parts become see-through. To use
+  another one put it in `assets/logos/<ID>.svg` or `.png` (`<ID>` as in
+  `/etc/os-release`).
+
+Every *i* explains its option. Files and folders are picked with the file
+chooser of the system (`zenity`, or `kdialog`).
 
 ## Dependencies
 
@@ -130,6 +177,7 @@ you add them to your file.
 | .webp wallpapers | `qt6-imageformats` | `qt6-qtimageformats` |
 | Fonts | `inter-font` `noto-fonts-emoji` `noto-fonts-cjk` | `rsms-inter-fonts` `google-noto-color-emoji-fonts` `google-noto-sans-cjk-fonts` |
 | Login screen (installed by `greeter/install.sh`) | `greetd` `greetd-agreety` `cage` | `greetd` `cage` |
+| Settings: file chooser, updates, GPU name | `zenity` `curl` `pciutils` | `zenity` `curl` `pciutils` |
 
 `install.sh` installs all of them. The icon font (Phosphor) ships with the
 shell in `assets/fonts/`.
@@ -153,6 +201,9 @@ terminal, a script or a keybind. `qs ipc show` lists everything available.
 | `qs ipc call theme set <id>` | apply a theme (shell, kitty, Nautilus, wallpaper), e.g. `theme set nord` |
 | `qs ipc call lock lock` | lock the screen (with `"lockScreen": true`) |
 | `qs ipc call lock suspend` | lock and suspend |
+| `qs ipc call settings open` | open the settings window (or bring it to the front) |
+| `qs ipc call settings page <name>` | open it on a page: `general`, `appearance`, `lock`, `wallpapers`, `system` |
+| `qs ipc call settings toggle` / `close` | open / close it |
 
 ## Keybinds
 
@@ -226,14 +277,14 @@ label `<name> (Quickshell)`, raise `version` and run `scripts/vscode.sh`.
 ## theme.json
 
 All the settings live in `theme.json`, in this folder. Changes apply as soon
-as the file is saved.
+as the file is saved. The [settings window](#settings) edits the same file.
 
 | Option | Values | Meaning |
 |---|---|---|
 | `scale` | number (0.5–3) | size of the whole shell |
-| `monitor` | `""` or a name like `"HDMI-A-1"`, `"DP-1"`, `"eDP-1"` | screen of the island (`hyprctl monitors`). Empty or not connected: the laptop screen, otherwise the first one |
+| `monitor` | `""`, a model like `"OMEN by HP 25"` or a port like `"HDMI-A-1"`, `"DP-1"`, `"eDP-1"` | screen of the island, the lock screen and the login screen (`hyprctl monitors`: `model` or `name`). Empty or not connected: the laptop screen, otherwise the first one |
 | `fontFamily` | font name | shell font |
-| `iconFont` | `phosphor`, `phosphor-light`, `phosphor-bold`, `phosphor-fill`, `classic` | icon style |
+| `iconFont` | `phosphor`, `phosphor-light`, `phosphor-bold`, `phosphor-fill`, `classic` (or `phosphor-<weight>` for another Phosphor weight in `assets/fonts` or installed) | icon style |
 | `islandStyle` | `"floating"` / `"attached"` | detached island with side circles, or attached to the top edge |
 | `minimal` | `true` / `false` | only the clock at rest, icons appear on hover |
 | `autoHide` | `true` / `false` | hide the island when windows are open (hover the top edge to bring it back) |
@@ -251,11 +302,13 @@ as the file is saved.
 | `bluetoothOnStartup` | `true` / `false` | Bluetooth on or off at the first shell start after boot |
 | `theme` | theme id | `catppuccin-mocha`, `cloudy-quasar`, `dracula`, `everforest`, `gruvbox`, `iceberg`, `kanagawa`, `midnight`, `night-owl`, `nord`, `one-dark`, `rose-pine`, `solarized`, `sonokai`, `tokyo-night`, `xcode` (files in `themes/`) |
 | `wallpaperDir` | folder | wallpapers shown in the launcher (`Tab` switches to themes and wallpapers) |
-| `wallpaperTransition` | `grow`, `outer`, `wave`, `wipe`, `fade`, `left`, `right`, `top`, `bottom`, `random`, `simple` | wallpaper change animation (awww) |
+| `wallpaperTransition` | `grow`, `outer`, `wave`, `wipe`, `fade`, `simple`, `left`, `right`, `top`, `bottom`, `center`, `any`, `random`, `none` | wallpaper change animation (awww) |
 | `vscodeThemeSync` | `true` / `false` | VS Code follows the shell theme (needs the [VS Code extension](#vs-code-themes)); `false`: VS Code keeps its own theme |
 | `networkMonitor` | `true` / `false` | system monitor (right click on the island): also shows the network speed, download and upload of all the network cards |
 | `backgroundApps` | `true` / `false` | system monitor: the "Background apps" list under the temperatures (apps with open windows; the × closes all the processes of that app). A click on an app takes you to its most recent window |
 | `displayOnDesktop` | `true` / `false` | desktop PC: show the Display slider and page in the control center too. The slider sets the brightness of the monitors through DDC/CI (`ddcutil`, all monitors together; DDC/CI must be on in the monitor menu). Laptops always have them |
+| `wallpaperThemes` | `{ "wallpaper.png": ["theme-id", ...] }` | the themes that go with a wallpaper: picking it applies one of them, at random if more (the pencil on a wallpaper in the settings). Missing: automatic, by colors |
+| `themeWallpapers` | `{ "theme-id": ["wallpaper.png", ...] }` | the wallpapers that go with a theme: applying it sets one of them, at random if more (the pencil on a theme in the settings). Missing: the theme's own `defaultWallpapers` |
 
 ## Wallpapers and themes
 
@@ -282,3 +335,7 @@ list them in `preferredBy` in `themes/<id>.json`:
 
 `"defaultWallpapers"` is something else: the wallpapers set when that theme
 is applied (one at random if there are more, `[]` = keep the current one).
+
+The pencils in the [settings](#settings) do the same for you, without
+touching the theme files: they write `wallpaperThemes` and `themeWallpapers`
+in `theme.json`, which come before `preferredBy` and `defaultWallpapers`.

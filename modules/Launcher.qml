@@ -294,49 +294,16 @@ Item {
             selectTheme(fav)
             return
         }
-        analyzer.analyze(Theme.fileUrl(item.path), item.path)
-    }
-
-    Canvas {
-        id: analyzer
-        width: 64
-        height: 36
-        opacity: 0.01
-        z: -1
-        property string source: ""
-        property string path: ""
-
-        function analyze(url, file) {
-            if (source !== "" && source !== url) unloadImage(source)
-            source = url
-            path = file
-            if (isImageLoaded(url)) requestPaint()
-            else loadImage(url)
-        }
-
-        function cancel() {
-            if (source !== "") unloadImage(source)
-            source = ""
-            path = ""
-        }
-
-        onImageLoaded: if (source !== "" && isImageLoaded(source)) requestPaint()
-
-        onPaint: {
-            if (source === "" || !isImageLoaded(source)) return
-            var ctx = getContext("2d")
-            ctx.reset()
-            ctx.drawImage(source, 0, 0, width, height)
-            var d = ctx.getImageData(0, 0, width, height).data
-            unloadImage(source)
-            source = ""
-            var id = ThemeManager.bestThemeFor(d, path)
+        analyzer.analyze(item.path, function (pixels) {
+            var id = ThemeManager.bestThemeFor(pixels, item.path)
             if (id) {
                 ThemeManager.apply(id, true)
                 root.selectTheme(id)
             }
-        }
+        })
     }
+
+    WallpaperAnalyzer { id: analyzer }
 
     function selectTheme(id) {
         var r = filterThemes(search.text)
@@ -701,39 +668,10 @@ Item {
                     opacity: selected ? 1 : 0.55
                     Behavior on opacity { NumberAnimation { duration: 160 } }
 
-                    ClippingRectangle {
+                    WallpaperThumb {
                         anchors.fill: parent
                         radius: root.innerRadius
-                        color: Theme.surface
-
-                        Image {
-                            id: thumbImage
-                            property bool fromThumb: wpCard.modelData.hasThumb
-                            anchors.fill: parent
-                            source: Theme.fileUrl(fromThumb ? wpCard.modelData.thumb
-                                                            : wpCard.modelData.path)
-                            readonly property int needW: Theme.px(wallpaperList.cardW, thumbImage)
-                            readonly property int needH: Theme.px(wallpaperList.height, thumbImage)
-                            sourceSize: fromThumb ? undefined : Qt.size(needW, needH)
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            cache: false
-                            onStatusChanged: {
-                                if (status === Image.Error && fromThumb) {
-                                    fromThumb = false
-                                    return
-                                }
-                                if (status !== Image.Ready || wpCard.modelData.thumb === "") return
-                                if (fromThumb) {
-                                    if (implicitWidth + 1 < needW || implicitHeight + 1 < needH)
-                                        fromThumb = false
-                                    return
-                                }
-                                var file = wpCard.modelData.thumb
-                                grabToImage(function (result) { result.saveToFile(file) },
-                                            Qt.size(needW, needH))
-                            }
-                        }
+                        wallpaper: wpCard.modelData
                     }
 
                     Rectangle {

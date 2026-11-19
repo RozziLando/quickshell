@@ -25,7 +25,7 @@ Scope {
     readonly property string mainScreenName: {
         var list = Quickshell.screens
         for (var i = 0; i < list.length; i++)
-            if (Theme.monitor !== "" && list[i].name === Theme.monitor) return list[i].name
+            if (Theme.isMonitor(list[i])) return list[i].name
         for (i = 0; i < list.length; i++)
             if (/^(eDP|LVDS|DSI)/.test(list[i].name)) return list[i].name
         return list.length > 0 ? list[0].name : ""

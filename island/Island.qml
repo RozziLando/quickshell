@@ -9,10 +9,8 @@ PanelWindow {
     id: win
     function pickScreen() {
         var list = Quickshell.screens
-        var wanted = Theme.monitor
-        if (wanted !== "")
-            for (var j = 0; j < list.length; j++)
-                if (list[j].name === wanted) return list[j]
+        for (var j = 0; j < list.length; j++)
+            if (Theme.isMonitor(list[j])) return list[j]
         for (var i = 0; i < list.length; i++)
             if (/^(eDP|LVDS|DSI)/.test(list[i].name)) return list[i]
         return list.length > 0 ? list[0] : null

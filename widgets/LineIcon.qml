@@ -267,6 +267,53 @@ Canvas {
             ctx.beginPath(); ctx.moveTo(6, 6); ctx.lineTo(18, 18); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(18, 6); ctx.lineTo(6, 18); ctx.stroke()
             break
+        case "gear":
+            ctx.beginPath(); ctx.arc(12, 12, 3, 0, 2 * Math.PI); ctx.stroke()
+            ctx.beginPath(); ctx.arc(12, 12, 6.5, 0, 2 * Math.PI); ctx.stroke()
+            for (i = 0; i < 8; i++) {
+                a = i * Math.PI / 4
+                ctx.beginPath()
+                ctx.moveTo(12 + 6.5 * Math.cos(a), 12 + 6.5 * Math.sin(a))
+                ctx.lineTo(12 + 9.5 * Math.cos(a), 12 + 9.5 * Math.sin(a))
+                ctx.stroke()
+            }
+            break
+        case "info":
+            ctx.beginPath(); ctx.arc(12, 12, 9, 0, 2 * Math.PI); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(12, 11); ctx.lineTo(12, 16.5); ctx.stroke()
+            ctx.beginPath(); ctx.arc(12, 7.8, 1.2, 0, 2 * Math.PI); ctx.fill()
+            break
+        case "pencil":
+            ctx.beginPath()
+            ctx.moveTo(4, 20); ctx.lineTo(4.8, 15.6); ctx.lineTo(15.5, 4.9)
+            ctx.lineTo(19.1, 8.5); ctx.lineTo(8.4, 19.2); ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(12.8, 7.6); ctx.lineTo(16.4, 11.2); ctx.stroke()
+            break
+        case "plus":
+            ctx.beginPath(); ctx.moveTo(12, 5); ctx.lineTo(12, 19); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(5, 12); ctx.lineTo(19, 12); ctx.stroke()
+            break
+        case "image":
+            ctx.beginPath(); ctx.roundedRect(3.5, 5, 17, 14, 2, 2); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(3.5, 16.5); ctx.lineTo(9, 11); ctx.lineTo(14, 16)
+            ctx.lineTo(16, 14); ctx.lineTo(20.5, 18); ctx.stroke()
+            ctx.beginPath(); ctx.arc(15.5, 9.5, 1.4, 0, 2 * Math.PI); ctx.fill()
+            break
+        case "update":
+            ctx.beginPath(); ctx.arc(12, 12, 9, 0, 2 * Math.PI); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(12, 7.5); ctx.lineTo(12, 16); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(8.5, 12.5); ctx.lineTo(12, 16); ctx.lineTo(15.5, 12.5); ctx.stroke()
+            break
+        case "copy":
+            ctx.beginPath(); ctx.roundedRect(8.5, 8.5, 11, 11, 2, 2); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(15.5, 4.5); ctx.lineTo(4.5, 4.5); ctx.lineTo(4.5, 15.5); ctx.stroke()
+            break
+        case "font":
+            ctx.beginPath(); ctx.moveTo(3, 18); ctx.lineTo(8, 6); ctx.lineTo(13, 18); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(5, 14); ctx.lineTo(11, 14); ctx.stroke()
+            ctx.beginPath(); ctx.arc(17.5, 15, 3, 0, 2 * Math.PI); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(20.5, 11.5); ctx.lineTo(20.5, 18); ctx.stroke()
+            break
         }
     }
 }
