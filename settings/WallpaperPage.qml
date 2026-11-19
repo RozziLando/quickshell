@@ -43,7 +43,16 @@ SettingsPage {
     onVisibleChanged: if (visible) enter()
     Component.onCompleted: enter()
 
+    property bool settled: false
+    Timer {
+        id: settleTimer
+        interval: 600
+        onTriggered: page.settled = true
+    }
+
     function enter() {
+        settled = false
+        settleTimer.restart()
         startedWith = ""
         wallpaperChosen = false
         ThemeManager.refresh()
@@ -331,7 +340,7 @@ SettingsPage {
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
-            highlightMoveDuration: 220
+            highlightMoveDuration: page.settled ? 220 : 0
             snapMode: PathView.SnapToItem
             path: Path {
                 startX: wallpaperList.width / 2 - wallpaperList.pathItemCount * wallpaperList.step / 2
@@ -341,7 +350,10 @@ SettingsPage {
                     y: wallpaperList.height / 2
                 }
             }
-            onCountChanged: page.selectCurrentWallpaper()
+            onCountChanged: {
+                if (!page.settled) settleTimer.restart()
+                page.selectCurrentWallpaper()
+            }
 
             Timer { id: wpWheel; interval: 140 }
             WheelHandler {
@@ -475,7 +487,7 @@ SettingsPage {
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
             highlightRangeMode: PathView.StrictlyEnforceRange
-            highlightMoveDuration: 220
+            highlightMoveDuration: page.settled ? 220 : 0
             snapMode: PathView.SnapToItem
             path: Path {
                 startX: themeList.width / 2 - themeList.pathItemCount * themeList.step / 2
@@ -485,7 +497,10 @@ SettingsPage {
                     y: themeList.height / 2
                 }
             }
-            onCountChanged: page.selectCurrentTheme()
+            onCountChanged: {
+                if (!page.settled) settleTimer.restart()
+                page.selectCurrentTheme()
+            }
 
             Timer { id: themeWheel; interval: 140 }
             WheelHandler {

@@ -216,11 +216,24 @@ Suggested binds for the Hyprland config (add them yourself):
 | `SUPER + ESCAPE` | `qs ipc call power toggle` |
 | `SUPER + S` | `qs ipc call screenshot region` |
 | `SUPER + A` | `qs ipc call screenshot save` |
+| `SUPER + COMMA` | `qs ipc call settings open` (settings window) |
 | `SUPER + Q` | `pkill -x quickshell \|\| quickshell` (restart the shell) |
 | Play / Pause / Next / Previous | `playerctl …; qs ipc call media peek` |
 | Volume up / down / mute, mic mute | `wpctl …` (the island shows the volume bar by itself) |
 | Screen brightness (laptops) | `brightnessctl …` (the island shows the bar by itself) |
 | Keyboard backlight (if present) | `brightnessctl -d <device> …` |
+
+For example, the settings window on `SUPER + ,` in a Lua config:
+
+```lua
+hl.bind(mainMod .. " + COMMA", hl.dsp.exec_cmd("qs ipc call settings open"))
+```
+
+or in a classic `hyprland.conf`:
+
+```ini
+bind = SUPER, COMMA, exec, qs ipc call settings open
+```
 
 Other useful commands:
 
