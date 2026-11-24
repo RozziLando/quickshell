@@ -170,7 +170,7 @@ Item {
     readonly property rect pillRect: {
         var p = place.pill
         if (!pillMode || !p || !stage || typeof p.mapToItem !== "function") return Qt.rect(0, 0, 0, 0)
-        var dep = p.x + p.y + p.width + p.height + stage.barRect.x + stage.barRect.y
+        var dep = p.x + p.y + p.width + p.height + (p.shift || 0) + stage.barRect.x + stage.barRect.y
         if (p.parent) dep += p.parent.x + p.parent.y
         if (p.parent && p.parent.parent) dep += p.parent.parent.x + p.parent.parent.y
         var q = p.mapToItem(stage.contentItem, 0, 0)
