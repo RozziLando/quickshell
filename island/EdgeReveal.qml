@@ -11,7 +11,7 @@ PanelWindow {
 
     screen: island.screen
     reloadableId: "edge-" + (island.screen ? island.screen.name : "none")
-    visible: !island.remapping && island.autoHide && island.autoHidden && !island.fullscreen
+    visible: !island.remapping && ((island.autoHide && island.autoHidden) || island.fullscreen)
 
     anchors {
         top: true
@@ -22,7 +22,7 @@ PanelWindow {
                                 : Math.max(3, Theme.s(3))
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.namespace: "quickshell-edge"
 
@@ -49,8 +49,24 @@ PanelWindow {
     }
 
     Item {
+        id: strip
         anchors.fill: parent
         HoverHandler { id: hover }
+    }
+
+    Item {
+        id: hole
+        x: (edge.width - edge.island.width) / 2
+        width: edge.island.width
+        height: edge.height
+    }
+
+    mask: Region {
+        item: strip
+        Region {
+            item: edge.island.peek ? hole : null
+            intersection: Intersection.Subtract
+        }
     }
 
     Binding {

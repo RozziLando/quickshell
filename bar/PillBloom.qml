@@ -8,9 +8,11 @@ Item {
     required property var host
     required property var stage
 
-    readonly property rect r: host.bloomRect
+    property rect r: host.bloomRect
+    property real radius: host.bloomRadius
+    property bool shown: host.bloomShown
 
-    visible: host.bloomShown
+    visible: shown
     x: 0
     y: 0
     width: stage.width
@@ -34,14 +36,14 @@ Item {
         y: bloom.r.y
         width: bloom.r.width
         height: bloom.r.height
-        radius: Math.min(bloom.host.bloomRadius, width / 2, height / 2)
+        radius: Math.min(bloom.radius, width / 2, height / 2)
     }
 
     EdgeShape {
         visible: bloom.stage.pillsAttached
         stage: bloom.stage
         box: bloom.r
-        radius: bloom.host.bloomRadius
+        radius: bloom.radius
         readonly property real a0: bloom.stage.vertical ? bloom.r.y : bloom.r.x
         readonly property real a1: a0 + (bloom.stage.vertical ? bloom.r.height : bloom.r.width)
         flushStart: a0 <= bloom.stage.barStart + 0.5

@@ -15,7 +15,6 @@ Item {
     property int requestRadius: 0
     property string grabOwner: ""
     property bool grabReady: false
-    property bool openHovered: false
 
     readonly property int topRadius: 0
     readonly property bool floating: true
@@ -35,12 +34,29 @@ Item {
         var isNew = owner !== id
         var fresh = !active
         if (fresh) snap = true
-        if (isNew && stage) place = stage.placementFor(id, toast, host)
+        if (isNew && stage) {
+            var next = stage.placementFor(id, toast, host)
+            var moved = active && pillMode && place.pill && (next.mode !== "pill" || next.pill !== place.pill)
+            if (moved) {
+                ghostPill = place.pill
+                ghostStart = bloomRect
+                ghostRadius = bloomRadius
+                gp = 0
+                ghostOn = true
+                ghostAnim.restart()
+            }
+            if (moved && next.mode === "pill") {
+                snap = true
+                regrow = true
+            }
+            place = next
+        }
         requestW = w
         requestH = h
         lastW = w
         lastH = h
         snap = false
+        regrow = false
         wantsKeyboard = keyboard === true
         if (radius !== undefined) requestRadius = radius
         else if (isNew) requestRadius = 0
@@ -193,8 +209,46 @@ Item {
     readonly property rect refFull: active && pillMode ? bloomFull : lastFull
     readonly property bool sizeAnimate: pillMode && !snap
 
-    property real bw: active && pillMode ? bloomFull.width : pillRect.width
-    property real bh: active && pillMode ? bloomFull.height : pillRect.height
+    property bool regrow: false
+    property real bw: active && pillMode && !regrow ? bloomFull.width : pillRect.width
+    property real bh: active && pillMode && !regrow ? bloomFull.height : pillRect.height
+
+    property Item ghostPill: null
+    property rect ghostStart: Qt.rect(0, 0, 0, 0)
+    property real ghostRadius: 0
+    property bool ghostOn: false
+    property real gp: 0
+    NumberAnimation {
+        id: ghostAnim
+        target: host
+        property: "gp"
+        from: 0
+        to: 1
+        duration: 320
+        easing.type: Easing.OutBack
+        easing.overshoot: 0.5
+        onFinished: {
+            host.ghostOn = false
+            host.ghostPill = null
+        }
+    }
+    readonly property rect ghostPillRect: {
+        var p = ghostPill
+        if (!p || !stage || typeof p.mapToItem !== "function") return ghostStart
+        var dep = p.x + p.y + p.width + p.height + (p.shift || 0) + stage.barRect.x + stage.barRect.y
+        if (p.parent) dep += p.parent.x + p.parent.y
+        if (p.parent && p.parent.parent) dep += p.parent.parent.x + p.parent.parent.y
+        var q = p.mapToItem(stage.contentItem, 0, 0)
+        return Qt.rect(q.x, q.y, p.width, p.height)
+    }
+    readonly property rect ghostRect: {
+        var a = ghostStart, b = ghostPillRect, k = gp
+        return Qt.rect(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k,
+                       Math.max(0, a.width + (b.width - a.width) * k), Math.max(0, a.height + (b.height - a.height) * k))
+    }
+    readonly property real ghostPillRadius: stage && stage.pillsAttached ? Theme.radius
+        : Theme.round(Math.min(ghostPillRect.width, ghostPillRect.height))
+    readonly property real ghostR: ghostRadius + (ghostPillRadius - ghostRadius) * Math.min(1, gp)
     Behavior on bw {
         id: bwBehavior
         enabled: host.sizeAnimate

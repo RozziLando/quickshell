@@ -426,6 +426,7 @@ PanelWindow {
     property var pending: null
 
     function alongOf(item) {
+        if (!item || typeof item.mapToItem !== "function") return barStart + barLength / 2
         var p = item.mapToItem(stage.contentItem, item.width / 2, item.height / 2)
         return vertical ? p.y : p.x
     }
@@ -531,6 +532,10 @@ PanelWindow {
         anchors.fill: parent
         visible: stage.pillsBar
 
+        PillBloom { host: panel; stage: stage; r: panel.ghostRect; radius: panel.ghostR; shown: panel.ghostOn }
+        PillBloom { host: toastHost; stage: stage; r: toastHost.ghostRect; radius: toastHost.ghostR; shown: toastHost.ghostOn }
+        PillBloom { host: mediaHost; stage: stage; r: mediaHost.ghostRect; radius: mediaHost.ghostR; shown: mediaHost.ghostOn }
+        PillBloom { host: osdHost; stage: stage; r: osdHost.ghostRect; radius: osdHost.ghostR; shown: osdHost.ghostOn }
         PillBloom { host: panel; stage: stage }
         PillBloom { host: toastHost; stage: stage }
         PillBloom { host: mediaHost; stage: stage }

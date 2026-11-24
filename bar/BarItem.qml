@@ -32,6 +32,7 @@ Item {
     Behavior on implicitHeight { enabled: barItem.kind === "workspaces" && barItem.stage.settled; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     readonly property bool veiled: !!pill && pill.activeOwner !== "" && !ccMode
+    enabled: !veiled
     FadeIn { active: !barItem.veiled; pause: 100; duration: 250 }
 
     readonly property bool hovered: hover.hovered
@@ -39,16 +40,6 @@ Item {
 
     Component.onCompleted: stage.registerItem(kind, barItem)
     Component.onDestruction: stage.unregisterItem(kind, barItem)
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: barItem.vertical ? barItem.thick - Theme.s(6) : barItem.length - Theme.s(4)
-        height: barItem.vertical ? barItem.length - Theme.s(4) : barItem.thick - Theme.s(6)
-        radius: Math.min(Theme.radius, Math.min(width, height) / 2)
-        color: Theme.highlight
-        opacity: hover.hovered && barItem.clickable && !(barItem.pill && barItem.pill.activeOwner !== "") ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 120 } }
-    }
 
     readonly property bool clickable: kind !== "workspaces" && (kind !== "clock" || Theme.controlCenter)
 

@@ -178,11 +178,8 @@ Item {
             focusTimer.restart()
         } else {
             page = ""
-            if (island.openHovered) reopenBlocked = true
         }
     }
-
-    property bool reopenBlocked: false
 
     function toggleWifi() {
         Networking.wifiEnabled = !Networking.wifiEnabled
@@ -230,18 +227,9 @@ Item {
         function onHoveredChanged() {
             if (root.island.hovered) {
                 closeTimer.stop()
-            } else {
-                openTimer.stop()
-                if (root.shown) closeTimer.restart()
+            } else if (root.shown) {
+                closeTimer.restart()
             }
-        }
-        function onOpenHoveredChanged() {
-            if (!root.island.openHovered) root.reopenBlocked = false
-            else if (root.island.owner === "" && !root.reopenBlocked) openTimer.restart()
-        }
-        function onOwnerChanged() {
-            if (root.island.owner === "" && root.island.openHovered && !root.reopenBlocked)
-                openTimer.restart()
         }
     }
 
@@ -281,16 +269,6 @@ Item {
                 + 'mkdir -p "$d"; f="$d/Screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"; '
                 + 'grim ' + (mon !== "" ? '-o "$1" ' : '') + '"$f" && wl-copy --type image/png < "$f"',
                 "sh", mon])
-        }
-    }
-
-    Timer {
-        id: openTimer
-        interval: 250
-        onTriggered: {
-            if (root.allowed && root.island.openHovered && root.island.owner === "" && !root.reopenBlocked)
-                root.island.open(root.ownerId, root.openWidth, root.openHeight,
-                                 root.typeToSearch, root.panelRadius)
         }
     }
 

@@ -67,10 +67,12 @@ PanelWindow {
 
     readonly property bool minimal: Theme.minimalIsland
     readonly property bool pointerNear: hoverHandler.hovered || leftNear.hovered || rightNear.hovered
+    readonly property bool peekHeld: pointerNear
+        || (peek && (bandLeft.hovered || bandRight.hovered || bandTop.hovered || bandBottom.hovered))
     property bool revealBlocked: false
-    onPointerNearChanged: {
-        if (!pointerNear && owner === "") revealBlocked = false
-        if (pointerNear) peekEnd.stop()
+    onPointerNearChanged: if (!pointerNear && owner === "") revealBlocked = false
+    onPeekHeldChanged: {
+        if (peekHeld) peekEnd.stop()
         else if (peek) peekEnd.restart()
     }
     readonly property bool revealWanted: minimal && owner === "" && !concealed
@@ -130,8 +132,7 @@ PanelWindow {
     property bool wantsKeyboard: false
     property bool fullscreen
 
-    readonly property bool concealed: fullscreen || (autoHidden && !peek)
-    readonly property bool hotspotActive: fullscreen || (autoHidden && !minimal)
+    readonly property bool concealed: (fullscreen || autoHidden) && !peek
 
     readonly property bool hiddenMode: concealed && owner === ""
 
@@ -140,12 +141,8 @@ PanelWindow {
         ? (hiddenMode && !floating ? 0 : idleH)
         : Math.min(requestH, maxH)
 
-    property bool hovered: hoverHandler.hovered || (hotspotActive && hotspotHover.hovered)
+    property bool hovered: hoverHandler.hovered
 
-    readonly property int edgeH: Math.max(3, Theme.s(4))
-    readonly property bool edgeHovered: edgeHover.hovered || (hotspotActive && hotspotHover.hovered)
-    readonly property bool openHovered: minimal ? false
-        : floating ? hovered : (edgeHovered || clockHover.hovered)
     readonly property int inlineIconPad: Theme.s(8)
 
     readonly property int defaultRadius: Theme.radius
@@ -173,11 +170,14 @@ PanelWindow {
     implicitHeight: maxH
     color: "transparent"
     readonly property int reservedHeight: topGap + idleH
-    exclusiveZone: !concealed && (!autoHide || peek) ? reservedHeight : 0
+    exclusiveZone: !fullscreen && !concealed && (!autoHide || peek) ? reservedHeight : 0
 
     mask: Region {
         item: pill
-        Region { item: win.hotspotActive ? hotspot : null }
+        Region { item: win.peek ? peekLeft : null }
+        Region { item: win.peek ? peekRight : null }
+        Region { item: win.peek ? peekTop : null }
+        Region { item: win.peek ? peekBottom : null }
         Region { item: win.sidesShown ? leftZone : null }
         Region { item: win.sidesShown ? rightZone : null }
         Region { item: win.sidesShown ? leftSide : null }
@@ -254,7 +254,7 @@ PanelWindow {
     Timer {
         id: peekEnd
         interval: 150
-        onTriggered: if (!win.edgeStripHovered && !win.pointerNear) win.peek = false
+        onTriggered: if (!win.edgeStripHovered && !win.peekHeld) win.peek = false
     }
 
     Timer {
@@ -285,15 +285,34 @@ PanelWindow {
     }
     onAutoHideChanged: fsDebounce.restart()
 
-    readonly property int hotspotWidth: Theme.s(300)
+    readonly property int peekDepth: reservedHeight + Theme.s(6)
     Item {
-        id: hotspot
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        width: win.hotspotWidth
-        height: Math.max(4, Theme.s(4))
-
-        HoverHandler { id: hotspotHover }
+        id: peekLeft
+        width: Math.max(0, pill.x)
+        height: win.peekDepth
+        HoverHandler { id: bandLeft }
+    }
+    Item {
+        id: peekRight
+        x: pill.x + pill.width
+        width: Math.max(0, win.width - x)
+        height: win.peekDepth
+        HoverHandler { id: bandRight }
+    }
+    Item {
+        id: peekTop
+        x: pill.x
+        width: pill.width
+        height: Math.max(0, pill.y)
+        HoverHandler { id: bandTop }
+    }
+    Item {
+        id: peekBottom
+        x: pill.x
+        y: pill.y + pill.height
+        width: pill.width
+        height: Math.max(0, win.peekDepth - y)
+        HoverHandler { id: bandBottom }
     }
 
     Item {
@@ -380,25 +399,9 @@ PanelWindow {
             clip: true
         }
 
-        Item {
-            width: parent.width
-            height: win.edgeH
-            z: 10
-            enabled: win.owner === ""
-            HoverHandler { id: edgeHover }
-        }
-
-        Item {
-            x: win.topRadius + win.inlineIconPad + win.idleH
-            width: Math.max(0, parent.width - 2 * x)
-            height: parent.height
-            enabled: win.owner === ""
-            HoverHandler { id: clockHover }
-        }
-
         MouseArea {
             anchors.fill: parent
-            enabled: win.minimal && win.owner === ""
+            enabled: win.owner === ""
             visible: enabled
             cursorShape: Qt.PointingHandCursor
             onClicked: win.clockClicked()
