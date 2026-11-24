@@ -25,7 +25,7 @@ Rectangle {
     Item {
         id: top
         width: parent.width
-        height: Math.max(SettingsUi.u(46), labels.implicitHeight + SettingsUi.u(18))
+        height: Math.max(SettingsUi.u(46), labels.implicitHeight + SettingsUi.u(18), slot.height + SettingsUi.u(20))
 
         Column {
             id: labels

@@ -38,8 +38,7 @@ Singleton {
             if (value === undefined || value === null || value === ""
                 || (Array.isArray(value) && value.length === 0)) delete map[name]
             else map[name] = value
-            if (Object.keys(map).length > 0) s[key] = map
-            else delete s[key]
+            s[key] = map
         })
     }
 
@@ -50,11 +49,11 @@ Singleton {
         "[Desktop Entry]",
         "Type=Application",
         "Name=Quickshell Settings",
-        "Comment=Settings of the Quickshell island",
+        "Comment=Settings of Quickshell",
         "Exec=quickshell ipc call settings open",
         "Icon=preferences-system",
         "Categories=Settings;DesktopSettings;",
-        "Keywords=quickshell;island;theme;wallpaper;settings;",
+        "Keywords=quickshell;bar;theme;wallpaper;settings;",
         "Terminal=false",
         "StartupNotify=false",
         ""

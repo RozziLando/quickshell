@@ -1,15 +1,15 @@
+//@ pragma Env QSG_USE_SIMPLE_ANIMATION_DRIVER=1
 import QtQuick
 import Quickshell
 import qs.island
-import qs.modules
-import qs.modules.controlcenter
-import qs.modules.media
-import qs.modules.system
+import qs.bar
 import qs.services
 import qs.lock
 import qs.settings
 
 ShellRoot {
+    id: root
+
     HyprShadowSync {}
 
     readonly property var themes: ThemeManager
@@ -27,28 +27,25 @@ ShellRoot {
 
     Lock { id: lockModule }
 
-    EdgeReveal { island: mainIsland }
+    readonly property string wantedMode: Theme.barMode ? "bar" : "island"
+    property string loadedMode: wantedMode
+    onWantedModeChanged: {
+        loadedMode = ""
+        modeSwitch.restart()
+    }
+    Timer {
+        id: modeSwitch
+        interval: 250
+        onTriggered: root.loadedMode = root.wantedMode
+    }
 
-    Island {
-        id: mainIsland
+    LazyLoader {
+        active: root.loadedMode === "island"
+        IslandShell { lock: lockModule }
+    }
 
-        onLeftClicked: mediaModule.toggle()
-        onRightClicked: sysmonModule.toggle()
-        onClockClicked: controlCenterModule.toggle()
-
-        Clock { island: mainIsland }
-        Notifications { id: notificationsModule; island: mainIsland }
-        Launcher { id: launcherModule; island: mainIsland }
-        MediaPlayer { id: mediaModule; island: mainIsland }
-        SystemMonitorPanel { id: sysmonModule; island: mainIsland }
-        Osd { island: mainIsland }
-        PowerMenu { id: powerModule; island: mainIsland; lock: lockModule }
-        ControlCenter {
-            id: controlCenterModule
-            island: mainIsland
-            launcher: launcherModule
-            notifications: notificationsModule
-            power: powerModule
-        }
+    LazyLoader {
+        active: root.loadedMode === "bar"
+        BarShell { lock: lockModule }
     }
 }

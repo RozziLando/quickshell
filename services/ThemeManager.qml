@@ -39,6 +39,7 @@ Singleton {
                 })
                 out.sort(function (a, b) { return a.name.localeCompare(b.name) })
                 root.themes = out
+                root.ensureFiles()
                 if (root.pendingApply !== "") {
                     var name = root.pendingApply
                     root.pendingApply = ""
@@ -46,6 +47,42 @@ Singleton {
                 }
             }
         }
+    }
+
+    function ensureFiles() {
+        var t = find(Theme.themeId)
+        if (!t || ensureProc.running) return
+        ensureProc.command = ["sh", "-c",
+            'mkdir -p "$(dirname "$4")"; if [ -n "$3" ] && command -v kitty >/dev/null 2>&1; then mkdir -p "$(dirname "$2")"; fi;'
+            + ' [ -z "$3" ] || grep -qsxF "# Tema: $1" "$2" || echo missing;'
+            + ' grep -qsxF "   Tema: $1 */" "$4" || echo missing',
+            "sh", t.name, kittyFile.path, t.terminal ? "1" : "", gtkFile.path]
+        ensureProc.running = true
+    }
+
+    Process {
+        id: ensureProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text.indexOf("missing") < 0) return
+                var t = root.find(Theme.themeId)
+                if (!t) return
+                if (t.terminal) kittyFile.setText(root.kittyConf(t))
+                gtkFile.setText(root.gtkCss(t))
+                root.runApplyScript([t.yaru || "", t.gnomeAccent || ""])
+            }
+        }
+    }
+
+    Connections {
+        target: Theme
+        function onThemeIdChanged() { ensureDelay.restart() }
+    }
+
+    Timer {
+        id: ensureDelay
+        interval: 800
+        onTriggered: root.ensureFiles()
     }
 
     function find(id) {

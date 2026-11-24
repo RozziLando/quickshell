@@ -18,8 +18,8 @@ Item {
     function u(value) { return Theme.s(value * sizeFactor) }
 
     readonly property int openWidth: root.u(640)
-    readonly property int innerRadius: root.u(17)
-    readonly property int panelRadius: innerRadius + edgePad
+    readonly property int innerRadius: Theme.radius
+    readonly property int panelRadius: innerRadius + edgePad * Theme.roundness
     readonly property int edgePad: root.u(14)
     readonly property int rowWidth: openWidth - 2 * (edgePad + island.topRadius)
     readonly property int openHeight: mode === "themes" ? root.u(44 + 222) + 2 * edgePad
@@ -374,7 +374,7 @@ Item {
                 anchors.right: appearanceButton.left
                 anchors.rightMargin: root.u(8)
                 height: parent.height
-                radius: height / 2
+                radius: Theme.round(height)
                 color: Theme.surface
 
                 LineIcon {
@@ -458,7 +458,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.u(34)
                 height: width
-                radius: width / 2
+                radius: Theme.round(width)
                 color: current ? Theme.accent
                      : (appsButtonArea.containsMouse ? Theme.highlight : Theme.surface)
                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -485,7 +485,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.u(34)
                 height: width
-                radius: width / 2
+                radius: Theme.round(width)
                 color: current ? Theme.accent
                      : (appearanceButtonArea.containsMouse ? Theme.highlight : Theme.surface)
                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -689,7 +689,7 @@ Item {
                         anchors.margins: root.u(8)
                         width: root.u(7)
                         height: width
-                        radius: width / 2
+                        radius: Theme.round(width)
                         color: Theme.accent
                         border.width: 1
                         border.color: Qt.rgba(0, 0, 0, 0.4)
@@ -782,7 +782,7 @@ Item {
                         anchors.margins: root.u(8)
                         width: root.u(6)
                         height: width
-                        radius: width / 2
+                        radius: Theme.round(width)
                         color: card.c.accent
                     }
 
@@ -799,7 +799,7 @@ Item {
                                     required property var modelData
                                     width: root.u(13)
                                     height: width
-                                    radius: width / 2
+                                    radius: Theme.round(width)
                                     color: modelData || "transparent"
                                 }
                             }

@@ -15,12 +15,26 @@ OptionRow {
 
     hasBelow: true
 
-    Text {
-        text: row.format(slider.shown)
-        color: slider.dragging ? Theme.accent : Theme.textSecondary
-        font.pixelSize: SettingsUi.u(10)
-        font.weight: Font.DemiBold
-        font.family: Theme.fontFamily
+    property alias actions: actionsRow.data
+
+    Row {
+        spacing: SettingsUi.u(8)
+
+        Row {
+            id: actionsRow
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: SettingsUi.u(6)
+        }
+
+        Text {
+            id: valueText
+            anchors.verticalCenter: parent.verticalCenter
+            text: row.format(slider.shown)
+            color: slider.dragging ? Theme.accent : Theme.textSecondary
+            font.pixelSize: SettingsUi.u(10)
+            font.weight: Font.DemiBold
+            font.family: Theme.fontFamily
+        }
     }
 
     below: ValueSlider {

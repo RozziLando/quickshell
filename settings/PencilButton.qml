@@ -15,7 +15,7 @@ Rectangle {
 
     width: SettingsUi.u(24)
     height: width
-    radius: width / 2
+    radius: Theme.round(width)
     color: paired || area.containsMouse ? tint : Qt.rgba(base.r, base.g, base.b, 0.85)
     border.width: 1
     border.color: Qt.rgba(0, 0, 0, 0.25)

@@ -41,13 +41,13 @@ Item {
     Rectangle {
         id: track
         anchors.fill: parent
-        radius: height / 2
+        radius: Theme.round(height)
         color: Theme.track
 
         Rectangle {
             id: fill
             height: parent.height
-            radius: height / 2
+            radius: Theme.round(height)
             width: root.animValue <= 0.001 ? 0 : Math.max(height, root.animValue * track.width)
             color: root.muted ? Theme.textDisabled : Theme.accent
         }

@@ -83,7 +83,7 @@ Item {
         anchors.verticalCenter: body.verticalCenter
         width: root.nubW
         height: Math.round(body.height * 0.42)
-        radius: width / 2
+        radius: Theme.round(width)
         color: Theme.text
     }
 }

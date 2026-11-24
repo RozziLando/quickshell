@@ -36,6 +36,67 @@ Item {
 
     Process { id: applyProc }
 
+    function layoutCommand() {
+        if (Hyprland.usingLua) {
+            var parts = []
+            if (Theme.hyprRounding) parts.push("decoration = { rounding = " + Theme.radius + " }")
+            if (Theme.hyprGaps) parts.push("general = { gaps_out = " + Theme.edgeGap + " }")
+            return parts.length > 0 ? ["hyprctl", "eval", "hl.config({ " + parts.join(", ") + " })"] : null
+        }
+        var cmds = []
+        if (Theme.hyprRounding) cmds.push("keyword decoration:rounding " + Theme.radius)
+        if (Theme.hyprGaps) cmds.push("keyword general:gaps_out " + Theme.edgeGap)
+        return cmds.length > 0 ? ["hyprctl", "--batch", cmds.join(" ; ")] : null
+    }
+
+    function applyLayout() {
+        var cmd = layoutCommand()
+        if (!cmd) return
+        layoutProc.command = cmd
+        layoutProc.running = true
+    }
+
+    Process { id: layoutProc }
+
+    function applyGlass() {
+        if (!Hyprland.usingLua) {
+            if (!Theme.glass) return
+            glassProc.command = ["hyprctl", "--batch",
+                "keyword layerrule blur on, ignore_alpha 0.2, match:namespace ^(quickshell(-bar)?)$"
+                + " ; keyword layerrule blur, ^(quickshell(-bar)?)$"
+                + " ; keyword layerrule ignorealpha 0.2, ^(quickshell(-bar)?)$"]
+            glassProc.running = true
+            return
+        }
+        glassProc.command = ["hyprctl", "eval",
+            "hl.layer_rule({ name = \"quickshell-glass\", match = { namespace = \"^quickshell(-bar)?$\" }, blur = "
+            + Theme.glass + ", ignore_alpha = 0.2 })"]
+        glassProc.running = true
+    }
+
+    Process { id: glassProc }
+
+    Timer {
+        id: glassLater
+        interval: 150
+        onTriggered: root.applyGlass()
+    }
+
+    Timer {
+        id: layoutLater
+        interval: 150
+        onTriggered: root.applyLayout()
+    }
+
+    Connections {
+        target: Theme
+        function onRadiusChanged() { if (Theme.hyprRounding) layoutLater.restart() }
+        function onEdgeGapChanged() { if (Theme.hyprGaps) layoutLater.restart() }
+        function onHyprRoundingChanged() { if (Theme.hyprRounding) layoutLater.restart() }
+        function onHyprGapsChanged() { if (Theme.hyprGaps) layoutLater.restart() }
+        function onGlassChanged() { glassLater.restart() }
+    }
+
     Timer {
         id: applyLater
         interval: 150
@@ -45,12 +106,20 @@ Item {
     onColorChanged: applyLater.restart()
     onShadowOnChanged: applyLater.restart()
     onDarkChanged: applyLater.restart()
-    Component.onCompleted: applyLater.restart()
+    Component.onCompleted: {
+        applyLater.restart()
+        layoutLater.restart()
+        glassLater.restart()
+    }
 
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "configreloaded") applyLater.restart()
+            if (event.name === "configreloaded") {
+                applyLater.restart()
+                layoutLater.restart()
+                glassLater.restart()
+            }
         }
     }
 }

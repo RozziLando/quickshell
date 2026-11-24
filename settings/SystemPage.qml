@@ -152,42 +152,6 @@ SettingsPage {
         return list.filter(function (r) { return r[1] !== undefined && r[1] !== "" })
     }
 
-    property int logoTry: 0
-    property string cleanLogo: ""
-
-    FileView {
-        path: page.info.logofile && /\.svg$/i.test(page.info.logofile) ? page.info.logofile : ""
-        printErrors: false
-        onLoaded: page.cleanLogo = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(page.withoutMarks(text()))
-    }
-
-    function withoutMarks(svg) {
-        var vb = svg.match(/viewBox="\s*([-\d.]+)[\s,]+([-\d.]+)[\s,]+([-\d.]+)[\s,]+([-\d.]+)/)
-        if (!vb) return svg
-        var x0 = parseFloat(vb[1]), y0 = parseFloat(vb[2]), w = parseFloat(vb[3]), h = parseFloat(vb[4])
-        return svg.replace(/<path\b[^>]*\/>/g, function (tag) {
-            var d = (tag.match(/\sd="([^"]*)"/) || [])[1] || ""
-            var m = d.match(/^\s*[mM]\s*([-\d.]+)[\s,]+([-\d.]+)/)
-            if (!m || d.length > 400) return tag
-            var x = parseFloat(m[1]), y = parseFloat(m[2])
-            return x > x0 + 0.85 * w && y > y0 + 0.75 * h ? "" : tag
-        })
-    }
-
-    readonly property var logoSources: {
-        var out = []
-        if (cleanLogo !== "") out.push(cleanLogo)
-        if (info.logofile) out.push(Theme.fileUrl(info.logofile))
-        var names = [info.logo || ""]
-        if (info.osid) names.push(info.osid + "-logo", "distributor-logo-" + info.osid)
-        names.forEach(function (name) {
-            var icon = name !== "" ? Quickshell.iconPath(name, true) : ""
-            if (icon !== "" && out.indexOf(icon) < 0) out.push(icon)
-        })
-        return out
-    }
-    onLogoSourcesChanged: logoTry = 0
-
     Item {
         width: parent.width
         height: hero.implicitHeight + SettingsUi.u(16)
@@ -203,82 +167,8 @@ SettingsPage {
                 width: SettingsUi.u(84)
                 height: width
 
-                Image {
-                    id: logo
+                DistroLogo {
                     anchors.fill: parent
-                    source: page.logoTry < page.logoSources.length ? page.logoSources[page.logoTry] : ""
-                    sourceSize.width: Theme.px(width, page)
-                    sourceSize.height: Theme.px(height, page)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    visible: false
-                    onStatusChanged: {
-                        if (status === Image.Error) page.logoTry++
-                        else if (status === Image.Ready) logoCanvas.prepare()
-                        else logoCanvas.requestPaint()
-                    }
-                }
-
-                Canvas {
-                    id: logoCanvas
-                    anchors.fill: parent
-                    renderTarget: Canvas.Image
-                    renderStrategy: Canvas.Immediate
-                    property string loaded: ""
-                    property color tint: Theme.accent
-                    onTintChanged: requestPaint()
-                    onImageLoaded: requestPaint()
-
-                    function prepare() {
-                        if (logo.status !== Image.Ready) return
-                        var url = String(logo.source)
-                        if (url !== loaded) {
-                            if (loaded !== "") unloadImage(loaded)
-                            loaded = url
-                        }
-                        if (isImageLoaded(url)) requestPaint()
-                        else loadImage(url)
-                    }
-
-                    onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.reset()
-                        if (logo.status !== Image.Ready || loaded === "" || !isImageLoaded(loaded)) return
-                        var iw = logo.implicitWidth, ih = logo.implicitHeight
-                        if (iw <= 0 || ih <= 0) return
-                        var k = Math.min(width / iw, height / ih)
-                        var dw = Math.round(iw * k), dh = Math.round(ih * k)
-                        ctx.drawImage(loaded, Math.round((width - dw) / 2), Math.round((height - dh) / 2), dw, dh)
-                        var img = ctx.getImageData(0, 0, width, height)
-                        var w = img.width, h = img.height, d = img.data, alpha = [], i
-                        for (i = 0; i < d.length; i += 4) {
-                            var mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2])
-                            var light = Math.max(0, Math.min(1, (mx / 255 - 0.72) / 0.2))
-                            var plain = 1 - Math.max(0, Math.min(1, ((mx > 0 ? (mx - mn) / mx : 0) - 0.12) / 0.2))
-                            alpha.push(Math.round(d[i + 3] * (1 - light * plain) / 255 * 20) / 20)
-                        }
-                        ctx.clearRect(0, 0, width, height)
-                        for (var y = 0; y < h; y++) {
-                            var x = 0
-                            while (x < w) {
-                                var av = alpha[y * w + x], x2 = x + 1
-                                while (x2 < w && alpha[y * w + x2] === av) x2++
-                                if (av > 0) {
-                                    ctx.fillStyle = Qt.rgba(tint.r, tint.g, tint.b, av)
-                                    ctx.fillRect(x, y, x2 - x, 1)
-                                }
-                                x = x2
-                            }
-                        }
-                    }
-                }
-
-                LineIcon {
-                    anchors.centerIn: parent
-                    visible: logo.status !== Image.Ready
-                    kind: "monitor"
-                    size: SettingsUi.u(64)
-                    color: Theme.accent
                 }
             }
 
@@ -400,13 +290,14 @@ SettingsPage {
     }
 
     OptionRow {
-        title: Updater.available ? "Update available" : "Quickshell island"
+        title: Updater.available ? "Update available" : "Quickshell"
         subtitle: {
             var v = Updater.mode === "git" ? "git " + Updater.shortLocal
                 : Updater.shortLocal !== "" ? "version " + Updater.shortLocal : "version unknown"
             if (Updater.localDate !== "") v += " · " + Updater.localDate
             if (page.info.quickshell) v += " · Quickshell " + page.info.quickshell
             if (Updater.running) return v + " · updating..."
+            if (!Updater.enabled) return v
             if (Updater.state === "error") return v + " · " + Updater.message
             if (Updater.checking) return v + " · checking for updates..."
             if (Updater.checked && Updater.remote === "") return v + " · cannot reach GitHub"
@@ -416,11 +307,19 @@ SettingsPage {
         info: "Updates download the latest version from GitHub and keep theme.json, the avatar, the wallpapers and the themes you added."
 
         PillButton {
+            visible: Updater.enabled || Updater.running
             primary: Updater.available
             busy: Updater.running || Updater.checking
             icon: Updater.available || Updater.running ? "update" : "reboot"
             text: Updater.running ? "Updating" : Updater.available ? "Update" : "Check"
             onClicked: Updater.available ? Updater.update() : Updater.check(true)
         }
+    }
+
+    ToggleRow {
+        title: "Updates"
+        info: "Look for new versions on GitHub and offer to install them. Off: the shell never checks and never shows the update button."
+        key: "updates"
+        checked: Theme.updates
     }
 }

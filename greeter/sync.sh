@@ -18,7 +18,8 @@ put "$SRC/services/Theme.qml"   "$DEST/services/Theme.qml"
 put "$SRC/widgets/LineIcon.qml" "$DEST/widgets/LineIcon.qml"
 put "$SRC/services/Icons.qml"   "$DEST/services/Icons.qml"
 for f in "$SRC"/assets/fonts/*.ttf; do put "$f" "$DEST/assets/fonts/$(basename "$f")"; done
-put "$SRC/theme.json"           "$DEST/theme.json"
+if [ -s "$SRC/theme.json" ]; then put "$SRC/theme.json" "$DEST/theme.json"
+else put "$SRC/theme.default.json" "$DEST/theme.json"; fi
 for f in "$SRC"/themes/*.json; do put "$f" "$DEST/themes/$(basename "$f")"; done
 
 found=""

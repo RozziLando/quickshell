@@ -29,7 +29,7 @@ Card {
         NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
     }
 
-    radius: root.u(22)
+    radius: Theme.radius
     opacity: available ? 1 : 0.4
 
     function setFromX(x) {
@@ -64,7 +64,7 @@ Card {
         visible: root.showDetails
         width: root.u(18)
         height: width
-        radius: width / 2
+        radius: Theme.round(width)
         anchors {
             right: parent.right
             rightMargin: root.u(10)
@@ -99,13 +99,13 @@ Card {
             bottomMargin: root.u(8)
         }
         height: root.u(24)
-        radius: height / 2
+        radius: Theme.round(height)
         color: Theme.track
 
         Rectangle {
             id: fill
             height: parent.height
-            radius: height / 2
+            radius: Theme.round(height)
             width: root.animValue <= 0.001 ? 0 : Math.max(height, root.animValue * track.width)
             color: root.muted ? Theme.textDisabled : Theme.accent
         }

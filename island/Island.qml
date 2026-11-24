@@ -92,9 +92,10 @@ PanelWindow {
     readonly property bool iconsShown: !minimal || revealed
 
     signal clockClicked()
-    readonly property int topGap: floating ? Theme.s(5) : 0
+    readonly property int topGap: floating ? Theme.edgeGap : 0
 
     readonly property int topRadius: Theme.s(10)
+    readonly property int filletRadius: Math.round(topRadius * Theme.roundness)
     readonly property int sideSize: floating ? idleH - Theme.s(4) : Theme.s(28)
     readonly property real sideIconScale: floating ? 0.82 : 1
     readonly property int sideGap: Theme.s(11)
@@ -147,7 +148,7 @@ PanelWindow {
         : floating ? hovered : (edgeHovered || clockHover.hovered)
     readonly property int inlineIconPad: Theme.s(8)
 
-    readonly property int defaultRadius: Theme.s(15)
+    readonly property int defaultRadius: Theme.radius
     property int requestRadius: 0
     readonly property int cornerRadius: owner !== "" && requestRadius > 0 ? requestRadius : defaultRadius
 
@@ -334,37 +335,35 @@ PanelWindow {
 
         HoverHandler { id: hoverHandler }
 
-        IslandShape {
+        Item {
             visible: !win.floating
-            outline: !Theme.shadowEnabled || Theme.glass
-            layer.enabled: Theme.shadowEnabled
-            layer.effect: SoftGlow {}
             anchors.fill: parent
             anchors.topMargin: -2
-            topRadius: win.topRadius
-            bottomRadius: win.cornerRadius
+            layer.enabled: Theme.shadowEnabled
+            layer.effect: SoftGlow {}
+
+            IslandShape {
+                anchors.fill: parent
+                outline: !Theme.shadowEnabled && !Theme.glass
+                layer.enabled: Theme.glass
+                layer.effect: LiquidGlass { outside: Qt.vector4d(0, 1, 0, 0) }
+                topRadius: win.topRadius
+                fillet: win.filletRadius
+                bottomRadius: win.cornerRadius
+            }
         }
 
-        Rectangle {
+        Item {
             visible: win.floating
             x: win.topRadius
             width: parent.width - 2 * win.topRadius
             height: parent.height
-            radius: Math.min(height / 2, win.cornerRadius)
-            color: Theme.panel
-            border.width: Theme.glass ? 1 : (Theme.shadowEnabled ? 0 : 1)
-            border.color: Theme.glass ? Theme.glassEdge : Theme.border
             layer.enabled: Theme.shadowEnabled
             layer.effect: SoftGlow {}
 
-            Rectangle {
-                visible: Theme.glass
+            GlassRect {
                 anchors.fill: parent
-                radius: parent.radius
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Theme.glassSheen }
-                    GradientStop { position: 0.45; color: "transparent" }
-                }
+                radius: Math.min(Theme.round(height), win.cornerRadius)
             }
         }
 

@@ -299,7 +299,7 @@ SettingsPage {
             anchors.verticalCenter: parent.verticalCenter
             width: SettingsUi.u(28)
             height: width
-            radius: width / 2
+            radius: Theme.round(width)
             color: addArea.containsMouse ? Theme.accent : Theme.highlight
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -402,7 +402,7 @@ SettingsPage {
                     anchors.margins: SettingsUi.u(8)
                     width: SettingsUi.u(7)
                     height: width
-                    radius: width / 2
+                    radius: Theme.round(width)
                     color: Theme.accent
                     border.width: 1
                     border.color: Qt.rgba(0, 0, 0, 0.4)
@@ -540,7 +540,7 @@ SettingsPage {
                     anchors.margins: SettingsUi.u(8)
                     width: SettingsUi.u(6)
                     height: width
-                    radius: width / 2
+                    radius: Theme.round(width)
                     color: card.c.accent || Theme.accent
                 }
 
@@ -557,7 +557,7 @@ SettingsPage {
                                 required property var modelData
                                 width: SettingsUi.u(13)
                                 height: width
-                                radius: width / 2
+                                radius: Theme.round(width)
                                 color: modelData || "transparent"
                             }
                         }

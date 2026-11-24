@@ -265,7 +265,7 @@ Item {
                             required property var modelData
                             width: menuLayer.u(9)
                             height: width
-                            radius: width / 2
+                            radius: Theme.round(width)
                             color: modelData || "transparent"
                         }
                     }

@@ -112,7 +112,7 @@ Item {
         id: canvas
         width: parent.width
         height: root.u(140)
-        radius: root.u(22)
+        radius: Theme.radius
         color: Theme.track
         clip: true
 
@@ -128,7 +128,7 @@ Item {
                 y: canvas.oy + (modelData.y - root.bounds.y) * root.k
                 width: modelData.w * root.k
                 height: modelData.h * root.k
-                radius: root.u(6)
+                radius: Math.min(root.u(6), Theme.radius)
                 color: area.drag.active ? Theme.accent : Theme.highlight
                 border.width: 1
                 border.color: modelData.internal ? Theme.accent : Theme.cardBorder
@@ -198,7 +198,7 @@ Item {
                     required property var modelData
                     width: root.u(60)
                     height: root.u(22)
-                    radius: height / 2
+                    radius: Theme.round(height)
                     color: modelData.apply ? Theme.accent
                          : (btnArea.containsMouse ? Theme.surface : Theme.highlight)
 

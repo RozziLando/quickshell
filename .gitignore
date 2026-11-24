@@ -3,3 +3,4 @@ assets/avatar.*
 *.bak-*
 *~
 .qmlls.ini
+theme.json

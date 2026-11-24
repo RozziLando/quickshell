@@ -12,14 +12,14 @@ Rectangle {
 
     width: u(40)
     height: u(22)
-    radius: height / 2
+    radius: Theme.round(height)
     color: checked ? Theme.accent : Theme.highlight
     Behavior on color { ColorAnimation { duration: 150 } }
 
     Rectangle {
         width: parent.height - root.u(6)
         height: width
-        radius: width / 2
+        radius: Theme.round(width)
         y: root.u(3)
         x: root.checked ? parent.width - width - root.u(3) : root.u(3)
         color: root.checked ? Theme.background : Theme.text

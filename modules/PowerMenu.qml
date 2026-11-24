@@ -19,13 +19,14 @@ Item {
     readonly property int circleSize: u(48)
     readonly property int gap: u(16)
     readonly property int edgePad: u(14)
-    readonly property int openWidth: 2 * sidePad + actions.length * circleSize
-                                     + (actions.length - 1) * gap
+    readonly property bool column: island.vertical === true
+    readonly property int span: actions.length * circleSize + (actions.length - 1) * gap
+    readonly property int openWidth: 2 * sidePad + (column ? circleSize : span)
     readonly property int sidePad: edgePad + island.topRadius
     readonly property int topPad: edgePad
     readonly property int bottomPad: edgePad
-    readonly property int panelRadius: circleSize / 2 + edgePad
-    readonly property int openHeight: topPad + circleSize + bottomPad
+    readonly property int panelRadius: Theme.round(circleSize) + edgePad * Theme.roundness
+    readonly property int openHeight: topPad + (column ? span : circleSize) + bottomPad
 
     readonly property var actions: (Theme.sleepEnabled ? [
         { id: "sleep",    label: "Sleep",     icon: "sleep",  confirm: false }
@@ -107,6 +108,8 @@ Item {
         Keys.onEscapePressed: root.close()
         Keys.onLeftPressed: root.selected = root.selected <= 0 ? root.actions.length - 1 : root.selected - 1
         Keys.onRightPressed: root.selected = (root.selected + 1) % root.actions.length
+        Keys.onUpPressed: root.selected = root.selected <= 0 ? root.actions.length - 1 : root.selected - 1
+        Keys.onDownPressed: root.selected = (root.selected + 1) % root.actions.length
         Keys.onTabPressed: root.selected = (root.selected + 1) % root.actions.length
         Keys.onBacktabPressed: root.selected = root.selected <= 0 ? root.actions.length - 1 : root.selected - 1
         Keys.onReturnPressed: root.activate(root.selected)
@@ -115,10 +118,11 @@ Item {
         visible: root.shown
         FadeIn { active: root.shown; pause: 160; duration: 220 }
 
-        Row {
+        Grid {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: root.topPad
+            columns: root.column ? 1 : Math.max(1, root.actions.length)
             spacing: root.gap
 
             Repeater {

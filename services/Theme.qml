@@ -18,6 +18,38 @@ Singleton {
         return Math.ceil(size * dpr)
     }
 
+    readonly property real cornerBase: Math.max(0, Math.min(30, Number(data.cornerRadius)))
+    readonly property int radius: s(cornerBase)
+    readonly property real roundness: Math.min(1, cornerBase / 15)
+
+    function round(size) {
+        return size / 2 * roundness
+    }
+
+    readonly property bool barMode: data.layout === "bar"
+    readonly property string barStyle: data.barStyle === "capsules" ? "integrated"
+        : ["attached", "floating", "integrated", "transparent", "pills", "pillsAttached"].indexOf(data.barStyle) >= 0 ? data.barStyle : "floating"
+    readonly property bool barCurves: data.barCurves !== false
+    readonly property bool barFrame: ((barStyle === "integrated" && barCurves) || barStyle === "pillsAttached") && data.barFrame === true
+    readonly property bool barPills: barStyle === "pills" || barStyle === "pillsAttached"
+    readonly property bool barFused: data.barFused !== false && barStyle !== "transparent" && !barPills
+    readonly property real barLength: Math.max(20, Math.min(100, Number(data.barLength) || 100)) / 100
+    readonly property real edgeGapBase: Math.max(0, Math.min(30, Number(data.edgeGap)))
+    readonly property int edgeGap: s(edgeGapBase)
+    readonly property bool controlCenter: data.controlCenter !== false
+    readonly property bool hyprRounding: data.hyprRounding === true
+    readonly property bool hyprGaps: data.hyprGaps === true
+    readonly property string barPosition: ["top", "bottom", "left", "right"].indexOf(data.barPosition) >= 0
+        ? data.barPosition : "top"
+    readonly property bool barVertical: barPosition === "left" || barPosition === "right"
+    readonly property var barItems: data.barItems
+    readonly property bool clockWeekday: data.clockWeekday === true
+    readonly property bool clockDay: data.clockDay === true
+    readonly property bool clockMonth: data.clockMonth === true
+    readonly property string toastPosition: ["top-left", "top", "top-right", "bottom-left", "bottom", "bottom-right"]
+        .indexOf(data.toastPosition) >= 0 ? data.toastPosition : "top-right"
+    readonly property bool audioPanel: data.audioPanel === true
+
     readonly property bool floatingIsland: data.islandStyle !== "attached"
     readonly property bool minimalIsland: data.minimal
     readonly property bool autoHide: data.autoHide
@@ -48,8 +80,6 @@ Singleton {
 
     readonly property bool glass: data.glass
     readonly property real glassOpacity: Math.max(0.3, Math.min(1, data.glassOpacity))
-    readonly property color glassEdge: Qt.rgba(1, 1, 1, 0.16)
-    readonly property color glassSheen: Qt.rgba(1, 1, 1, 0.09)
 
     function tint(value, alpha) {
         var col = Qt.color(value)
@@ -85,6 +115,7 @@ Singleton {
     readonly property bool lockBlur: data.lockBlur
     readonly property bool loginBlur: data.loginBlur
     readonly property bool lockScreen: data.lockScreen
+    readonly property bool updates: data.updates !== false
     readonly property bool sleepEnabled: data.sleepEnabled
     readonly property bool loginScreen: data.loginScreen
 
@@ -93,8 +124,20 @@ Singleton {
     readonly property real idleSleepMinutes: data.idleSleepMinutes
     readonly property bool networkMonitor: data.networkMonitor
     readonly property bool backgroundApps: data.backgroundApps
+    readonly property bool showEmptyWorkspaces: data.showEmptyWorkspaces !== false
     readonly property bool displayOnDesktop: data.displayOnDesktop
     readonly property bool vscodeThemeSync: data.vscodeThemeSync
+    readonly property var controlTiles: data.controlTiles
+    readonly property var controlSections: data.controlSections
+
+    Process {
+        id: seed
+        command: ["sh", "-c", '[ -s "$1" ] && exit 0; [ -f "$2" ] && cp "$2" "$1" && exit 10; exit 0', "sh",
+            Quickshell.shellPath("theme.json"), Quickshell.shellPath("theme.default.json")]
+        onExited: code => { if (code === 10) settingsFile.reload() }
+    }
+
+    Component.onCompleted: seed.running = true
 
     FileView {
         id: settingsFile
@@ -103,12 +146,14 @@ Singleton {
         blockLoading: true
         watchChanges: true
         onFileChanged: reload()
+        onLoadFailed: seed.running = true
 
         adapter: JsonAdapter {
             id: data
 
             property real scale: 1.0
-            property string fontFamily: "JetBrains Mono"
+            property real cornerRadius: 15
+            property string fontFamily: "Inter"
             property string iconFont: "phosphor"
             property string islandStyle: "floating"
             property bool minimal: false
@@ -117,12 +162,14 @@ Singleton {
             property bool glowEnabled: true
             property bool darkShadow: false
             property bool glass: false
+            property bool glassAuto: false
             property real glassOpacity: 0.55
             property string theme: "midnight"
             property bool bluetoothOnStartup: false
             property bool lockBlur: true
             property bool loginBlur: true
             property bool lockScreen: true
+            property bool updates: true
             property bool sleepEnabled: true
             property bool loginScreen: true
             property real idleLockMinutes: 10
@@ -132,7 +179,27 @@ Singleton {
             property bool vscodeThemeSync: true
             property bool networkMonitor: false
             property bool backgroundApps: true
+            property bool showEmptyWorkspaces: true
             property bool displayOnDesktop: false
+            property string layout: "bar"
+            property string barStyle: "floating"
+            property bool barFrame: true
+            property bool barCurves: true
+            property bool barFused: true
+            property real barLength: 100
+            property real edgeGap: 5
+            property bool controlCenter: true
+            property bool hyprRounding: false
+            property bool hyprGaps: false
+            property string barPosition: "top"
+            property var barItems: ({})
+            property bool clockWeekday: false
+            property bool clockDay: false
+            property bool clockMonth: false
+            property string toastPosition: "top-right"
+            property bool audioPanel: false
+            property var controlTiles: "auto"
+            property var controlSections: "auto"
             property var themeWallpapers: ({})
             property var wallpaperThemes: ({})
         }

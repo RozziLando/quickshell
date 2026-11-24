@@ -24,12 +24,13 @@ Singleton {
     property string message: ""
 
     readonly property bool running: state === "running"
-    readonly property bool available: checked && remote !== "" && !running
+    readonly property bool enabled: Theme.updates
+    readonly property bool available: enabled && checked && remote !== "" && !running
         && (mode === "git" ? !contained : local !== remote)
     readonly property string shortLocal: local !== "" ? local.substring(0, 7) : ""
 
     function check(force) {
-        if (checking || running) return
+        if (!enabled || checking || running) return
         if (!force && checked && Date.now() - lastCheck < 10 * 60 * 1000) return
         checking = true
         lastCheck = Date.now()
@@ -84,8 +85,10 @@ Singleton {
         onExited: root.checking = false
     }
 
+    onEnabledChanged: if (enabled) check(true)
+
     function update() {
-        if (running || checking) return
+        if (!enabled || running || checking) return
         state = "running"
         message = ""
         Quickshell.execDetached(["sh", "-c", 't=$(mktemp) || exit 1; cp "$0" "$t" && sh "$t" "$@"; rm -f "$t"',

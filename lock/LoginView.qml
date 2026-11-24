@@ -230,7 +230,7 @@ Item {
             x: Math.round((parent.width - width) / 2)
             width: root.v(88)
             height: width
-            radius: width / 2
+            radius: Theme.round(width)
             color: Qt.rgba(1, 1, 1, 0.18)
             border.width: 1
             border.color: Qt.rgba(1, 1, 1, 0.25)
@@ -271,7 +271,7 @@ Item {
                 id: pill
                 width: parent.width
                 height: parent.height
-                radius: height / 2
+                radius: Theme.round(height)
                 color: Qt.rgba(1, 1, 1, 0.16)
                 border.width: 1
                 border.color: field.activeFocus ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(1, 1, 1, 0.22)
@@ -325,7 +325,7 @@ Item {
                     y: Math.round((parent.height - height) / 2)
                     width: parent.height - root.v(9)
                     height: width
-                    radius: width / 2
+                    radius: Theme.round(width)
                     color: Qt.rgba(1, 1, 1, field.text.length > 0 ? 0.28 : 0.12)
                     opacity: root.busy ? 0.5 : 1
 
@@ -382,7 +382,7 @@ Item {
                     x: Math.round((parent.width - width) / 2)
                     width: root.v(40)
                     height: width
-                    radius: width / 2
+                    radius: Theme.round(width)
                     color: Qt.rgba(1, 1, 1, area.containsMouse ? 0.26 : 0.16)
 
                     LineIcon {

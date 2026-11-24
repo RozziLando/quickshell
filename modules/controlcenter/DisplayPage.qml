@@ -236,7 +236,7 @@ SubPage {
         visible: page.pendingRevert !== null
         width: parent.width
         height: page.u(84)
-        radius: page.u(22)
+        radius: Theme.radius
         color: Theme.card
         border.width: 1
         border.color: Theme.accent
@@ -273,7 +273,7 @@ SubPage {
                         required property var modelData
                         width: page.u(80)
                         height: page.u(24)
-                        radius: height / 2
+                        radius: Theme.round(height)
                         color: modelData.keep ? Theme.accent : Theme.highlight
 
                         Text {
@@ -324,7 +324,7 @@ SubPage {
                 readonly property bool current: page.currentMode === modelData.mode
                 width: (parent.width - page.u(6)) / 2
                 height: page.u(44)
-                radius: page.u(22)
+                radius: Theme.radius
                 color: current ? Theme.accent : (modeArea.containsMouse ? Theme.surface : Theme.card)
                 border.width: 1
                 border.color: current ? Theme.accent : Theme.cardBorder

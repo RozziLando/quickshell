@@ -14,7 +14,7 @@ Card {
     signal clicked()
     signal toggled()
 
-    property real cornerRadius: height / 2
+    property real cornerRadius: Theme.radius
     radius: Math.min(cornerRadius, height / 2)
     color: area.containsMouse ? Theme.surface : Theme.card
     Behavior on color { ColorAnimation { duration: 150 } }
@@ -28,7 +28,7 @@ Card {
         id: badge
         width: root.height - 2 * root.pad
         height: width
-        radius: width / 2
+        radius: Theme.round(width)
         anchors.left: parent.left
         anchors.leftMargin: root.pad
         anchors.verticalCenter: parent.verticalCenter

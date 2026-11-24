@@ -11,11 +11,14 @@ Item {
     property string title: ""
     property bool showSwitch: false
     property bool switchOn: false
+    property bool showBack: true
 
     signal back()
     signal switchToggled()
 
     default property alias content: body.data
+    readonly property int naturalHeight: header.height + root.u(10) + body.implicitHeight
+    property int bottomGap: 0
 
     onVisibleChanged: if (visible) scrollToTop()
     function scrollToTop() { flick.contentY = 0 }
@@ -29,9 +32,10 @@ Item {
 
         Rectangle {
             id: backButton
-            width: root.u(32)
+            visible: root.showBack
+            width: root.showBack ? root.u(32) : 0
             height: width
-            radius: width / 2
+            radius: Theme.round(width)
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             color: backArea.containsMouse ? Theme.surface : Theme.card
@@ -56,7 +60,7 @@ Item {
 
         Text {
             anchors.left: backButton.right
-            anchors.leftMargin: root.u(12)
+            anchors.leftMargin: root.showBack ? root.u(12) : root.u(4)
             anchors.verticalCenter: parent.verticalCenter
             text: root.title
             color: Theme.text
@@ -83,6 +87,7 @@ Item {
             left: parent.left
             right: parent.right
             bottom: parent.bottom
+            bottomMargin: root.bottomGap
         }
         contentHeight: body.implicitHeight
         clip: true
@@ -92,6 +97,18 @@ Item {
             id: body
             width: flick.width
             spacing: root.u(6)
+        }
+    }
+
+    Rectangle {
+        anchors.left: flick.left
+        anchors.right: flick.right
+        anchors.bottom: flick.bottom
+        height: root.u(28)
+        visible: flick.contentHeight > flick.height + 1 && !flick.atYEnd
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(Theme.panel.r, Theme.panel.g, Theme.panel.b, 0) }
+            GradientStop { position: 1.0; color: Theme.panel }
         }
     }
 }

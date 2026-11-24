@@ -316,7 +316,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: root.iconSize
             height: root.iconSize
-            radius: width / 2
+            radius: Theme.round(width)
             color: Theme.surface
             Image {
                 anchors.fill: parent

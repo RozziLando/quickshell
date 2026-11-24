@@ -13,7 +13,8 @@ Rectangle {
     function u(value) { return Theme.s(value * sizeFactor) }
 
     property bool active: false
-    readonly property bool wanted: Theme.backgroundApps
+    property bool here: true
+    readonly property bool wanted: Theme.backgroundApps && here
     property bool expanded: false
     property var apps: []
     property var appMap: ({})
@@ -27,7 +28,7 @@ Rectangle {
     visible: wanted && apps.length > 0
     width: parent ? parent.width : 0
     height: visible ? content.implicitHeight + 2 * pad : 0
-    radius: u(16)
+    radius: Theme.radius
     color: Theme.card
     border.width: 1
     border.color: Theme.cardBorder

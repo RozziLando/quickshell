@@ -97,7 +97,7 @@ Item {
             ClippingRectangle {
                 width: root.coverSize
                 height: root.coverSize
-                radius: root.u(12)
+                radius: Theme.radius
                 color: Theme.surface
 
                 Image {
@@ -173,12 +173,12 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width
                         height: root.u(4)
-                        radius: height / 2
+                        radius: Theme.round(height)
                         color: Theme.highlight
 
                         Rectangle {
                             height: parent.height
-                            radius: height / 2
+                            radius: Theme.round(height)
                             color: Theme.accent
                             width: {
                                 var p = root.player
@@ -265,7 +265,7 @@ Item {
                         required property int index
                         width: index === root.index ? root.u(14) : root.u(6)
                         height: root.u(6)
-                        radius: root.u(3)
+                        radius: Math.min(root.u(3), Theme.radius)
                         color: index === root.index ? Theme.text : Theme.textDisabled
 
                         Behavior on width { NumberAnimation { duration: 150 } }

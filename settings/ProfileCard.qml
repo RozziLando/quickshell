@@ -120,7 +120,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: SettingsUi.u(36)
         height: width
-        radius: width / 2
+        radius: Theme.round(width)
         color: Theme.highlight
 
         Image {
@@ -192,9 +192,9 @@ Rectangle {
         }
         Text {
             width: parent.width
-            text: Updater.running ? "Updating..." : Updater.state === "error" ? "Update failed"
+            text: Updater.running ? "Updating..." : Updater.enabled && Updater.state === "error" ? "Update failed"
                 : Updater.available ? "New version" : "Quickshell"
-            color: Updater.state === "error" ? Theme.warning : Updater.available ? Theme.accent : Theme.textMuted
+            color: Updater.enabled && Updater.state === "error" ? Theme.warning : Updater.available ? Theme.accent : Theme.textMuted
             font.pixelSize: SettingsUi.u(9)
             font.family: Theme.fontFamily
             elide: Text.ElideRight
@@ -206,7 +206,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: SettingsUi.u(10)
         anchors.verticalCenter: parent.verticalCenter
-        visible: Updater.available || Updater.running || Updater.state === "error"
+        visible: Updater.available || Updater.running || (Updater.enabled && Updater.state === "error")
         primary: true
         busy: Updater.running
         icon: "update"

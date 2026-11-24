@@ -36,12 +36,12 @@ Column {
     Rectangle {
         width: parent.width
         height: SettingsUi.u(6)
-        radius: height / 2
+        radius: Theme.round(height)
         color: Theme.track
 
         Rectangle {
             height: parent.height
-            radius: height / 2
+            radius: Theme.round(height)
             width: parent.width * Math.max(0, Math.min(1, bar.fraction))
             color: bar.warn ? Theme.warning : Theme.accent
             Behavior on width { NumberAnimation { duration: 400 } }

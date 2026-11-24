@@ -84,6 +84,73 @@ SettingsPage {
 
     SectionTitle {
         sizeFactor: SettingsUi.factor
+        text: "Shape"
+    }
+
+    SliderRow {
+        title: "Corner radius"
+        info: "Roundness of every corner of the shell: island, bar, panels, cards, buttons. Lower values turn the circles into rounded squares, 0 makes everything square."
+        from: 0
+        to: 30
+        step: 1
+        value: Theme.cornerBase
+        format: function (v) { return Theme.s(v) + " px" }
+        onCommitted: v => Settings.set("cornerRadius", Math.round(v))
+
+        actions: [
+            IconButton {
+                visible: Theme.cornerBase !== 15
+                icon: "reboot"
+                tip: "Back to the default radius"
+                onClicked: Settings.set("cornerRadius", 15)
+            },
+            PillButton {
+                readonly property bool remembered: SettingsUi.hyprMemory.rounding !== undefined
+                height: SettingsUi.u(24)
+                icon: Theme.hyprRounding ? (remembered ? "reboot" : "close") : "monitor"
+                text: Theme.hyprRounding ? (remembered ? "Undo" : "Unlink") : "Hyprland"
+                tip: Theme.hyprRounding
+                    ? (remembered ? "Give the windows of Hyprland back the corners they had before"
+                                  : "Stop following this radius: Hyprland goes back to its own config")
+                    : "Round the windows of Hyprland like the shell, and keep them in sync"
+                onClicked: Theme.hyprRounding ? SettingsUi.undoHypr("rounding") : SettingsUi.linkHypr("rounding")
+            }
+        ]
+    }
+
+    SliderRow {
+        title: "Distance from the edges"
+        info: "Space between the floating island or the floating bar and the edges of the screen, at the top and at the sides."
+        from: 0
+        to: 30
+        step: 1
+        value: Theme.edgeGapBase
+        format: function (v) { return Theme.s(v) + " px" }
+        onCommitted: v => Settings.set("edgeGap", Math.round(v))
+
+        actions: [
+            IconButton {
+                visible: Theme.edgeGapBase !== 5
+                icon: "reboot"
+                tip: "Back to the default distance"
+                onClicked: Settings.set("edgeGap", 5)
+            },
+            PillButton {
+                readonly property bool remembered: SettingsUi.hyprMemory.gaps !== undefined
+                height: SettingsUi.u(24)
+                icon: Theme.hyprGaps ? (remembered ? "reboot" : "close") : "monitor"
+                text: Theme.hyprGaps ? (remembered ? "Undo" : "Unlink") : "Hyprland"
+                tip: Theme.hyprGaps
+                    ? (remembered ? "Give Hyprland back the outer gaps it had before"
+                                  : "Stop following this distance: Hyprland goes back to its own config")
+                    : "Set the outer gaps of Hyprland (windows to screen edges) to this distance, and keep them in sync"
+                onClicked: Theme.hyprGaps ? SettingsUi.undoHypr("gaps") : SettingsUi.linkHypr("gaps")
+            }
+        ]
+    }
+
+    SectionTitle {
+        sizeFactor: SettingsUi.factor
         text: "Text and icons"
     }
 
@@ -91,14 +158,26 @@ SettingsPage {
         title: "Font"
         info: "Font of the whole shell. The list shows every font installed on this computer."
 
-        Dropdown {
-            text: Theme.fontFamily
-            textFont: Theme.fontFamily
-            items: page.fontItems
-            current: Theme.fontFamily
-            searchable: true
-            menuWidth: SettingsUi.u(280)
-            onPicked: value => Settings.set("fontFamily", value)
+        Row {
+            spacing: SettingsUi.u(8)
+
+            IconButton {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: Theme.fontFamily !== "Inter"
+                icon: "reboot"
+                tip: "Back to the default font (Inter)"
+                onClicked: Settings.set("fontFamily", "Inter")
+            }
+
+            Dropdown {
+                text: Theme.fontFamily
+                textFont: Theme.fontFamily
+                items: page.fontItems
+                current: Theme.fontFamily
+                searchable: true
+                menuWidth: SettingsUi.u(280)
+                onPicked: value => Settings.set("fontFamily", value)
+            }
         }
     }
 
@@ -106,32 +185,82 @@ SettingsPage {
         title: "Icons"
         info: "Style of the icons. The shell uses the Phosphor icon set: every Phosphor weight found in assets/fonts or installed on the computer is listed. Classic draws simple line icons."
 
-        Dropdown {
-            text: {
-                for (var i = 0; i < page.iconItems.length; i++)
-                    if (page.iconItems[i].value === page.currentIcon) return page.iconItems[i].label
-                return Theme.iconFont
+        Row {
+            spacing: SettingsUi.u(8)
+
+            IconButton {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: page.currentIcon !== "phosphor"
+                icon: "reboot"
+                tip: "Back to the default icons (Phosphor Regular)"
+                onClicked: Settings.set("iconFont", "phosphor")
             }
-            items: page.iconItems
-            current: page.currentIcon
-            menuWidth: SettingsUi.u(240)
-            onPicked: value => Settings.set("iconFont", value)
+
+            Dropdown {
+                text: {
+                    for (var i = 0; i < page.iconItems.length; i++)
+                        if (page.iconItems[i].value === page.currentIcon) return page.iconItems[i].label
+                    return Theme.iconFont
+                }
+                items: page.iconItems
+                current: page.currentIcon
+                menuWidth: SettingsUi.u(240)
+                onPicked: value => Settings.set("iconFont", value)
+            }
         }
     }
 
     SectionTitle {
         sizeFactor: SettingsUi.factor
-        text: "Island"
+        text: "Layout"
     }
 
     Row {
         width: parent.width
         spacing: SettingsUi.u(6)
 
+        ChoiceCard {
+            id: islandCard
+            width: (parent.width - SettingsUi.u(6)) / 2
+            title: "Island"
+            current: !Theme.barMode
+            onClicked: Settings.set("layout", "island")
+
+            MiniBar {
+                kind: Theme.floatingIsland ? "islandFloating" : "islandAttached"
+                ink: islandCard.current ? Theme.accent : Theme.textMuted
+            }
+        }
+
+        ChoiceCard {
+            id: barCard
+            width: (parent.width - SettingsUi.u(6)) / 2
+            title: "Bar"
+            current: Theme.barMode
+            onClicked: Settings.set("layout", "bar")
+
+            MiniBar {
+                kind: Theme.barStyle
+                ink: barCard.current ? Theme.accent : Theme.textMuted
+            }
+        }
+    }
+
+    SectionTitle {
+        visible: !Theme.barMode
+        sizeFactor: SettingsUi.factor
+        text: "Island"
+    }
+
+    Row {
+        visible: !Theme.barMode
+        width: parent.width
+        spacing: SettingsUi.u(6)
+
         Repeater {
             model: [
-                { value: "floating", label: "Floating", info: "Detached from the top edge, with the side circles" },
-                { value: "attached", label: "Attached", info: "Joined to the top edge of the screen" }
+                { value: "floating", label: "Floating" },
+                { value: "attached", label: "Attached" }
             ]
 
             delegate: Rectangle {
@@ -157,40 +286,9 @@ SettingsPage {
                     color: Theme.track
                     clip: true
 
-                    readonly property int islandW: SettingsUi.u(70)
-                    readonly property int islandH: SettingsUi.u(14)
-
-                    Rectangle {
-                        visible: styleCard.modelData.value === "floating"
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        y: SettingsUi.u(7)
-                        width: preview.islandW
-                        height: preview.islandH
-                        radius: height / 2
-                        color: styleCard.current ? Theme.accent : Theme.textMuted
-                    }
-                    Repeater {
-                        model: styleCard.modelData.value === "floating" ? [-1, 1] : []
-                        delegate: Rectangle {
-                            required property int modelData
-                            width: preview.islandH
-                            height: width
-                            radius: width / 2
-                            y: SettingsUi.u(7)
-                            x: preview.width / 2 + modelData * (preview.islandW / 2 + SettingsUi.u(5) + width / 2) - width / 2
-                            color: styleCard.current ? Theme.accent : Theme.textMuted
-                            opacity: 0.7
-                        }
-                    }
-
-                    Rectangle {
-                        visible: styleCard.modelData.value === "attached"
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        y: -radius
-                        width: preview.islandW + SettingsUi.u(16)
-                        height: preview.islandH + SettingsUi.u(6) + radius
-                        radius: SettingsUi.u(9)
-                        color: styleCard.current ? Theme.accent : Theme.textMuted
+                    MiniBar {
+                        kind: styleCard.modelData.value === "floating" ? "islandFloating" : "islandAttached"
+                        ink: styleCard.current ? Theme.accent : Theme.textMuted
                     }
                 }
 
@@ -211,15 +309,6 @@ SettingsPage {
                         font.weight: Font.DemiBold
                         font.family: Theme.fontFamily
                     }
-                    Text {
-                        width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        text: styleCard.modelData.info
-                        color: Theme.textSecondary
-                        font.pixelSize: SettingsUi.u(9)
-                        font.family: Theme.fontFamily
-                        wrapMode: Text.WordWrap
-                    }
                 }
 
                 MouseArea {
@@ -234,6 +323,7 @@ SettingsPage {
     }
 
     ToggleRow {
+        visible: !Theme.barMode
         title: "Minimal"
         info: "At rest the island shows only the clock; the other icons appear when the mouse is over it."
         key: "minimal"
@@ -241,22 +331,194 @@ SettingsPage {
     }
 
     ToggleRow {
+        visible: !Theme.barMode
+        title: "Full audio panel"
+        info: "The audio button of the island opens the playing media together with all the outputs, inputs and app volumes, like the bar. Off: it opens only the media player."
+        key: "audioPanel"
+        checked: Theme.audioPanel
+    }
+
+    SectionTitle {
+        visible: Theme.barMode
+        sizeFactor: SettingsUi.factor
+        text: "Bar"
+    }
+
+    ToggleRow {
+        visible: Theme.barMode && Theme.barStyle !== "transparent" && !Theme.barPills
+        title: "Panels fused to the bar"
+        info: "The panels of the bar buttons grow out of the bar. Off: they open as separate floating cards, next to their button, like the notifications."
+        key: "barFused"
+        checked: Theme.barFused
+    }
+
+    Grid {
+        visible: Theme.barMode
+        width: parent.width
+        columns: 3
+        spacing: SettingsUi.u(6)
+
+        Repeater {
+            model: [
+                { value: "floating", label: "Floating" },
+                { value: "attached", label: "Attached" },
+                { value: "integrated", label: "Integrated" },
+                { value: "transparent", label: "Transparent" },
+                { value: "pills", label: "Pills" },
+                { value: "pillsAttached", label: "Attached pills" }
+            ]
+
+            delegate: ChoiceCard {
+                id: styleChoice
+                required property var modelData
+                width: (parent.width - 2 * SettingsUi.u(6)) / 3
+                previewHeight: SettingsUi.u(48)
+                title: modelData.label
+                current: Theme.barStyle === modelData.value
+                onClicked: {
+                    var v = modelData.value
+                    Settings.edit(function (s) {
+                        var was = s.barStyle === "transparent"
+                        if (v === "transparent" && !was && s.glass !== true) {
+                            s.glass = true
+                            s.glassAuto = true
+                        } else if (v !== "transparent" && was && s.glassAuto === true) {
+                            s.glass = false
+                            s.glassAuto = false
+                        }
+                        s.barStyle = v
+                    })
+                }
+
+                readonly property color ink: current ? Theme.accent : Theme.textMuted
+
+                MiniBar {
+                    kind: styleChoice.modelData.value
+                    ink: styleChoice.ink
+                }
+            }
+        }
+    }
+
+    ToggleRow {
+        visible: Theme.barMode && Theme.barStyle === "integrated"
+        title: "Curved ends"
+        info: "The ends of the bar curve into the sides of the monitor. Off: the bar is a straight strip along the whole edge."
+        key: "barCurves"
+        checked: Theme.barCurves
+    }
+
+    ToggleRow {
+        visible: Theme.barMode && ((Theme.barStyle === "integrated" && Theme.barCurves) || Theme.barStyle === "pillsAttached")
+        title: "Screen frame"
+        info: "A thin frame of the bar color around the whole screen, with rounded inner corners."
+        key: "barFrame"
+        checked: Theme.barFrame
+    }
+
+    SliderRow {
+        visible: Theme.barMode && (Theme.barStyle === "floating" || Theme.barStyle === "attached")
+        title: "Bar width"
+        info: "Length of the bar along its edge, as a share of the screen. It never gets shorter than its items."
+        from: 20
+        to: 100
+        step: 5
+        value: Theme.barLength * 100
+        format: function (v) { return Math.round(v) + "%" }
+        onCommitted: v => Settings.set("barLength", Math.round(v))
+    }
+
+    OptionRow {
+        visible: Theme.barMode
+        title: "Position"
+        info: "Edge of the screen where the bar sits."
+
+        Segmented {
+            options: [
+                { value: "top", label: "Top" }, { value: "bottom", label: "Bottom" },
+                { value: "left", label: "Left" }, { value: "right", label: "Right" }
+            ]
+            current: Theme.barPosition
+            onPicked: value => Settings.set("barPosition", value)
+        }
+    }
+
+    SectionTitle {
+        visible: Theme.barMode
+        sizeFactor: SettingsUi.factor
+        text: "Bar items"
+    }
+
+    BarDesigner {
+        visible: Theme.barMode
+        lists: Controls.barSections
+        pills: Theme.barPills
+        dividers: Theme.barStyle === "pills"
+        pool: Controls.barKinds.filter(function (k) {
+            var s = Controls.barSections
+            return Controls.barAvailable(k) && s.start.indexOf(k) < 0 && s.center.indexOf(k) < 0 && s.end.indexOf(k) < 0
+        })
+        onEdited: lists => Settings.set("barItems", { start: lists.start, center: lists.center, end: lists.end })
+    }
+
+    ToggleRow {
+        visible: Theme.barMode
+        title: "Weekday in the clock"
+        info: "Shows the day of the week next to the time, e.g. Sun."
+        key: "clockWeekday"
+        checked: Theme.clockWeekday
+    }
+
+    ToggleRow {
+        visible: Theme.barMode
+        title: "Day in the clock"
+        info: "Shows the day of the month next to the time, e.g. 22."
+        key: "clockDay"
+        checked: Theme.clockDay
+    }
+
+    ToggleRow {
+        visible: Theme.barMode
+        title: "Month in the clock"
+        info: "Shows the month next to the time, e.g. Nov."
+        key: "clockMonth"
+        checked: Theme.clockMonth
+    }
+
+    OptionRow {
+        visible: Theme.barMode
+        title: "Notifications"
+        subtitle: "Where notifications, volume, brightness and media appear"
+        info: "With the bar, notifications and the volume, brightness and media popups appear in this place of the screen."
+
+        ToastPicker {
+            current: Theme.toastPosition
+            onPicked: value => Settings.set("toastPosition", value)
+        }
+    }
+
+    SectionTitle {
+        sizeFactor: SettingsUi.factor
+        text: "Effects"
+    }
+
+    ToggleRow {
         title: "Auto hide"
-        info: "The island hides when windows are open. Move the mouse to the top edge of the screen to bring it back."
+        info: "The island or the bar hides when windows are open. Move the mouse to its edge of the screen to bring it back."
         key: "autoHide"
         checked: Theme.autoHide
     }
 
     ToggleRow {
         title: "Glow"
-        info: "A soft glow in the color of the theme around the island and the windows. When the dark shadow is also on, the shadow covers it."
+        info: "A soft glow in the color of the theme around the island or the bar and the windows. When the dark shadow is also on, the shadow covers it."
         key: "glowEnabled"
         checked: Theme.glowEnabled
     }
 
     ToggleRow {
         title: "Dark shadow"
-        info: "A classic dark shadow around the island and the windows. When it is on it replaces the glow."
+        info: "A classic dark shadow around the island or the bar and the windows. When it is on it replaces the glow."
         key: "darkShadow"
         checked: Theme.darkShadow
     }
@@ -268,7 +530,7 @@ SettingsPage {
 
     ToggleRow {
         title: "Glass"
-        info: "Translucent island and panels: what is behind them shows through."
+        info: "Liquid glass: translucent, blurred surfaces with a light-catching rim. Bar and panels melt into one piece."
         key: "glass"
         checked: Theme.glass
     }

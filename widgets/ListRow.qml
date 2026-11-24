@@ -26,7 +26,7 @@ Rectangle {
 
     width: parent ? parent.width : 0
     height: content.implicitHeight + 2 * u(8)
-    radius: u(22)
+    radius: Theme.radius
     color: area.containsMouse && clickable ? Theme.surface : Theme.card
     border.width: 1
     border.color: Theme.cardBorder
@@ -58,7 +58,7 @@ Rectangle {
                 id: badge
                 width: root.u(32)
                 height: width
-                radius: width / 2
+                radius: Theme.round(width)
                 color: root.selected ? Theme.accent : Theme.highlight
                 Behavior on color { ColorAnimation { duration: 150 } }
 

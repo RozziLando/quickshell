@@ -26,6 +26,7 @@ Scope {
     readonly property var pages: [
         { id: "general", label: "General", icon: "gear" },
         { id: "appearance", label: "Appearance", icon: "palette" },
+        { id: "control", label: "Control Center", icon: "sliders" },
         { id: "lock", label: "Login & Lock", icon: "lock" },
         { id: "wallpapers", label: "Wallpapers & Themes", icon: "image" },
         { id: "system", label: "System", icon: "cpu" }
@@ -44,6 +45,7 @@ Scope {
     function hide() {
         SettingsUi.closeMenu()
         SettingsUi.tip = null
+        SettingsUi.hyprMemory = ({})
         persist.open = false
     }
 
@@ -67,18 +69,29 @@ Scope {
     }
 
     function applyRule() {
-        if (!Hyprland.usingLua) return
+        if (!Hyprland.usingLua) {
+            ruleProc.command = ["hyprctl", "--batch",
+                "keyword windowrule float on, center on, match:title ^(" + windowTitle + ")$"
+                + " ; keyword windowrulev2 float, title:^(" + windowTitle + ")$"
+                + " ; keyword windowrulev2 center, title:^(" + windowTitle + ")$"]
+            ruleProc.running = true
+            return
+        }
         ruleProc.command = ["hyprctl", "eval",
             'hl.window_rule({ name = "quickshell-settings", match = { class = "^org.quickshell$", title = "^'
-            + windowTitle + '$" }, float = true, center = true, rounding = ' + Theme.s(15) + ' })']
+            + windowTitle + '$" }, float = true, center = true, rounding = ' + Theme.radius + ' })']
         ruleProc.running = true
     }
     Process { id: ruleProc }
 
     Component.onCompleted: applyRule()
     Connections {
+        target: Controls
+        function onSettingsRequested(page) { root.show(page) }
+    }
+    Connections {
         target: Theme
-        function onScaleChanged() { root.applyRule() }
+        function onRadiusChanged() { root.applyRule() }
     }
     Connections {
         target: Hyprland
@@ -94,7 +107,7 @@ Scope {
             id: win
 
             title: root.windowTitle
-            color: Theme.panel
+            color: Theme.glass ? "transparent" : Theme.panel
 
             property real fit: 1
             Component.onCompleted: {
@@ -123,6 +136,12 @@ Scope {
             maximumSize: Qt.size(implicitWidth, implicitHeight)
 
             onVisibleChanged: if (!visible && persist.open) root.hide()
+
+            GlassRect {
+                visible: Theme.glass
+                anchors.fill: parent
+                radius: Theme.radius
+            }
 
             Item {
                 id: content
@@ -167,7 +186,7 @@ Scope {
                         anchors.verticalCenter: heading.verticalCenter
                         width: SettingsUi.u(26)
                         height: width
-                        radius: width / 2
+                        radius: Theme.round(width)
                         color: closeArea.containsMouse ? Theme.warning : Theme.highlight
                         Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -217,7 +236,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: SettingsUi.u(30)
                                     height: width
-                                    radius: width / 2
+                                    radius: Theme.round(width)
                                     color: navItem.current ? Theme.accent : Theme.highlight
                                     Behavior on color { ColorAnimation { duration: 150 } }
 
@@ -277,7 +296,7 @@ Scope {
                     anchors.bottom: parent.bottom
                     anchors.margins: SettingsUi.u(10)
                     radius: SettingsUi.radius
-                    color: Theme.background
+                    color: Theme.glass ? Qt.rgba(Theme.background.r, Theme.background.g, Theme.background.b, 0.35) : Theme.background
                     border.width: 1
                     border.color: Theme.cardBorder
                     clip: true
@@ -288,6 +307,7 @@ Scope {
                         sourceComponent: ({
                             "general": generalPage,
                             "appearance": appearancePage,
+                            "control": controlPage,
                             "lock": lockPage,
                             "wallpapers": wallpaperPage,
                             "system": systemPage
@@ -296,6 +316,7 @@ Scope {
 
                     Component { id: generalPage; GeneralPage {} }
                     Component { id: appearancePage; AppearancePage {} }
+                    Component { id: controlPage; ControlPage {} }
                     Component { id: lockPage; LockPage {} }
                     Component { id: wallpaperPage; WallpaperPage {} }
                     Component { id: systemPage; SystemPage {} }

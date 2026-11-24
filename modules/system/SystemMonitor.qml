@@ -9,7 +9,7 @@ Item {
 
     property real sizeFactor: 1.0
     function u(value) { return Theme.s(value * sizeFactor) }
-    property int cardRadius: Theme.s(15)
+    property int cardRadius: Theme.radius
 
     property bool active: visible
 
@@ -300,12 +300,12 @@ Item {
             visible: stat.fraction >= 0
             width: parent.width
             height: Theme.s(5)
-            radius: height / 2
+            radius: Theme.round(height)
             color: Theme.track
 
             Rectangle {
                 height: parent.height
-                radius: height / 2
+                radius: Theme.round(height)
                 width: parent.width * Math.max(0, Math.min(1, stat.fraction))
                 color: stat.warn ? Theme.warning : Theme.accent
                 Behavior on width { NumberAnimation { duration: 400 } }
@@ -394,6 +394,7 @@ Item {
         }
 
         BackgroundApps {
+            here: !Controls.appsInControl
             radius: root.cardRadius
             sizeFactor: root.sizeFactor
             active: root.active

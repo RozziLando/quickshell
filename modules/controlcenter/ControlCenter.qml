@@ -9,6 +9,7 @@ import Quickshell.Networking
 import Quickshell.Services.UPower
 import qs.services
 import qs.widgets
+import qs.modules.system
 
 Item {
     id: root
@@ -21,7 +22,7 @@ Item {
     readonly property string ownerId: "control"
     readonly property bool shown: island.owner === ownerId
 
-    property bool typeToSearch: true
+    readonly property bool typeToSearch: sectionShown("search")
     property string screenshotCommand:
         'g="$(slurp)" || exit 0; grim -g "$g" - | wl-copy --type image/png'
 
@@ -37,17 +38,9 @@ Item {
     readonly property int tileH: root.u(54)
     readonly property int circleSize: root.u(48)
     readonly property int sliderCardH: root.u(60)
-    readonly property bool hasNotifications: notifications.history.count > 0
-    readonly property int notifItemH: root.u(56)
-    readonly property int notifSpacing: root.u(6)
-    readonly property real notifVisible: Math.min(notifications.history.count, 2.5)
-    readonly property int notifListH: Math.round(notifVisible * notifItemH
-        + Math.max(0, Math.ceil(notifVisible) - 1) * notifSpacing)
-    readonly property int notifCardH: hasNotifications ? root.u(100) - notifItemH + notifListH
-                                                       : root.u(38)
-    readonly property int searchH: 2 * cardRadius
-    readonly property int cardRadius: root.u(22)
-    readonly property int panelRadius: cardRadius + edgePad
+    readonly property int searchH: root.u(44)
+    readonly property int cardRadius: Theme.radius
+    readonly property int panelRadius: cardRadius + edgePad * Theme.roundness
 
     readonly property var batteryDevice: UPower.displayDevice
     readonly property bool desktop: !(batteryDevice && batteryDevice.ready
@@ -56,9 +49,42 @@ Item {
     readonly property bool showDisplay: !desktop || Theme.displayOnDesktop
     readonly property bool showKeyboard: !desktop && keyboardAvailable
 
-    readonly property int sliderCount: 1 + (showDisplay ? 1 : 0) + (showKeyboard ? 1 : 0)
-    readonly property int openHeight: topPad + tileH + sliderCount * sliderCardH
-        + notifCardH + searchH + (sliderCount + 2) * gap + bottomPad
+    readonly property var sections: Controls.sections.filter(function (id) {
+        if (id === "display") return root.showDisplay
+        if (id === "keyboard") return root.showKeyboard
+        return true
+    })
+    readonly property bool hasTiles: Controls.tiles.length > 0
+
+    function sectionItem(id) {
+        return ({
+            "audio": volumeSlider,
+            "display": displaySlider,
+            "keyboard": keyboardSlider,
+            "notifications": notifCard,
+            "search": searchCard,
+            "apps": appsCard
+        })[id] || null
+    }
+
+    readonly property var sectionLayout: {
+        var y = hasTiles ? tileH + gap : 0, out = {}, last = 0
+        for (var i = 0; i < sections.length; i++) {
+            var item = sectionItem(sections[i])
+            if (!item) continue
+            var h = sections[i] === "apps" ? appsCard.height : item.height
+            if (h <= 0) continue
+            out[sections[i]] = y
+            y += h + gap
+            last = y - gap
+        }
+        out.total = Math.max(hasTiles ? tileH : 0, last)
+        return out
+    }
+
+    function sectionShown(id) { return sectionLayout[id] !== undefined }
+
+    readonly property int openHeight: topPad + Math.max(root.u(20), sectionLayout.total) + bottomPad
 
     onOpenHeightChanged: if (shown) island.open(ownerId, openWidth, openHeight,
                                                 typeToSearch || island.wantsKeyboard)
@@ -119,13 +145,6 @@ Item {
 
     property string page: ""
 
-    function arrivalText(time) {
-        if (!(time > 0)) return ""
-        var d = new Date(time)
-        return d.toDateString() === new Date().toDateString()
-            ? Qt.formatDateTime(d, "hh:mm") : Qt.formatDateTime(d, "dd/MM")
-    }
-
     function openPage(name) {
         page = name
         pageFocusTimer.restart()
@@ -175,6 +194,17 @@ Item {
         if (btAdapter) btAdapter.enabled = !btAdapter.enabled
     }
 
+    function activateTile(id) {
+        if (id === "launcher") root.launcher.openMode(0)
+        else if (id === "themes") root.launcher.openMode(1)
+        else if (id === "screenshot") root.takeScreenshot()
+        else if (id === "power") root.power.open()
+        else if (id === "settings") {
+            island.close(ownerId)
+            Controls.settingsRequested("")
+        }
+    }
+
     function takeScreenshot() {
         island.close(ownerId)
         Quickshell.execDetached(["sh", "-c", "sleep 0.5; " + screenshotCommand])
@@ -217,11 +247,15 @@ Item {
         }
     }
 
+    readonly property bool allowed: Theme.controlCenter
+    onAllowedChanged: if (!allowed && shown) island.close(ownerId)
+
     function toggle() {
         if (shown) {
             island.close(ownerId)
             return
         }
+        if (!allowed) return
         island.open(ownerId, openWidth, openHeight, typeToSearch, panelRadius)
         island.grabOwner = ownerId
     }
@@ -256,7 +290,7 @@ Item {
         id: openTimer
         interval: 250
         onTriggered: {
-            if (root.island.openHovered && root.island.owner === "" && !root.reopenBlocked)
+            if (root.allowed && root.island.openHovered && root.island.owner === "" && !root.reopenBlocked)
                 root.island.open(root.ownerId, root.openWidth, root.openHeight,
                                  root.typeToSearch, root.panelRadius)
         }
@@ -277,7 +311,8 @@ Item {
         onTriggered: if (root.typeToSearch) searchInput.forceActiveFocus()
     }
 
-    Column {
+    Item {
+        id: mainArea
         anchors {
             fill: parent
             topMargin: root.topPad
@@ -285,80 +320,77 @@ Item {
             leftMargin: root.sidePad
             rightMargin: root.sidePad
         }
-        spacing: root.gap
 
         visible: root.shown && root.page === ""
         FadeIn { active: (root.shown && root.page === ""); pause: 160; duration: 220 }
 
         Row {
             id: topRow
+            visible: root.hasTiles
             width: parent.width
             height: root.tileH
             spacing: root.gap
 
-            readonly property int tiles: root.hasBluetooth ? 2 : 1
-            readonly property int circles: root.hasBluetooth ? 2 : 4
-            readonly property int tileW: (width - circles * root.circleSize
-                                          - (tiles + circles - 1) * spacing) / tiles
+            readonly property int tiles: Controls.tiles.filter(function (id) { return Controls.tileInfo[id].slots === 2 }).length
+            readonly property int circles: Controls.tiles.length - tiles
+            readonly property int tileW: tiles > 0
+                ? (width - circles * root.circleSize - (tiles + circles - 1) * spacing) / tiles : 0
+            readonly property int usedW: tiles > 0 ? width
+                : circles * root.circleSize + Math.max(0, circles - 1) * spacing
+            x: (parent.width - usedW) / 2
 
-            ToggleTile {
-                sizeFactor: root.sizeFactor
-                cornerRadius: root.cardRadius
-                width: topRow.tileW
-                height: root.tileH
-                kind: root.hasWifi ? "wifi" : "ethernet"
-                title: root.hasWifi ? "Wi-Fi" : "Ethernet"
-                subtitle: root.hasWifi ? root.wifiStatus : root.wiredStatus
-                active: root.hasWifi ? root.wifiOn : root.wiredConnected
-                onToggled: if (root.hasWifi) root.toggleWifi()
-                onClicked: if (root.hasWifi) root.openPage("wifi")
+            Repeater {
+                model: Controls.tiles
+                delegate: Loader {
+                    required property string modelData
+                    anchors.verticalCenter: parent.verticalCenter
+                    sourceComponent: Controls.tileInfo[modelData].slots === 2 ? wideTile : circleTile
+                    property string tileId: modelData
+                }
             }
-            ToggleTile {
-                visible: root.hasBluetooth
-                sizeFactor: root.sizeFactor
-                cornerRadius: root.cardRadius
-                width: topRow.tileW
-                height: root.tileH
-                kind: "bluetooth"
-                title: "Bluetooth"
-                subtitle: root.bluetoothStatus
-                active: root.bluetoothOn
-                onToggled: root.toggleBluetooth()
-                onClicked: root.openPage("bluetooth")
+
+            Component {
+                id: wideTile
+                ToggleTile {
+                    readonly property string tileId: parent ? parent.tileId : ""
+                    readonly property bool net: tileId === "network"
+                    sizeFactor: root.sizeFactor
+                    cornerRadius: root.cardRadius
+                    width: topRow.tileW
+                    height: root.tileH
+                    kind: net ? (root.hasWifi ? "wifi" : "ethernet") : "bluetooth"
+                    title: net ? (root.hasWifi ? "Wi-Fi" : "Ethernet") : "Bluetooth"
+                    subtitle: net ? (root.hasWifi ? root.wifiStatus : root.wiredStatus) : root.bluetoothStatus
+                    active: net ? (root.hasWifi ? root.wifiOn : root.wiredConnected) : root.bluetoothOn
+                    onToggled: {
+                        if (!net) root.toggleBluetooth()
+                        else if (root.hasWifi) root.toggleWifi()
+                    }
+                    onClicked: {
+                        if (!net) root.openPage("bluetooth")
+                        else if (root.hasWifi) root.openPage("wifi")
+                    }
+                }
             }
-            CircleButton {
-                visible: !root.hasBluetooth
-                kind: "grid"
-                size: root.circleSize
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: root.launcher.openMode(0)
-            }
-            CircleButton {
-                visible: !root.hasBluetooth
-                kind: "palette"
-                size: root.circleSize
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: root.launcher.openMode(1)
-            }
-            CircleButton {
-                kind: "screenshot"
-                size: root.circleSize
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: root.takeScreenshot()
-            }
-            CircleButton {
-                kind: "power"
-                size: root.circleSize
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: root.power.open()
+
+            Component {
+                id: circleTile
+                CircleButton {
+                    readonly property string tileId: parent ? parent.tileId : ""
+                    kind: Controls.tileInfo[tileId] ? Controls.tileInfo[tileId].icon : ""
+                    size: root.circleSize
+                    onClicked: root.activateTile(tileId)
+                }
             }
         }
 
         ControlSlider {
             sizeFactor: root.sizeFactor
             id: volumeSlider
+            y: root.sectionLayout["audio"] || 0
             width: parent.width
             height: root.sliderCardH
+            visible: root.sectionShown("audio")
             title: "Audio"
             icon: root.audioAvailable && root.sink.audio.muted ? "volume-mute" : "volume"
             value: root.audioAvailable ? root.sink.audio.volume : 0
@@ -373,7 +405,8 @@ Item {
         ControlSlider {
             sizeFactor: root.sizeFactor
             id: displaySlider
-            visible: root.showDisplay
+            y: root.sectionLayout["display"] || 0
+            visible: root.sectionShown("display")
             onDetailsClicked: root.openPage("display")
             width: parent.width
             height: root.sliderCardH
@@ -387,8 +420,9 @@ Item {
         ControlSlider {
             sizeFactor: root.sizeFactor
             id: keyboardSlider
+            y: root.sectionLayout["keyboard"] || 0
             showDetails: false
-            visible: root.showKeyboard
+            visible: root.sectionShown("keyboard")
             width: parent.width
             height: root.sliderCardH
             title: "Keyboard"
@@ -398,228 +432,30 @@ Item {
             onMoved: value => root.setKeyboard(value)
         }
 
-        Card {
+        NotificationCard {
+            id: notifCard
+            y: root.sectionLayout["notifications"] || 0
+            visible: root.sectionShown("notifications")
             width: parent.width
-            height: root.notifCardH
+            notifications: root.notifications
+            sizeFactor: root.sizeFactor
+            cardRadius: root.cardRadius
+            onActivated: root.island.close(root.ownerId)
+        }
+
+        BackgroundApps {
+            id: appsCard
+            y: root.sectionLayout["apps"] || 0
+            here: Controls.appsInControl
+            active: root.shown
             radius: root.cardRadius
-
-            Item {
-                id: notifTop
-                anchors {
-                    top: parent.top
-                    topMargin: root.u(10)
-                    left: parent.left
-                    right: parent.right
-                    leftMargin: root.u(16)
-                    rightMargin: root.u(16)
-                }
-                height: root.u(18)
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Notifications" + (root.notifications.history.count > 1
-                                         ? "  ·  " + root.notifications.history.count : "")
-                    color: Theme.textSecondary
-                    font.pixelSize: root.u(10)
-                    font.family: Theme.fontFamily
-                }
-
-                Text {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.notifications.history.count > 0
-                    text: "Clear all"
-                    color: Theme.textMuted
-                    font.pixelSize: root.u(10)
-                    font.family: Theme.fontFamily
-
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -root.u(6)
-                        onClicked: root.notifications.history.clear()
-                    }
-                }
-            }
-
-            ListView {
-                id: notifList
-                visible: root.hasNotifications
-                anchors {
-                    top: notifTop.bottom
-                    topMargin: root.u(6)
-                    left: parent.left
-                    right: parent.right
-                    leftMargin: root.u(10)
-                    rightMargin: root.u(10)
-                }
-                height: root.notifListH
-                clip: true
-                spacing: root.notifSpacing
-                model: root.notifications.history
-                boundsBehavior: Flickable.StopAtBounds
-
-                delegate: Card {
-                    id: entry
-                    required property int index
-                    required property string app
-                    required property string summary
-                    required property string body
-                    required property string icon
-                    required property string desktopEntry
-                    required property bool rounded
-                    required property real time
-
-                    width: ListView.view.width
-                    height: root.notifItemH
-                    radius: root.cardRadius - root.u(10)
-                    color: entryArea.containsMouse ? Theme.highlight : Theme.surface
-                    border.color: "transparent"
-
-                    MouseArea {
-                        id: entryArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            root.notifications.focusApp(entry.desktopEntry, entry.app)
-                            root.island.close(root.ownerId)
-                        }
-                    }
-
-                    Item {
-                        id: avatar
-                        width: root.u(30)
-                        height: root.u(30)
-                        anchors {
-                            left: parent.left
-                            leftMargin: root.u(12)
-                            verticalCenter: parent.verticalCenter
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            visible: !iconBox.visible
-                            color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22)
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: entry.app !== "" ? entry.app.charAt(0).toUpperCase() : "?"
-                                color: Theme.accent
-                                font.pixelSize: root.u(11)
-                                font.bold: true
-                                font.family: Theme.fontFamily
-                            }
-                        }
-
-                        ClippingRectangle {
-                            id: iconBox
-                            anchors.fill: parent
-                            radius: entry.rounded ? width / 2 : 0
-                            color: "transparent"
-                            visible: entry.icon !== "" && iconImage.status === Image.Ready
-
-                            Image {
-                                id: iconImage
-                                anchors.fill: parent
-                                source: entry.icon
-                                sourceSize.width: Theme.px(root.u(30), iconImage)
-                                sourceSize.height: Theme.px(root.u(30), iconImage)
-                                fillMode: entry.rounded ? Image.PreserveAspectCrop : Image.PreserveAspectFit
-                                asynchronous: true
-                            }
-                        }
-                    }
-
-                    Column {
-                        anchors {
-                            left: avatar.right
-                            leftMargin: root.u(10)
-                            right: timeText.left
-                            rightMargin: root.u(6)
-                            verticalCenter: parent.verticalCenter
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: entry.app
-                            color: Theme.textMuted
-                            font.pixelSize: root.u(9)
-                            font.family: Theme.fontFamily
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            width: parent.width
-                            text: entry.summary
-                            textFormat: Text.PlainText
-                            color: Theme.text
-                            font.pixelSize: root.u(11)
-                            font.bold: true
-                            font.family: Theme.fontFamily
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            width: parent.width
-                            visible: entry.body !== ""
-                            text: entry.body.replace(/\n/g, " ")
-                            textFormat: Text.PlainText
-                            color: Theme.textSoft
-                            font.pixelSize: root.u(10)
-                            font.family: Theme.fontFamily
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    Text {
-                        id: timeText
-                        anchors {
-                            right: closeButton.left
-                            rightMargin: root.u(6)
-                            verticalCenter: parent.verticalCenter
-                        }
-                        text: root.arrivalText(entry.time)
-                        color: Theme.textMuted
-                        font.pixelSize: root.u(9)
-                        font.family: Theme.fontFamily
-                    }
-
-                    Item {
-                        id: closeButton
-                        width: root.u(16)
-                        height: root.u(16)
-                        anchors {
-                            right: parent.right
-                            rightMargin: root.u(14)
-                            verticalCenter: parent.verticalCenter
-                        }
-
-                        LineIcon {
-                            anchors.centerIn: parent
-                            kind: "close"
-                            size: root.u(10)
-                            color: Theme.textMuted
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.margins: -root.u(5)
-                            onClicked: root.notifications.history.remove(entry.index)
-                        }
-                    }
-                }
-            }
-
-            Text {
-                anchors.right: notifTop.right
-                anchors.verticalCenter: notifTop.verticalCenter
-                visible: !root.hasNotifications
-                text: "No notifications"
-                color: Theme.textMuted
-                font.pixelSize: root.u(10)
-                font.family: Theme.fontFamily
-            }
+            sizeFactor: root.sizeFactor
         }
 
         Card {
+            id: searchCard
+            y: root.sectionLayout["search"] || 0
+            visible: root.sectionShown("search")
             width: parent.width
             height: root.searchH
             radius: root.cardRadius

@@ -308,6 +308,35 @@ Canvas {
             ctx.beginPath(); ctx.roundedRect(8.5, 8.5, 11, 11, 2, 2); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(15.5, 4.5); ctx.lineTo(4.5, 4.5); ctx.lineTo(4.5, 15.5); ctx.stroke()
             break
+        case "bell":
+            ctx.beginPath()
+            ctx.moveTo(6, 17); ctx.lineTo(6, 11); ctx.arc(12, 11, 6, Math.PI, 0); ctx.lineTo(18, 17)
+            ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(4.5, 17); ctx.lineTo(19.5, 17); ctx.stroke()
+            ctx.beginPath(); ctx.arc(12, 19.5, 2, 0, Math.PI); ctx.stroke()
+            break
+        case "sliders":
+            for (i = 0; i < 3; i++) {
+                a = 6 + 6 * i
+                ctx.beginPath(); ctx.moveTo(4, a); ctx.lineTo(20, a); ctx.stroke()
+                ctx.beginPath(); ctx.arc(i === 1 ? 15 : 9, a, 2.2, 0, 2 * Math.PI); ctx.fill()
+            }
+            break
+        case "drag":
+            for (i = 0; i < 6; i++) {
+                ctx.beginPath(); ctx.arc(9 + 6 * (i % 2), 6 + 6 * Math.floor(i / 2), 1.5, 0, 2 * Math.PI); ctx.fill()
+            }
+            break
+        case "layout":
+            ctx.beginPath(); ctx.roundedRect(3.5, 4.5, 17, 15, 2, 2); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(3.5, 9.5); ctx.lineTo(20.5, 9.5); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(10, 9.5); ctx.lineTo(10, 19.5); ctx.stroke()
+            break
+        case "calendar":
+            ctx.beginPath(); ctx.roundedRect(4, 5.5, 16, 14.5, 2, 2); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(20, 10); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(8.5, 3.5); ctx.lineTo(8.5, 7); ctx.moveTo(15.5, 3.5); ctx.lineTo(15.5, 7); ctx.stroke()
+            break
         case "font":
             ctx.beginPath(); ctx.moveTo(3, 18); ctx.lineTo(8, 6); ctx.lineTo(13, 18); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(5, 14); ctx.lineTo(11, 14); ctx.stroke()

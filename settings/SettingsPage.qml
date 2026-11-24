@@ -62,7 +62,7 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: SettingsUi.u(40)
                         height: width
-                        radius: width / 2
+                        radius: Theme.round(width)
                         color: Theme.accent
 
                         LineIcon {
@@ -110,19 +110,45 @@ Item {
         height: 0
     }
 
-    Rectangle {
+    Item {
+        id: scrollTrack
         visible: flick.contentHeight > flick.height + 1
         anchors.right: parent.right
-        anchors.rightMargin: SettingsUi.u(4)
-        readonly property real track: flick.height
-        readonly property real size: Math.max(SettingsUi.u(24), flick.visibleArea.heightRatio * track)
-        y: page.pad + Math.max(0, Math.min(track - size,
-                                           flick.contentY / Math.max(1, flick.contentHeight - flick.height) * (track - size)))
-        width: SettingsUi.u(4)
-        height: size
-        radius: width / 2
-        color: Theme.textMuted
-        opacity: flick.moving ? 0.7 : 0.3
-        Behavior on opacity { NumberAnimation { duration: 200 } }
+        y: page.pad
+        width: SettingsUi.u(12)
+        height: flick.height
+
+        readonly property real size: Math.max(SettingsUi.u(24), flick.visibleArea.heightRatio * height)
+        readonly property real range: Math.max(1, flick.contentHeight - flick.height)
+        readonly property bool active: scrollArea.containsMouse || scrollArea.pressed
+
+        function scrollTo(y) {
+            var f = (y - size / 2) / Math.max(1, height - size)
+            flick.contentY = Math.max(0, Math.min(range, f * range))
+        }
+
+        Rectangle {
+            anchors.right: parent.right
+            anchors.rightMargin: SettingsUi.u(4)
+            y: Math.max(0, Math.min(scrollTrack.height - scrollTrack.size,
+                                    flick.contentY / scrollTrack.range * (scrollTrack.height - scrollTrack.size)))
+            width: scrollTrack.active ? SettingsUi.u(7) : SettingsUi.u(4)
+            height: scrollTrack.size
+            radius: Theme.round(width)
+            color: scrollTrack.active ? Theme.textSecondary : Theme.textMuted
+            opacity: scrollTrack.active || flick.moving ? 0.8 : 0.3
+            Behavior on width { NumberAnimation { duration: 120 } }
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+        }
+
+        MouseArea {
+            id: scrollArea
+            anchors.fill: parent
+            hoverEnabled: true
+            preventStealing: true
+            cursorShape: Qt.PointingHandCursor
+            onPressed: mouse => scrollTrack.scrollTo(mouse.y)
+            onPositionChanged: mouse => { if (pressed) scrollTrack.scrollTo(mouse.y) }
+        }
     }
 }

@@ -34,7 +34,7 @@ ListRow {
         visible: row.owner.passwordFor === row.net
         width: parent.width
         height: row.owner.u(30)
-        radius: height / 2
+        radius: Theme.round(height)
         color: Theme.track
 
         onVisibleChanged: if (visible) { pwInput.text = ""; focusLater.restart() }

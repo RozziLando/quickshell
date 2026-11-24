@@ -41,7 +41,17 @@ say "running	$$"
 
 if [ -d "$dir/.git" ]; then
     command -v git >/dev/null 2>&1 || fail "git is not installed"
-    out=$(git -C "$dir" pull --ff-only 2>&1) || fail "git pull failed: $(printf '%s' "$out" | tail -n 1)"
+    keep=""
+    if [ -s "$dir/theme.json" ]; then
+        keep=$(mktemp) || fail "Cannot create a temporary file"
+        cp "$dir/theme.json" "$keep" || fail "Cannot save theme.json"
+        git -C "$dir" ls-files --error-unmatch theme.json >/dev/null 2>&1 \
+            && git -C "$dir" checkout -q -- theme.json 2>/dev/null
+    fi
+    out=$(git -C "$dir" pull --ff-only 2>&1); code=$?
+    if [ -n "$keep" ]; then cp "$keep" "$dir/theme.json"; rm -f "$keep"; fi
+    [ "$code" -eq 0 ] || fail "git pull failed: $(printf '%s' "$out" | tail -n 1)"
+    [ -s "$dir/theme.json" ] || cp "$dir/theme.default.json" "$dir/theme.json" 2>/dev/null
     finish "$(git -C "$dir" rev-parse HEAD)"
 fi
 
@@ -67,7 +77,8 @@ if [ -f "$dir/.update-files" ]; then
     done
 fi
 
-[ -f "$dir/theme.json" ] || cp "$tmp/new/theme.json" "$dir/theme.json"
+[ -s "$dir/theme.json" ] || cp "$tmp/new/theme.default.json" "$dir/theme.json" 2>/dev/null \
+    || cp "$tmp/new/theme.json" "$dir/theme.json" 2>/dev/null
 (cd "$tmp/new" && tar -cf - --exclude=./theme.json .) | (cd "$dir" && tar -xf -) \
     || fail "Cannot copy the new files"
 cp "$tmp/files" "$dir/.update-files"

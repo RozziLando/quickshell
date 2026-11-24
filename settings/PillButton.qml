@@ -9,6 +9,7 @@ Rectangle {
     property string icon: ""
     property bool primary: false
     property bool busy: false
+    property string tip: ""
 
     signal clicked()
 
@@ -64,6 +65,15 @@ Rectangle {
         hoverEnabled: true
         enabled: !root.busy
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
+        onClicked: {
+            SettingsUi.hideTip(root)
+            root.clicked()
+        }
+        onContainsMouseChanged: {
+            if (containsMouse && root.tip !== "") SettingsUi.showTip(root, root.tip)
+            else SettingsUi.hideTip(root)
+        }
     }
+
+    Component.onDestruction: SettingsUi.hideTip(root)
 }

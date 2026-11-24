@@ -14,13 +14,14 @@ for arg in "$@"; do
         --desktop) FORM=desktop ;;
         -h|--help)
             printf '%s\n' \
-                "Quickshell island: dependencies (Arch and Fedora)." \
+                "Quickshell: dependencies (Arch and Fedora)." \
                 "" \
                 "  1. detects Arch or Fedora and installs the dependencies" \
                 "  2. makes Wi-Fi and Bluetooth work: firmware, drivers, NetworkManager and bluetooth services" \
                 "  3. turns on FastConnectable in /etc/bluetooth/main.conf" \
-                "  4. creates the wallpaper folder (wallpaperDir in theme.json) if it is missing" \
-                "  5. asks whether VS Code and its forks should follow the shell theme (scripts/vscode.sh)" \
+                "  4. creates theme.json from theme.default.json if it is missing" \
+                "  5. creates the wallpaper folder (wallpaperDir in theme.json) if it is missing" \
+                "  6. asks whether VS Code and its forks should follow the shell theme (scripts/vscode.sh)" \
                 "" \
                 "  ./install.sh -y             accept the defaults, ask nothing" \
                 "  ./install.sh --no-packages  skip the package installation" \
@@ -331,6 +332,14 @@ if [ -f "$BT_CONF" ]; then
     fi
 fi
 
+say "Settings"
+if [ -s "$SRC/theme.json" ]; then
+    info "theme.json found: your settings are kept"
+else
+    cp "$SRC/theme.default.json" "$SRC/theme.json"
+    info "created theme.json from theme.default.json"
+fi
+
 say "Wallpapers"
 WALL_DIR=$(sed -n 's/.*"wallpaperDir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SRC/theme.json" 2>/dev/null | head -n 1)
 WALL_DIR=${WALL_DIR:-~/Wallpapers}
@@ -347,6 +356,14 @@ else
     fi
 fi
 info "at the first start the shell applies one of them; then pick them in the launcher (Tab)"
+
+OTHER_NOTIFY=""
+for n in mako dunst swaync xfce4-notifyd; do command -v "$n" >/dev/null 2>&1 && OTHER_NOTIFY="$OTHER_NOTIFY $n"; done
+if [ -n "$OTHER_NOTIFY" ]; then
+    say "Notifications"
+    warn "also installed:$OTHER_NOTIFY. It can take the notifications before the shell starts:"
+    warn "remove it, or make sure it is not started by your Hyprland config"
+fi
 
 say "VS Code themes"
 EDITORS=$(sh "$SRC/scripts/vscode.sh" --list | tr '\n' ' ' | sed 's/ *$//')

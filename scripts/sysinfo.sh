@@ -5,6 +5,7 @@ has() { command -v "$1" >/dev/null 2>&1; }
 clean() { tr -s ' ' | sed 's/^ //; s/ $//'; }
 
 shelldir=${1:-}
+mode=${2:-all}
 
 if [ -r /etc/os-release ]; then
     . /etc/os-release
@@ -17,6 +18,7 @@ if [ -r /etc/os-release ]; then
         if [ -f "$f" ]; then put logofile "$f"; break; fi
     done
 fi
+[ "$mode" = logo ] && exit 0
 
 put user "$(id -un)"
 put hostname "$(cat /proc/sys/kernel/hostname 2>/dev/null || uname -n)"

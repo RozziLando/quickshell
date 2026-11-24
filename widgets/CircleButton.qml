@@ -13,7 +13,7 @@ Card {
 
     width: size
     height: size
-    radius: size / 2
+    radius: Theme.round(size)
 
     color: active ? (area.containsMouse ? Qt.lighter(activeColor, 1.12) : activeColor)
                   : (area.containsMouse ? Theme.surface : Theme.card)

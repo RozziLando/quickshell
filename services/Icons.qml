@@ -68,7 +68,12 @@ Singleton {
         "image": 0xe2ca,
         "update": 0xe028,
         "copy": 0xe1ca,
-        "font": 0xe6ee
+        "font": 0xe6ee,
+        "bell": 0xe0ce,
+        "sliders": 0xe434,
+        "drag": 0xeae2,
+        "layout": 0xe6d6,
+        "calendar": 0xe108
     })
 
     function glyph(kind, level) {

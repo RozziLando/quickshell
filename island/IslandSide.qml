@@ -2,7 +2,7 @@ import QtQuick
 import qs.services
 import qs.widgets
 
-Rectangle {
+Item {
     id: root
 
     property bool shown: true
@@ -19,19 +19,11 @@ Rectangle {
     width: size
     height: size
     x: growLeft ? anchorX - width : anchorX
-    radius: round ? size / 2 : Theme.s(7)
-    color: Theme.panel
-    border.width: Theme.glass ? 1 : (Theme.shadowEnabled ? 0 : 1)
-    border.color: Theme.glass ? Theme.glassEdge : Theme.border
+    property real radius: round ? Theme.round(size) : Math.min(Theme.s(7), Theme.radius)
 
-    Rectangle {
-        visible: Theme.glass
+    GlassRect {
         anchors.fill: parent
-        radius: parent.radius
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.glassSheen }
-            GradientStop { position: 0.5; color: "transparent" }
-        }
+        radius: root.radius
     }
     layer.enabled: Theme.shadowEnabled
     layer.effect: SoftGlow {}

@@ -106,8 +106,15 @@ SettingsPage {
     }
 
     ToggleRow {
+        title: "Show empty workspaces"
+        info: "Bar workspaces: also show the empty workspaces between the used ones, as dimmer dots. Off: only the workspaces with windows and the current one."
+        key: "showEmptyWorkspaces"
+        checked: Theme.showEmptyWorkspaces
+    }
+
+    ToggleRow {
         title: "Background apps"
-        info: "The system monitor shows the apps with open windows under the temperatures. A click opens the app, the × closes all its processes."
+        info: "The apps with open windows, in the system monitor under the temperatures, or in the control center if you add them there. A click opens the app, the × closes all its processes."
         key: "backgroundApps"
         checked: Theme.backgroundApps
     }

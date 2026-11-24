@@ -14,7 +14,16 @@ Item {
 
     readonly property bool dragging: area.pressed
     property real dragValue: value
-    readonly property real shown: dragging ? dragValue : value
+    property bool pending: false
+    readonly property real shown: dragging || pending ? dragValue : value
+
+    onValueChanged: pending = false
+
+    Timer {
+        id: pendingEnd
+        interval: 1500
+        onTriggered: root.pending = false
+    }
 
     width: parent ? parent.width : 0
     height: SettingsUi.u(18)
@@ -59,7 +68,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.height - SettingsUi.u(6)
                 height: width
-                radius: width / 2
+                radius: Theme.round(width)
                 color: Theme.background
             }
         }
@@ -80,7 +89,10 @@ Item {
         onPressed: mouse => { root.dragValue = at(mouse.x) }
         onPositionChanged: mouse => { if (pressed) root.dragValue = at(mouse.x) }
         onReleased: {
-            if (root.dragValue !== root.value) root.committed(root.dragValue)
+            if (root.dragValue === root.value) return
+            root.pending = true
+            pendingEnd.restart()
+            root.committed(root.dragValue)
         }
     }
 }
