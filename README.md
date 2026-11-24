@@ -117,7 +117,9 @@ bind = SUPER, COMMA, exec, qs ipc call settings open
 ```
 
 `qs log` shows the log of the shell, `pkill -x quickshell` stops it. Saved
-`.qml` files and `theme.json` reload automatically.
+`.qml` files and `theme.json` reload automatically. At start the shell
+relaunches itself once with a leaner memory setup (`MALLOC_CONF`); start it
+with `QS_NO_RESPAWN=1` to skip that.
 
 ## Wallpapers and themes
 
@@ -156,7 +158,10 @@ deleting it restores the defaults.
 | `hyprGaps`, `hyprRounding` | `true` / `false`: keep Hyprland gaps and rounding in sync |
 | `islandStyle` | `"floating"`, `"attached"` |
 | `minimal`, `autoHide`, `audioPanel` | `true` / `false` |
-| `toastPosition` | `"top-left"`, `"top"`, `"top-right"`, `"bottom-left"`, `"bottom"`, `"bottom-right"` |
+| `toastPosition`, `mediaPosition`, `osdPosition` | `"top-left"`, `"top"`, `"top-right"`, `"bottom-left"`, `"bottom"`, `"bottom-right"` (media and volume/brightness use their own only with `toastSeparate`) |
+| `toastSeparate` | `true` / `false` |
+| `popupAnimation` | `"pop"`, `"slide"`, `"zoom"`, `"unfold"`, `"fade"`, `"none"`: how cards not fused to the bar appear |
+| `popupSpeed` | `"relaxed"`, `"normal"`, `"snappy"` |
 | `clockWeekday`, `clockDay`, `clockMonth`, `showEmptyWorkspaces` | `true` / `false` |
 | `controlCenter` | `true` / `false` |
 | `controlTiles`, `controlSections` | list or `"auto"` |

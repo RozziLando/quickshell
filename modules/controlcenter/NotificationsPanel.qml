@@ -7,7 +7,8 @@ Item {
     required property var island
     required property var notifications
 
-    anchors.fill: parent
+    width: shown ? parent.width : openWidth
+    height: shown ? parent.height : openHeight
 
     readonly property string ownerId: "inbox"
     readonly property bool shown: island.owner === ownerId

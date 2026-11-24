@@ -8,32 +8,42 @@ Item {
     required property var host
     required property var stage
 
-    readonly property int m: stage.pillFillet + 2
+    readonly property rect r: host.bloomRect
 
     visible: host.bloomShown
-    x: host.bloomRect.x - m
-    y: host.bloomRect.y - m
-    width: host.bloomRect.width + 2 * m
-    height: host.bloomRect.height + 2 * m
-    layer.enabled: Theme.shadowEnabled
+    x: 0
+    y: 0
+    width: stage.width
+    height: stage.height
+    layer.enabled: Theme.shadowEnabled && visible && bloom.stage.pillsAttached
     layer.effect: SoftGlow {}
 
+    RectShadow {
+        visible: Theme.shadowEnabled && !bloom.stage.pillsAttached
+        x: bloom.r.x
+        y: bloom.r.y
+        width: bloom.r.width
+        height: bloom.r.height
+        radius: bloomGlass.radius
+    }
+
     GlassRect {
+        id: bloomGlass
         visible: !bloom.stage.pillsAttached
-        x: bloom.m
-        y: bloom.m
-        width: bloom.host.bloomRect.width
-        height: bloom.host.bloomRect.height
+        x: bloom.r.x
+        y: bloom.r.y
+        width: bloom.r.width
+        height: bloom.r.height
         radius: Math.min(bloom.host.bloomRadius, width / 2, height / 2)
     }
 
     EdgeShape {
         visible: bloom.stage.pillsAttached
         stage: bloom.stage
-        box: Qt.rect(bloom.m, bloom.m, bloom.host.bloomRect.width, bloom.host.bloomRect.height)
+        box: bloom.r
         radius: bloom.host.bloomRadius
-        readonly property real a0: bloom.stage.vertical ? bloom.host.bloomRect.y : bloom.host.bloomRect.x
-        readonly property real a1: a0 + (bloom.stage.vertical ? bloom.host.bloomRect.height : bloom.host.bloomRect.width)
+        readonly property real a0: bloom.stage.vertical ? bloom.r.y : bloom.r.x
+        readonly property real a1: a0 + (bloom.stage.vertical ? bloom.r.height : bloom.r.width)
         flushStart: a0 <= bloom.stage.barStart + 0.5
         flushEnd: a1 >= bloom.stage.barStart + bloom.stage.barLength - 0.5
     }

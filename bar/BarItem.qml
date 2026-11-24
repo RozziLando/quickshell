@@ -46,7 +46,7 @@ Item {
         height: barItem.vertical ? barItem.length - Theme.s(4) : barItem.thick - Theme.s(6)
         radius: Math.min(Theme.radius, Math.min(width, height) / 2)
         color: Theme.highlight
-        opacity: hover.hovered && barItem.clickable ? 1 : 0
+        opacity: hover.hovered && barItem.clickable && !(barItem.pill && barItem.pill.activeOwner !== "") ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 120 } }
     }
 
@@ -169,10 +169,21 @@ Item {
                  day: Qt.formatDateTime(now, "d") + " " + Qt.locale("en_US").monthName(now.getMonth(), Locale.ShortFormat) }
     }
 
+    readonly property real ccTarget: {
+        if (!ccMode || !stage || !stage.mainPanel) return 0
+        var f = stage.mainPanel.bloomFull
+        if (f.width <= 0 || f.height <= 0) return 0
+        var c = mapToItem(stage.contentItem, width / 2, height / 2)
+        return vertical ? f.y + f.height / 2 - c.y : f.x + f.width / 2 - c.x
+    }
+    property real ccShift: ccTarget
+    Behavior on ccShift { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
+
     Row {
         id: clockRow
         visible: barItem.kind === "clock" && !barItem.vertical
         anchors.centerIn: parent
+        anchors.horizontalCenterOffset: barItem.ccShift
         spacing: Theme.s(8)
 
         Text {
@@ -224,6 +235,7 @@ Item {
         id: clockColumn
         visible: barItem.kind === "clock" && barItem.vertical
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: barItem.ccShift
         spacing: Theme.s(1)
 
         Repeater {

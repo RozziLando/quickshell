@@ -17,7 +17,15 @@ Item {
     readonly property string activeOwner: stage.pillActiveOwner(capsule)
 
     property real shift: stage.pillShift(capsule)
-    Behavior on shift { SpringAnimation { spring: 3; damping: 0.35 } }
+    Behavior on shift {
+        id: shiftBehavior
+        NumberAnimation {
+            readonly property bool closing: Math.abs(shiftBehavior.targetValue) < 0.5
+            duration: closing ? 320 : 380
+            easing.type: Easing.OutBack
+            easing.overshoot: closing ? 0.5 : 1.1
+        }
+    }
     transform: Translate {
         x: capsule.stage.vertical ? 0 : capsule.shift
         y: capsule.stage.vertical ? capsule.shift : 0
@@ -42,10 +50,21 @@ Item {
         width: capsule.width + 2 * m
         height: capsule.height + 2 * m
         opacity: capsule.bloomed ? 0 : 1
-        layer.enabled: Theme.shadowEnabled
+        layer.enabled: Theme.shadowEnabled && visible && capsule.stage.pillsAttached
         layer.effect: SoftGlow { drop: capsule.stage.pillsAttached }
 
+        RectShadow {
+            visible: Theme.shadowEnabled && !capsule.stage.pillsAttached
+            drop: false
+            x: parent.m
+            y: parent.m
+            width: capsule.width
+            height: capsule.height
+            radius: pillRect.radius
+        }
+
         GlassRect {
+            id: pillRect
             visible: !capsule.stage.pillsAttached
             x: parent.m
             y: parent.m

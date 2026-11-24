@@ -57,7 +57,21 @@ Scope {
 
     function suspendNow() {
         suspendAfterLock = false
-        Quickshell.execDetached(["systemctl", "suspend"])
+        if (suspendProc.running) return
+        console.info("Suspending the system")
+        suspendProc.running = true
+    }
+
+    Process {
+        id: suspendProc
+        command: ["sh", "-c",
+            'out=$(systemctl suspend 2>&1) && exit 0;'
+            + ' printf "%s\\n" "$out";'
+            + ' systemctl suspend --check-inhibitors=no 2>&1 || systemctl suspend -i 2>&1']
+        stdout: StdioCollector {
+            onStreamFinished: if (text.trim() !== "") console.warn("Suspend:", text.trim())
+        }
+        onExited: code => { if (code !== 0) console.warn("Suspend failed, exit code", code) }
     }
 
     Process {
@@ -255,7 +269,11 @@ Scope {
         enabled: Theme.sleepEnabled && Theme.idleSleepMinutes > 0
         timeout: Math.max(1, Theme.idleSleepMinutes * 60)
         respectInhibitors: true
-        onIsIdleChanged: if (isIdle) root.lockAndSuspend()
+        onIsIdleChanged: {
+            if (!isIdle) return
+            console.info("Idle for", Theme.idleSleepMinutes, "minutes: sleep")
+            root.lockAndSuspend()
+        }
     }
 
     IpcHandler {

@@ -24,7 +24,7 @@ Item {
     readonly property bool concealed: false
     readonly property bool remapping: false
     readonly property int defaultRadius: Theme.radius
-    readonly property int cornerRadius: requestRadius > 0 ? requestRadius : defaultRadius
+    readonly property int cornerRadius: Theme.radius + Math.round(Theme.s(14 * 0.79) * Theme.roundness)
     readonly property bool hovered: frameHover.hovered || (!!stage && stage.anchorHovered(owner))
 
     default property alias content: contentHost.data
@@ -35,7 +35,7 @@ Item {
         var isNew = owner !== id
         var fresh = !active
         if (fresh) snap = true
-        if (isNew && stage) place = stage.placementFor(id, toast)
+        if (isNew && stage) place = stage.placementFor(id, toast, host)
         requestW = w
         requestH = h
         lastW = w
@@ -164,7 +164,7 @@ Item {
     readonly property rect pillBox: {
         var p = pillRect, w = lastW, h = lastH, e = stage ? stage.barEdge : "top"
         var keep = !!place.keep
-        var room = keep || !place.pill ? { before: 0, after: 0 } : stage.pillRoom(place.pill)
+        var room = !place.pill ? { before: 0, after: 0 } : stage.pillRoom(place.pill)
         var gapAlong = stage.gap
         if (e === "top" || e === "bottom") {
             var lo = room.before > 0 ? gapAlong + room.before : margin
@@ -273,28 +273,96 @@ Item {
         return alongPos(place.along, animH, stageH)
     }
 
-    readonly property bool shownBox: pillMode ? bloomShown : attach !== "none" ? animW > 1 && animH > 1 : active
+    readonly property bool shownBox: pillMode ? bloomShown : attach !== "none" ? animW > 1 && animH > 1 : active || progress > 0.01
     readonly property real shapeX: alongX ? boxX - filletStart
         : (attach === "right" ? boxX - ear : boxX - 1)
     readonly property real shapeY: alongX ? (attach === "bottom" ? boxY - ear : boxY - 1) : boxY - filletStart
     readonly property real shapeW: alongX ? animW + filletStart + filletEnd : animW + 1 + ear
     readonly property real shapeH: alongX ? animH + 1 + ear : animH + filletStart + filletEnd
 
+    readonly property bool plainMode: attach === "none" && !pillMode
+    readonly property point plainDir: {
+        if (place.mode === "anchored") {
+            var e = stage ? stage.barEdge : "top"
+            return e === "top" ? Qt.point(0, -1) : e === "bottom" ? Qt.point(0, 1) : e === "left" ? Qt.point(-1, 0) : Qt.point(1, 0)
+        }
+        if (place.mode === "corner") {
+            if (place.h === "left") return Qt.point(-1, 0)
+            if (place.h === "right") return Qt.point(1, 0)
+            return place.v === "bottom" ? Qt.point(0, 1) : Qt.point(0, -1)
+        }
+        return Qt.point(0, 1)
+    }
+    readonly property point plainOrigin: {
+        var w = lastW, h = lastH
+        if (place.mode === "anchored") {
+            var e = stage ? stage.barEdge : "top"
+            if (e === "top" || e === "bottom")
+                return Qt.point(Math.max(0, Math.min(w, place.along - boxX)), e === "top" ? 0 : h)
+            return Qt.point(e === "left" ? 0 : w, Math.max(0, Math.min(h, place.along - boxY)))
+        }
+        if (place.mode === "corner")
+            return Qt.point(place.h === "left" ? 0 : place.h === "right" ? w : w / 2, place.v === "bottom" ? h : 0)
+        return Qt.point(w / 2, h / 2)
+    }
+
+    readonly property string anim: Theme.popupAnimation
+    readonly property real pace: Theme.popupSpeed
+    property real progress: active ? 1 : 0
+    Behavior on progress {
+        id: progressBehavior
+        enabled: host.plainMode
+        NumberAnimation {
+            readonly property bool closing: progressBehavior.targetValue < 0.5
+            readonly property var spec: ({
+                "pop": closing ? [200, Easing.InCubic, 0] : [440, Easing.OutBack, 1.5],
+                "slide": closing ? [220, Easing.InCubic, 0] : [420, Easing.OutQuint, 0],
+                "zoom": closing ? [220, Easing.InQuad, 0] : [400, Easing.OutQuint, 0],
+                "unfold": closing ? [220, Easing.InCubic, 0] : [420, Easing.OutBack, 0.9],
+                "fade": closing ? [160, Easing.InQuad, 0] : [240, Easing.OutQuad, 0],
+                "none": [0, Easing.Linear, 0]
+            })[host.anim] || [220, Easing.OutCubic, 0]
+            duration: Math.round(spec[0] * host.pace)
+            easing.type: spec[1]
+            easing.overshoot: spec[2]
+        }
+    }
+    readonly property real fadeLevel: {
+        var p = progress
+        if (anim === "fade" || anim === "none") return Math.max(0, Math.min(1, p))
+        return Math.max(0, Math.min(1, p * (anim === "unfold" ? 3 : 2)))
+    }
+    readonly property real popScale: anim === "pop" ? 0.82 + 0.18 * progress : anim === "zoom" ? 0.45 + 0.55 * progress : 1
+    readonly property real unfoldX: anim === "unfold" && plainDir.x !== 0 ? Math.max(0.02, progress) : 1
+    readonly property real unfoldY: anim === "unfold" && plainDir.y !== 0 ? Math.max(0.02, progress) : 1
+    readonly property real travel: anim === "slide" ? Theme.s(48) : anim === "pop" ? Theme.s(14) : 0
+    readonly property real shiftX: plainDir.x * (1 - progress) * travel
+    readonly property real shiftY: plainDir.y * (1 - progress) * travel
+
     Item {
         id: plain
-        visible: host.attach === "none" && !host.pillMode
+        visible: host.plainMode && opacity > 0
         x: host.boxX
         y: host.boxY
         width: host.lastW
         height: host.lastH
-        opacity: host.active ? 1 : 0
-        scale: host.active ? 1 : 0.94
-        Behavior on opacity { NumberAnimation { duration: 180 } }
-        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-        layer.enabled: Theme.shadowEnabled
-        layer.effect: SoftGlow {}
+        opacity: host.fadeLevel
+        transform: [
+            Scale {
+                origin.x: host.plainOrigin.x
+                origin.y: host.plainOrigin.y
+                xScale: host.popScale * host.unfoldX
+                yScale: host.popScale * host.unfoldY
+            },
+            Translate { x: host.shiftX; y: host.shiftY }
+        ]
+        RectShadow {
+            anchors.fill: parent
+            radius: plainRect.radius
+        }
 
         GlassRect {
+            id: plainRect
             anchors.fill: parent
             radius: Math.min(host.cornerRadius, height / 2, width / 2)
         }
@@ -307,7 +375,16 @@ Item {
         width: host.pillMode ? host.bloomFrame.width : host.attach === "none" ? plain.width : host.animW
         height: host.pillMode ? host.bloomFrame.height : host.attach === "none" ? plain.height : host.animH
         visible: host.pillMode ? host.bloomShown : host.attach === "none" ? plain.opacity > 0 : host.shownBox
-        scale: !host.pillMode && host.attach === "none" ? plain.scale : 1
+        opacity: host.plainMode ? plain.opacity : 1
+        transform: [
+            Scale {
+                origin.x: host.plainMode ? host.plainOrigin.x : 0
+                origin.y: host.plainMode ? host.plainOrigin.y : 0
+                xScale: host.plainMode ? host.popScale * host.unfoldX : 1
+                yScale: host.plainMode ? host.popScale * host.unfoldY : 1
+            },
+            Translate { x: host.plainMode ? host.shiftX : 0; y: host.plainMode ? host.shiftY : 0 }
+        ]
         clip: host.pillMode
 
         HoverHandler { id: frameHover }
@@ -321,4 +398,5 @@ Item {
     }
 
     readonly property Item frameItem: frame
+    readonly property Item holder: contentHost
 }

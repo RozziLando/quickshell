@@ -6,7 +6,8 @@ import qs.widgets
 Item {
     id: root
     required property var island
-    anchors.fill: parent
+    width: shown ? parent.width : openWidth
+    height: shown ? parent.height : openHeight
 
     readonly property string ownerId: "osd"
     readonly property bool shown: island.owner === ownerId
@@ -17,7 +18,8 @@ Item {
     readonly property int sliderH: u(24)
     readonly property int topPad: island.floating ? Math.floor((island.idleH - sliderH) / 2) : u(12)
     readonly property int bottomPad: island.floating ? island.idleH - sliderH - topPad : u(16)
-    readonly property int sidePad: island.floating ? island.topRadius + topPad : u(24)
+    readonly property int fitPad: height > sliderH ? Math.floor((height - sliderH) / 2) : topPad
+    readonly property int sidePad: island.floating ? island.topRadius + Math.max(topPad, fitPad) : u(24)
     readonly property int openWidth: u(280)
     readonly property int openHeight: topPad + sliderH + bottomPad
 
@@ -86,7 +88,7 @@ Item {
             top: parent.top
             leftMargin: root.sidePad
             rightMargin: root.sidePad
-            topMargin: root.topPad
+            topMargin: root.island.floating ? Math.max(root.topPad, root.fitPad) : root.topPad
         }
         height: root.sliderH
         sizeFactor: root.sizeFactor

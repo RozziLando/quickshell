@@ -11,6 +11,24 @@ SettingsPage {
     title: "Appearance"
     description: "Fonts, icons, the shape of the island and its effects."
 
+    readonly property var animationItems: [
+        { value: "pop", label: "Pop", detail: "springs out of its item" },
+        { value: "slide", label: "Slide", detail: "glides in from its side" },
+        { value: "zoom", label: "Zoom", detail: "grows from its item" },
+        { value: "unfold", label: "Unfold", detail: "opens like a menu" },
+        { value: "fade", label: "Fade" },
+        { value: "none", label: "None" }
+    ]
+    readonly property var speedItems: [
+        { value: "relaxed", label: "Relaxed" },
+        { value: "normal", label: "Normal" },
+        { value: "snappy", label: "Snappy" }
+    ]
+    function labelOf(items, value) {
+        for (var i = 0; i < items.length; i++) if (items[i].value === value) return items[i].label
+        return value
+    }
+
     readonly property var fontItems: {
         var seen = {}
         return Qt.fontFamilies().filter(function (f) {
@@ -485,15 +503,84 @@ SettingsPage {
         checked: Theme.clockMonth
     }
 
+    ToggleRow {
+        visible: Theme.barMode
+        title: "Show empty workspaces"
+        info: "Bar workspaces: also show the empty workspaces between the used ones, as dimmer dots. Off: only the workspaces with windows and the current one."
+        key: "showEmptyWorkspaces"
+        checked: Theme.showEmptyWorkspaces
+    }
+
     OptionRow {
         visible: Theme.barMode
         title: "Notifications"
-        subtitle: "Where notifications, volume, brightness and media appear"
-        info: "With the bar, notifications and the volume, brightness and media popups appear in this place of the screen."
+        subtitle: Theme.toastSeparate ? "Where notifications appear" : "Where notifications, volume, brightness and media appear"
+        info: "With the bar, the popups appear in this place of the screen. With pills they grow the pill on that side, or the pill of the bell."
 
         ToastPicker {
             current: Theme.toastPosition
             onPicked: value => Settings.set("toastPosition", value)
+        }
+    }
+
+    ToggleRow {
+        visible: Theme.barMode
+        title: "Separate positions"
+        info: "Off: notifications, media and the volume and brightness bar appear in the same place. On: each of the three has its own place."
+        key: "toastSeparate"
+        checked: Theme.toastSeparate
+    }
+
+    OptionRow {
+        visible: Theme.barMode && Theme.toastSeparate
+        title: "Media"
+        subtitle: "Where the media player appears"
+        info: "The media player that appears when a song changes or with the media keys."
+
+        ToastPicker {
+            current: Theme.mediaPosition
+            onPicked: value => Settings.set("mediaPosition", value)
+        }
+    }
+
+    OptionRow {
+        visible: Theme.barMode && Theme.toastSeparate
+        title: "Volume and brightness"
+        subtitle: "Where the volume and brightness bar appears"
+        info: "The bar that appears when the volume or the brightness changes."
+
+        ToastPicker {
+            current: Theme.osdPosition
+            onPicked: value => Settings.set("osdPosition", value)
+        }
+    }
+
+    OptionRow {
+        visible: Theme.barMode
+        title: "Card animation"
+        info: "How the panels that appear on their own come in: the launcher in the middle of the screen, the panels not fused to the bar and the notifications, media and volume cards."
+
+        Dropdown {
+            text: page.labelOf(page.animationItems, Theme.popupAnimation)
+            items: page.animationItems
+            current: Theme.popupAnimation
+            menuWidth: SettingsUi.u(240)
+            onPicked: value => Settings.set("popupAnimation", value)
+        }
+    }
+
+    OptionRow {
+        visible: Theme.barMode && Theme.popupAnimation !== "none"
+        title: "Animation speed"
+        info: "Speed of the card animation."
+
+        Dropdown {
+            readonly property string value: Theme.popupSpeed > 1 ? "relaxed" : Theme.popupSpeed < 1 ? "snappy" : "normal"
+            text: page.labelOf(page.speedItems, value)
+            items: page.speedItems
+            current: value
+            menuWidth: SettingsUi.u(180)
+            onPicked: value => Settings.set("popupSpeed", value)
         }
     }
 

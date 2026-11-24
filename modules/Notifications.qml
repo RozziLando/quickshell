@@ -9,7 +9,8 @@ import qs.widgets
 Item {
     id: root
     required property var island
-    anchors.fill: parent
+    width: shown ? parent.width : wantedW
+    height: shown ? parent.height : wantedH
 
     readonly property string ownerId: "notif"
     readonly property bool shown: island.owner === ownerId

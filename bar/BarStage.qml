@@ -252,31 +252,12 @@ PanelWindow {
 
     readonly property rect paintBox: {
         var W = width, H = height
-        if (frameOn && !fullscreen) return Qt.rect(0, 0, W, H)
-        var x0 = W, y0 = H, x1 = 0, y1 = 0
-        function add(x, y, w, h) {
-            x0 = Math.min(x0, x)
-            y0 = Math.min(y0, y)
-            x1 = Math.max(x1, x + w)
-            y1 = Math.max(y1, y + h)
-        }
-        var m = Math.max(attachFillet, ear, Theme.radius) + Theme.s(4)
-        var b = barRect
-        if (integratedBar) {
-            if (vertical) add(b.x - m, 0, b.width + 2 * m, H)
-            else add(0, b.y - m, W, b.height + 2 * m)
-        } else {
-            add(b.x - m, b.y - m, b.width + 2 * m, b.height + 2 * m)
-        }
-        if (panel.attach !== "none" && panel.shownBox)
-            add(panel.shapeX - Theme.s(4), panel.shapeY - Theme.s(4), panel.shapeW + Theme.s(8), panel.shapeH + Theme.s(8))
-        var q = 32
-        x0 = Math.max(0, Math.floor(x0 / q) * q)
-        y0 = Math.max(0, Math.floor(y0 / q) * q)
-        x1 = Math.min(W, Math.ceil(x1 / q) * q)
-        y1 = Math.min(H, Math.ceil(y1 / q) * q)
-        if (x1 - x0 < 1 || y1 - y0 < 1) return Qt.rect(0, 0, 1, 1)
-        return Qt.rect(x0, y0, x1 - x0, y1 - y0)
+        if ((frameOn && !fullscreen) || (Theme.barFused && !bareBar)) return Qt.rect(0, 0, W, H)
+        var depth = Math.min(vertical ? W : H, extent + Math.max(attachFillet, ear, Theme.radius) + Theme.s(8))
+        if (barEdge === "top") return Qt.rect(0, 0, W, depth)
+        if (barEdge === "bottom") return Qt.rect(0, H - depth, W, depth)
+        if (barEdge === "left") return Qt.rect(0, 0, depth, H)
+        return Qt.rect(W - depth, 0, depth, H)
     }
 
     readonly property real barInner: barEdge === "top" ? barRect.y + barRect.height
@@ -300,7 +281,7 @@ PanelWindow {
     }
     function unregisterPill(p) {
         pills = pills.filter(function (x) { return x !== p })
-        ;[panel, toastHost].forEach(function (h) {
+        hosts.forEach(function (h) {
             if (h.place.pill !== p) return
             if (h.active) h.close(h.owner)
             h.place = { mode: "center" }
@@ -314,19 +295,40 @@ PanelWindow {
         if (which === "last") return l[l.length - 1]
         return l[Math.floor((l.length - 1) / 2)]
     }
+    readonly property var toastHosts: [toastHost, mediaHost, osdHost]
+    readonly property var hosts: [panel, toastHost, mediaHost, osdHost]
     function pillBloomed(p) {
-        return (panel.bloomShown && panel.place.pill === p) || (toastHost.bloomShown && toastHost.place.pill === p)
+        return hosts.some(function (h) { return h.bloomShown && h.place.pill === p })
     }
     function pillOwner(p) {
-        if (panel.bloomShown && panel.place.pill === p) return panel.owner !== "" ? panel.owner : panel.lastOwner
-        if (toastHost.bloomShown && toastHost.place.pill === p) return toastHost.owner !== "" ? toastHost.owner : toastHost.lastOwner
+        for (var i = 0; i < hosts.length; i++) {
+            var h = hosts[i]
+            if (h.bloomShown && h.place.pill === p) return h.owner !== "" ? h.owner : h.lastOwner
+        }
         return ""
     }
     function pillActiveOwner(p) {
-        if (panel.active && panel.pillMode && panel.place.pill === p) return panel.owner
-        if (toastHost.active && toastHost.pillMode && toastHost.place.pill === p) return toastHost.owner
+        for (var i = 0; i < hosts.length; i++) {
+            var h = hosts[i]
+            if (h.active && h.pillMode && h.place.pill === p) return h.owner
+        }
         return ""
     }
+    function pillTakenBy(p, list, except) {
+        return list.some(function (h) { return h !== except && pillTaken(p, h) })
+    }
+    function toastPositionOf(host) {
+        if (!Theme.toastSeparate || host === toastHost) return Theme.toastPosition
+        return host === mediaHost ? Theme.mediaPosition : Theme.osdPosition
+    }
+    Connections {
+        target: Theme
+        function onToastSeparateChanged() {
+            stage.toastHosts.forEach(function (h) { if (h.owner !== "") h.close(h.owner) })
+        }
+    }
+    readonly property var mainPanel: panel
+
     function pillBase(q) {
         var g = q.parent && q.parent.parent ? q.parent.parent : null
         return vertical ? barRect.y + (g ? g.y : 0) + q.y : barRect.x + (g ? g.x : 0) + q.x
@@ -342,11 +344,11 @@ PanelWindow {
         return { before: before, after: after }
     }
     function pillShift(p) {
-        if (pillTaken(p, panel) || pillTaken(p, toastHost)) return 0
+        if (pillTakenBy(p, hosts, null)) return 0
         var total = 0, space = pillSpace
         var list = pills.slice().sort(function (a, b) { return pillBase(a) - pillBase(b) })
-        ;[panel, toastHost].forEach(function (h) {
-            if (!(h.active && h.pillMode) || !h.place.pill || h.place.keep) return
+        hosts.forEach(function (h) {
+            if (!(h.active && h.pillMode) || !h.place.pill) return
             var b = h.place.pill, bi = list.indexOf(b), i = list.indexOf(p)
             if (bi < 0 || i < 0) return
             var f = h.bloomFull
@@ -379,10 +381,10 @@ PanelWindow {
     function pillTaken(p, host) {
         return host.active && host.pillMode && host.place.pill === p
     }
-    function toastPill() {
+    function toastPill(host) {
         var it = registry["notifications"]
-        if (it && it.pill) return it.pill
-        var pos = Theme.toastPosition
+        if (it && it.pill && (!Theme.toastSeparate || host === toastHost)) return it.pill
+        var pos = toastPositionOf(host)
         var v = pos.indexOf("bottom") === 0 ? "bottom" : "top"
         var h = pos.indexOf("left") >= 0 ? "left" : pos.indexOf("right") >= 0 ? "right" : "center"
         if (!vertical) {
@@ -428,24 +430,29 @@ PanelWindow {
         return vertical ? p.y : p.x
     }
 
-    function placementFor(id, toast) {
+    function placementFor(id, toast, host) {
         if (toast && pillsBar && revealed) {
-            var tp = toastPill()
-            if (tp && !pillTaken(tp, panel)) return { mode: "pill", pill: tp }
+            var tp = toastPill(host)
+            if (tp && !pillTakenBy(tp, hosts, host)) return { mode: "pill", pill: tp }
         }
         if (toast) {
-            var pos = Theme.toastPosition
+            var pos = toastPositionOf(host)
             var m = windowGaps + Theme.s(14)
             var ins = { top: m + frameSize, bottom: m + frameSize, left: m + frameSize, right: m + frameSize }
             ins[barEdge] = m + extent
-            return { mode: "corner", v: pos.indexOf("bottom") === 0 ? "bottom" : "top",
-                     h: pos.indexOf("left") >= 0 ? "left" : pos.indexOf("right") >= 0 ? "right" : "center",
+            var v = pos.indexOf("bottom") === 0 ? "bottom" : "top"
+            var hz = pos.indexOf("left") >= 0 ? "left" : pos.indexOf("right") >= 0 ? "right" : "center"
+            toastHosts.forEach(function (o) {
+                if (o === host || !o.active || o.place.mode !== "corner" || o.place.v !== v || o.place.h !== hz) return
+                ins[v] += o.requestH + Theme.s(10)
+            })
+            return { mode: "corner", v: v, h: hz,
                      top: ins.top, bottom: ins.bottom, left: ins.left, right: ins.right }
         }
         var hidden = !revealed
         if (pillsBar && id === "launcher") {
             var cp = !vertical && !hidden ? pillAt("center", "middle") : null
-            if (cp && !pillTaken(cp, toastHost)) return { mode: "pill", pill: cp, keep: false }
+            if (cp && !pillTakenBy(cp, toastHosts, null)) return { mode: "pill", pill: cp, keep: false }
             return { mode: "center", solo: hidden }
         }
         if (id === "launcher" && (!Theme.barFused || vertical)) return { mode: "center", solo: hidden }
@@ -465,7 +472,7 @@ PanelWindow {
                      start: rimmed ? rim - 2 : 0, end: rimmed ? alongSize - rim + 2 : alongSize,
                      ears: rimmed, earSize: rimmed ? frameRadius : 0, straight: !rimmed }
         }
-        if (pillsBar && item && item.pill && !pillTaken(item.pill, toastHost))
+        if (pillsBar && item && item.pill && !pillTakenBy(item.pill, toastHosts, null))
             return { mode: "pill", pill: item.pill, keep: id === "control" }
         if (!Theme.barFused)
             return { mode: "anchored", along: along, origin: barInner, gap: Theme.s(8) }
@@ -508,6 +515,8 @@ PanelWindow {
         item: barHit
         Region { item: panel.active || panel.shownBox ? panel.frameItem : null }
         Region { item: toastHost.active ? toastHost.frameItem : null }
+        Region { item: mediaHost.active ? mediaHost.frameItem : null }
+        Region { item: osdHost.active ? osdHost.frameItem : null }
         Region { item: !stage.revealed || stage.peek ? edgeStrip : null }
     }
 
@@ -524,6 +533,8 @@ PanelWindow {
 
         PillBloom { host: panel; stage: stage }
         PillBloom { host: toastHost; stage: stage }
+        PillBloom { host: mediaHost; stage: stage }
+        PillBloom { host: osdHost; stage: stage }
     }
 
     Item {
@@ -533,13 +544,13 @@ PanelWindow {
         y: stage.paintBox.y
         width: stage.paintBox.width
         height: stage.paintBox.height
-        layer.enabled: Theme.shadowEnabled
+        layer.enabled: Theme.shadowEnabled && visible
         layer.effect: SoftGlow { drop: !stage.floatingBar }
 
         Item {
             id: surface
             anchors.fill: parent
-            layer.enabled: Theme.glass
+            layer.enabled: Theme.glass && visible
             layer.effect: LiquidGlass {
                 outside: Qt.vector4d(body.x <= 0 ? 1 : 0, body.y <= 0 ? 1 : 0,
                                      body.x + body.width >= stage.width ? 1 : 0,
@@ -800,8 +811,30 @@ PanelWindow {
         toast: true
 
         Notifications { id: notifications; island: toastHost }
-        Osd { island: toastHost }
-        MediaPlayer { island: toastHost }
+    }
+
+    BarPopup {
+        id: mediaHost
+        anchors.fill: parent
+        stage: stage
+        toast: true
+    }
+
+    BarPopup {
+        id: osdHost
+        anchors.fill: parent
+        stage: stage
+        toast: true
+    }
+
+    MediaPlayer {
+        island: Theme.toastSeparate ? mediaHost : toastHost
+        parent: island.holder
+    }
+
+    Osd {
+        island: Theme.toastSeparate ? osdHost : toastHost
+        parent: island.holder
     }
 
     HyprlandFocusGrab {

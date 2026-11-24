@@ -297,6 +297,27 @@ PanelWindow {
     }
 
     Item {
+        id: attachedLayer
+        visible: !win.floating && pill.visible
+        anchors.fill: parent
+        layer.enabled: Theme.shadowEnabled && visible
+        layer.effect: SoftGlow {}
+
+        IslandShape {
+            x: pill.x
+            y: pill.y - 2
+            width: pill.width
+            height: pill.height + 2
+            outline: !Theme.shadowEnabled && !Theme.glass
+            layer.enabled: Theme.glass && visible
+            layer.effect: LiquidGlass { outside: Qt.vector4d(0, 1, 0, 0) }
+            topRadius: win.topRadius
+            fillet: win.filletRadius
+            bottomRadius: win.cornerRadius
+        }
+    }
+
+    Item {
         id: pill
         anchors.horizontalCenter: parent.horizontalCenter
         width: win.targetW
@@ -336,32 +357,18 @@ PanelWindow {
         HoverHandler { id: hoverHandler }
 
         Item {
-            visible: !win.floating
-            anchors.fill: parent
-            anchors.topMargin: -2
-            layer.enabled: Theme.shadowEnabled
-            layer.effect: SoftGlow {}
-
-            IslandShape {
-                anchors.fill: parent
-                outline: !Theme.shadowEnabled && !Theme.glass
-                layer.enabled: Theme.glass
-                layer.effect: LiquidGlass { outside: Qt.vector4d(0, 1, 0, 0) }
-                topRadius: win.topRadius
-                fillet: win.filletRadius
-                bottomRadius: win.cornerRadius
-            }
-        }
-
-        Item {
             visible: win.floating
             x: win.topRadius
             width: parent.width - 2 * win.topRadius
             height: parent.height
-            layer.enabled: Theme.shadowEnabled
-            layer.effect: SoftGlow {}
+
+            RectShadow {
+                anchors.fill: parent
+                radius: floatRect.radius
+            }
 
             GlassRect {
+                id: floatRect
                 anchors.fill: parent
                 radius: Math.min(Theme.round(height), win.cornerRadius)
             }

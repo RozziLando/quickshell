@@ -103,7 +103,7 @@ Item {
                 Image {
                     id: incoming
                     visible: false
-                    source: root.player ? root.player.trackArtUrl : ""
+                    source: root.player ? CoverArt.source(root.player.trackArtUrl) : ""
                     sourceSize: Qt.size(Theme.px(root.coverSize, incoming), Theme.px(root.coverSize, incoming))
                     asynchronous: true
                     onStatusChanged: {

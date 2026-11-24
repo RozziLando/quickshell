@@ -17,7 +17,8 @@ Item {
     required property var launcher
     required property var notifications
     required property var power
-    anchors.fill: parent
+    width: shown ? parent.width : openWidth
+    height: shown ? parent.height : openHeight
 
     readonly property string ownerId: "control"
     readonly property bool shown: island.owner === ownerId
@@ -141,7 +142,7 @@ Item {
 
     readonly property bool busy: volumeSlider.dragging
         || displaySlider.dragging || keyboardSlider.dragging
-        || wifiPage.busy || audioPage.busy || displayPage.busy
+        || (pageLoader.item && pageLoader.item.busy === true)
 
     property string page: ""
 
@@ -159,10 +160,7 @@ Item {
         id: pageFocusTimer
         interval: 60
         onTriggered: {
-            if (root.page === "wifi") wifiPage.forceActiveFocus()
-            else if (root.page === "bluetooth") bluetoothPage.forceActiveFocus()
-            else if (root.page === "audio") audioPage.forceActiveFocus()
-            else if (root.page === "display") displayPage.forceActiveFocus()
+            if (root.page !== "" && pageLoader.item) pageLoader.item.forceActiveFocus()
         }
     }
 
@@ -512,25 +510,38 @@ Item {
         }
     }
 
-    WifiPage {
-        id: wifiPage
-        anchors {
-            fill: parent
-            topMargin: root.topPad
-            bottomMargin: root.bottomPad
-            leftMargin: root.sidePad
-            rightMargin: root.sidePad
+    Component {
+        id: wifiComponent
+        WifiPage {
+            sizeFactor: root.sizeFactor
+            onBack: root.closePage()
+            onKeyboardWanted: root.requestKeyboard()
         }
-        sizeFactor: root.sizeFactor
-        visible: root.shown && root.page === "wifi"
-        opacity: visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
-        onBack: root.closePage()
-        onKeyboardWanted: root.requestKeyboard()
+    }
+    Component {
+        id: bluetoothComponent
+        BluetoothPage {
+            sizeFactor: root.sizeFactor
+            onBack: root.closePage()
+        }
+    }
+    Component {
+        id: audioComponent
+        AudioPage {
+            sizeFactor: root.sizeFactor
+            onBack: root.closePage()
+        }
+    }
+    Component {
+        id: displayComponent
+        DisplayPage {
+            sizeFactor: root.sizeFactor
+            onBack: root.closePage()
+        }
     }
 
-    BluetoothPage {
-        id: bluetoothPage
+    Loader {
+        id: pageLoader
         anchors {
             fill: parent
             topMargin: root.topPad
@@ -538,42 +549,11 @@ Item {
             leftMargin: root.sidePad
             rightMargin: root.sidePad
         }
-        sizeFactor: root.sizeFactor
-        visible: root.shown && root.page === "bluetooth"
+        active: root.page !== ""
+        sourceComponent: ({ "wifi": wifiComponent, "bluetooth": bluetoothComponent,
+                            "audio": audioComponent, "display": displayComponent })[root.page] || null
+        visible: root.shown && root.page !== ""
         opacity: visible ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 180 } }
-        onBack: root.closePage()
-    }
-
-    AudioPage {
-        id: audioPage
-        anchors {
-            fill: parent
-            topMargin: root.topPad
-            bottomMargin: root.bottomPad
-            leftMargin: root.sidePad
-            rightMargin: root.sidePad
-        }
-        sizeFactor: root.sizeFactor
-        visible: root.shown && root.page === "audio"
-        opacity: visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
-        onBack: root.closePage()
-    }
-
-    DisplayPage {
-        id: displayPage
-        anchors {
-            fill: parent
-            topMargin: root.topPad
-            bottomMargin: root.bottomPad
-            leftMargin: root.sidePad
-            rightMargin: root.sidePad
-        }
-        sizeFactor: root.sizeFactor
-        visible: root.shown && root.page === "display"
-        opacity: visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
-        onBack: root.closePage()
     }
 }

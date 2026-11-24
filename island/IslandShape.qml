@@ -1,63 +1,64 @@
 import QtQuick
 import qs.services
+import qs.widgets
 
-Canvas {
-    id: canvas
+Item {
+    id: shape
 
     property real topRadius: Theme.s(10)
     property real fillet: topRadius
     property real bottomRadius: Theme.s(15)
     property bool outline: true
 
-    onWidthChanged: requestPaint()
-    onAvailableChanged: requestPaint()
-    onVisibleChanged: if (visible) requestPaint()
-    onHeightChanged: requestPaint()
-    onTopRadiusChanged: requestPaint()
-    onFilletChanged: requestPaint()
-    onBottomRadiusChanged: requestPaint()
-    onOutlineChanged: requestPaint()
+    readonly property real f: Math.max(0, Math.min(fillet, topRadius))
+    readonly property real rb: Math.max(0, Math.min(bottomRadius, (width - 2 * topRadius) / 2, height / 2))
 
-    Connections {
-        target: Theme
-        function onScaleChanged() { canvas.requestPaint() }
-        function onPanelChanged() { canvas.requestPaint() }
-        function onGlassChanged() { canvas.requestPaint() }
-        function onBorderChanged() { canvas.requestPaint() }
+    Item {
+        visible: shape.outline
+        anchors.fill: parent
+
+        Rectangle {
+            x: shape.topRadius - 1
+            width: Math.max(0, shape.width - 2 * shape.topRadius + 2)
+            height: shape.height + 1
+            color: Theme.border
+            bottomLeftRadius: shape.rb + 1
+            bottomRightRadius: shape.rb + 1
+        }
+        Fillet {
+            x: shape.topRadius - shape.f - 1
+            y: -1
+            size: shape.f + 1
+            corner: "tr"
+            fill: Theme.border
+        }
+        Fillet {
+            x: shape.width - shape.topRadius
+            y: -1
+            size: shape.f + 1
+            corner: "tl"
+            fill: Theme.border
+        }
     }
 
-    onPaint: {
-        var ctx = getContext("2d");
-        ctx.reset();
-
-        var w = width;
-        var h = height;
-        var r_top = topRadius;
-        var r_bottom = Math.min(bottomRadius, (w - 2 * r_top) / 2, h / 2);
-
-        ctx.fillStyle = Theme.panel;
-        ctx.strokeStyle = Theme.border;
-        ctx.lineWidth = 1;
-
-        var f = Math.max(0, Math.min(fillet, r_top));
-
-        ctx.beginPath();
-        ctx.moveTo(r_top - f, 0);
-        if (f > 0) ctx.arcTo(r_top, 0, r_top, h, f);
-        else ctx.lineTo(r_top, 0);
-        ctx.lineTo(r_top, h - r_bottom);
-        if (r_bottom > 0) ctx.arcTo(r_top, h, w - r_top, h, r_bottom);
-        else ctx.lineTo(r_top, h);
-        ctx.lineTo(w - r_top - r_bottom, h);
-        if (r_bottom > 0) ctx.arcTo(w - r_top, h, w - r_top, 0, r_bottom);
-        else ctx.lineTo(w - r_top, h);
-        ctx.lineTo(w - r_top, f);
-        if (f > 0) ctx.arcTo(w - r_top, 0, w - r_top + f, 0, f);
-        else ctx.lineTo(w - r_top, 0);
-        ctx.lineTo(w - r_top + f, 0);
-        ctx.closePath();
-
-        ctx.fill();
-        if (outline) ctx.stroke();
+    Rectangle {
+        x: shape.topRadius
+        width: Math.max(0, shape.width - 2 * shape.topRadius)
+        height: shape.height
+        color: Theme.panel
+        bottomLeftRadius: shape.rb
+        bottomRightRadius: shape.rb
+    }
+    Fillet {
+        x: shape.topRadius - shape.f
+        size: shape.f
+        corner: "tr"
+        fill: Theme.panel
+    }
+    Fillet {
+        x: shape.width - shape.topRadius
+        size: shape.f
+        corner: "tl"
+        fill: Theme.panel
     }
 }

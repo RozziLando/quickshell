@@ -8,7 +8,8 @@ Item {
     id: root
     required property var island
 
-    anchors.fill: parent
+    width: shown ? parent.width : openWidth
+    height: shown ? parent.height : openHeight
 
     readonly property string ownerId: "audio"
     readonly property bool shown: island.owner === ownerId

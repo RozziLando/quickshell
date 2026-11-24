@@ -9,7 +9,8 @@ Item {
     property Component page: null
     property real heightUnits: 440
 
-    anchors.fill: parent
+    width: shown ? parent.width : openWidth
+    height: shown ? parent.height : openHeight
 
     readonly property bool shown: island.owner === ownerId && ownerId !== ""
 
@@ -28,8 +29,17 @@ Item {
     readonly property bool busy: !!(loader.item && loader.item.busy === true)
     property bool keyboard: false
 
+    property bool live: false
+    Timer {
+        id: liveTimer
+        interval: 1500
+        onTriggered: root.live = root.shown
+    }
+
     function open() {
         keyboard = false
+        liveTimer.stop()
+        live = true
         island.open(ownerId, openWidth, openHeight, false, panelRadius)
         island.grabOwner = ownerId
     }
@@ -39,7 +49,15 @@ Item {
         else open()
     }
 
-    onShownChanged: if (!shown) keyboard = false
+    onShownChanged: {
+        if (shown) {
+            liveTimer.stop()
+            live = true
+        } else {
+            keyboard = false
+            liveTimer.restart()
+        }
+    }
 
     Connections {
         target: root.island
@@ -67,7 +85,7 @@ Item {
             leftMargin: root.sidePad
             rightMargin: root.sidePad
         }
-        active: root.shown || status === Loader.Ready
+        active: root.live
         sourceComponent: root.page
         visible: root.shown
         onLoaded: {

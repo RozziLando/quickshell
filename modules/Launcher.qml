@@ -9,7 +9,8 @@ import qs.widgets
 Item {
     id: root
     required property var island
-    anchors.fill: parent
+    width: shown ? parent.width : openWidth
+    height: shown ? parent.height : openHeight
 
     readonly property string ownerId: "launcher"
     readonly property bool shown: island.owner === ownerId
@@ -98,8 +99,17 @@ Item {
         island.open(ownerId, openWidth, openHeight, true, panelRadius)
     }
 
+    property bool live: false
+    Timer {
+        id: liveTimer
+        interval: 1500
+        onTriggered: root.live = root.shown
+    }
+
     onShownChanged: {
         if (shown) {
+            liveTimer.stop()
+            live = true
             wallpaperChosen = false
             startedWith = ""
             search.text = initialText
@@ -114,6 +124,7 @@ Item {
             list.currentIndex = 0
             focusTimer.restart()
         } else {
+            liveTimer.restart()
             list.pointerX = -1
             list.pointerY = -1
             grabActive = false
@@ -519,7 +530,7 @@ Item {
                 visible: root.mode === "apps"
                 clip: true
                 spacing: root.u(2)
-                model: root.mode === "apps" ? root.results : []
+                model: root.live && root.mode === "apps" ? root.results : []
                 currentIndex: 0
                 boundsBehavior: Flickable.StopAtBounds
                 highlightMoveDuration: 80
@@ -625,7 +636,7 @@ Item {
                 y: root.u(22)
                 visible: root.mode === "themes"
                 clip: true
-                model: root.mode === "themes" ? root.wallpaperResults : []
+                model: root.live && root.mode === "themes" ? root.wallpaperResults : []
                 currentIndex: 0
                 pathItemCount: Math.min(count, Math.ceil(width / step) + 2)
                 preferredHighlightBegin: 0.5
@@ -728,7 +739,7 @@ Item {
                 y: root.u(144)
                 visible: root.mode === "themes"
                 clip: true
-                model: root.mode === "themes" ? root.results : []
+                model: root.live && root.mode === "themes" ? root.results : []
                 currentIndex: 0
                 pathItemCount: Math.min(count, Math.ceil(width / step) + 2)
                 preferredHighlightBegin: 0.5

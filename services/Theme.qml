@@ -48,6 +48,12 @@ Singleton {
     readonly property bool clockMonth: data.clockMonth === true
     readonly property string toastPosition: ["top-left", "top", "top-right", "bottom-left", "bottom", "bottom-right"]
         .indexOf(data.toastPosition) >= 0 ? data.toastPosition : "top-right"
+    readonly property var toastSpots: ["top-left", "top", "top-right", "bottom-left", "bottom", "bottom-right"]
+    readonly property bool toastSeparate: data.toastSeparate === true
+    readonly property string mediaPosition: toastSpots.indexOf(data.mediaPosition) >= 0 ? data.mediaPosition : toastPosition
+    readonly property string osdPosition: toastSpots.indexOf(data.osdPosition) >= 0 ? data.osdPosition : toastPosition
+    readonly property string popupAnimation: ["pop", "slide", "zoom", "unfold", "fade", "none"].indexOf(data.popupAnimation) >= 0 ? data.popupAnimation : "pop"
+    readonly property real popupSpeed: data.popupSpeed === "relaxed" ? 1.35 : data.popupSpeed === "snappy" ? 0.7 : 1
     readonly property bool audioPanel: data.audioPanel === true
 
     readonly property bool floatingIsland: data.islandStyle !== "attached"
@@ -197,6 +203,11 @@ Singleton {
             property bool clockDay: false
             property bool clockMonth: false
             property string toastPosition: "top-right"
+            property bool toastSeparate: false
+            property string popupAnimation: "pop"
+            property string popupSpeed: "normal"
+            property string mediaPosition: ""
+            property string osdPosition: ""
             property bool audioPanel: false
             property var controlTiles: "auto"
             property var controlSections: "auto"

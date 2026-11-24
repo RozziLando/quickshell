@@ -60,88 +60,29 @@ Item {
     }
     onLogoSourcesChanged: logoTry = 0
 
-    readonly property int supersample: Math.max(2, Math.min(4, Math.ceil(128 / Math.max(1, Math.min(width, height)))))
-
     Image {
         id: logo
         anchors.fill: parent
         source: root.logoTry < root.logoSources.length ? root.logoSources[root.logoTry] : ""
-        sourceSize.width: Theme.px(width * root.supersample, root)
-        sourceSize.height: Theme.px(height * root.supersample, root)
+        sourceSize.width: Theme.px(width * 2, root)
+        sourceSize.height: Theme.px(height * 2, root)
         fillMode: Image.PreserveAspectFit
         asynchronous: true
+        smooth: true
+        mipmap: true
         visible: false
-        onStatusChanged: {
-            if (status === Image.Error) root.logoTry++
-            else if (status === Image.Ready) logoCanvas.prepare()
-            else logoCanvas.requestPaint()
-        }
+        onStatusChanged: if (status === Image.Error) root.logoTry++
     }
 
-    Canvas {
-        id: logoCanvas
-        width: root.width * root.supersample
-        height: root.height * root.supersample
-        scale: 1 / root.supersample
-        transformOrigin: Item.TopLeft
-        layer.enabled: true
-        layer.smooth: true
-        layer.mipmap: true
-        renderTarget: Canvas.Image
-        renderStrategy: Canvas.Immediate
-        property string loaded: ""
+    ShaderEffect {
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        width: logo.paintedWidth
+        height: logo.paintedHeight
+        visible: logo.status === Image.Ready
+        property var source: logo
         property color tint: root.tint
-        onTintChanged: requestPaint()
-        onImageLoaded: requestPaint()
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
-
-        readonly property string key: Math.random().toString(36).slice(2, 10)
-
-        function prepare() {
-            if (logo.status !== Image.Ready) return
-            var src = String(logo.source)
-            var url = src.indexOf("data:") === 0 ? src + "#" + key
-                    : src + (src.indexOf("?") >= 0 ? "&" : "?") + "k=" + key
-            if (url !== loaded) {
-                if (loaded !== "") unloadImage(loaded)
-                loaded = url
-            }
-            if (isImageLoaded(url)) requestPaint()
-            else loadImage(url)
-        }
-
-        onPaint: {
-            var ctx = getContext("2d")
-            ctx.reset()
-            if (logo.status !== Image.Ready || loaded === "" || !isImageLoaded(loaded)) return
-            var iw = logo.implicitWidth, ih = logo.implicitHeight
-            if (iw <= 0 || ih <= 0) return
-            var k = Math.min(width / iw, height / ih)
-            var dw = Math.round(iw * k), dh = Math.round(ih * k)
-            ctx.drawImage(loaded, Math.round((width - dw) / 2), Math.round((height - dh) / 2), dw, dh)
-            var img = ctx.getImageData(0, 0, width, height)
-            var w = img.width, h = img.height, d = img.data, alpha = [], i
-            for (i = 0; i < d.length; i += 4) {
-                var mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2])
-                var light = Math.max(0, Math.min(1, (mx / 255 - 0.72) / 0.2))
-                var plain = 1 - Math.max(0, Math.min(1, ((mx > 0 ? (mx - mn) / mx : 0) - 0.12) / 0.2))
-                alpha.push(Math.round(d[i + 3] * (1 - light * plain) / 255 * 48) / 48)
-            }
-            ctx.clearRect(0, 0, width, height)
-            for (var y = 0; y < h; y++) {
-                var x = 0
-                while (x < w) {
-                    var av = alpha[y * w + x], x2 = x + 1
-                    while (x2 < w && alpha[y * w + x2] === av) x2++
-                    if (av > 0) {
-                        ctx.fillStyle = Qt.rgba(tint.r, tint.g, tint.b, av)
-                        ctx.fillRect(x, y, x2 - x, 1)
-                    }
-                    x = x2
-                }
-            }
-        }
+        fragmentShader: Qt.resolvedUrl("shaders/logo.frag.qsb")
     }
 
     LineIcon {

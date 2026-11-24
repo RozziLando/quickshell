@@ -1,4 +1,5 @@
 import QtQuick
+import qs.widgets
 import qs.bar
 
 Item {

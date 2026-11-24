@@ -109,7 +109,7 @@ Item {
         corner: shape.corner("end", "edge")
     }
 
-    layer.enabled: Theme.glass
+    layer.enabled: Theme.glass && visible
     layer.effect: LiquidGlass {
         outside: Qt.vector4d(shape.side === "left" || (!shape.upright && shape.flushStart) ? 1 : 0,
                              shape.side === "top" || (shape.upright && shape.flushStart) ? 1 : 0,

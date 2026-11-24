@@ -21,12 +21,14 @@ Item {
     x: growLeft ? anchorX - width : anchorX
     property real radius: round ? Theme.round(size) : Math.min(Theme.s(7), Theme.radius)
 
+    RectShadow {
+        anchors.fill: parent
+        radius: root.radius
+    }
     GlassRect {
         anchors.fill: parent
         radius: root.radius
     }
-    layer.enabled: Theme.shadowEnabled
-    layer.effect: SoftGlow {}
 
     property real offsetX: 0
     property real offsetY: 0
