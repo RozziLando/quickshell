@@ -27,7 +27,7 @@ Rectangle {
 
     visible: wanted && apps.length > 0
     width: parent ? parent.width : 0
-    height: visible ? content.implicitHeight + 2 * pad : 0
+    height: wanted && apps.length > 0 ? content.implicitHeight + 2 * pad : 0
     radius: Theme.radius
     color: Theme.card
     border.width: 1

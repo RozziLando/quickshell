@@ -7,6 +7,7 @@ Item {
 
     property string kind: ""
     property bool tile: true
+    property bool outline: false
     property real k: 1
     function f(v) { return SettingsUi.u(v * 0.79 * k) }
 
@@ -15,6 +16,7 @@ Item {
     readonly property bool wide: tile && tileMeta.slots === 2
 
     function sectionHeight(id) {
+        if (id === "clock") return f(60)
         if (id === "notifications") return f(64)
         if (id === "search" || id === "apps") return f(44)
         return f(60)
@@ -75,7 +77,7 @@ Item {
 
             Text {
                 width: parent.width
-                text: piece.tileMeta.label
+                text: piece.kind === "powermode" ? "Power" : piece.tileMeta.label
                 color: Theme.text
                 font.pixelSize: piece.f(12)
                 font.bold: true
@@ -84,7 +86,8 @@ Item {
             }
             Text {
                 width: parent.width
-                text: piece.kind === "network" && !Controls.hasWifi ? "Connected" : "On"
+                text: piece.kind === "powermode" ? "Balanced"
+                    : piece.kind === "network" && !Controls.hasWifi ? "Connected" : "On"
                 color: Theme.textSecondary
                 font.pixelSize: piece.f(10)
                 font.family: Theme.fontFamily
@@ -97,9 +100,11 @@ Item {
         visible: !piece.tile
         anchors.fill: parent
         radius: Theme.radius
-        color: Theme.card
-        border.width: 1
-        border.color: Theme.cardBorder
+        readonly property bool bare: piece.kind === "clock"
+        color: bare ? "transparent" : Theme.card
+        border.width: bare ? 1.5 : 1
+        border.color: bare ? (piece.outline ? Theme.accent : "transparent") : Theme.cardBorder
+        Behavior on border.color { ColorAnimation { duration: 140 } }
 
         readonly property bool slider: ["audio", "display", "keyboard"].indexOf(piece.kind) >= 0
 
@@ -148,6 +153,55 @@ Item {
             color: Theme.textMuted
             font.pixelSize: piece.f(10)
             font.family: Theme.fontFamily
+        }
+
+        Item {
+            visible: piece.kind === "clock"
+            anchors.fill: parent
+            readonly property bool narrow: piece.width < piece.f(250)
+
+            Text {
+                id: clockTime
+                x: parent.narrow ? (parent.width - width) / 2 : piece.f(16)
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: parent.narrow ? -piece.f(8) : 0
+                text: "21:40"
+                color: Theme.text
+                font.pixelSize: parent.narrow ? piece.f(20) : piece.f(28)
+                font.bold: true
+                font.family: Theme.fontFamily
+            }
+            Column {
+                visible: !parent.narrow
+                anchors.right: parent.right
+                anchors.rightMargin: piece.f(16)
+                anchors.verticalCenter: parent.verticalCenter
+                Text {
+                    anchors.right: parent.right
+                    text: "Thursday"
+                    color: Theme.accent
+                    font.pixelSize: piece.f(13)
+                    font.weight: Font.DemiBold
+                    font.family: Theme.fontFamily
+                }
+                Text {
+                    anchors.right: parent.right
+                    text: "26 November 2026"
+                    color: Theme.textSecondary
+                    font.pixelSize: piece.f(11)
+                    font.family: Theme.fontFamily
+                }
+            }
+            Text {
+                visible: parent.narrow
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: clockTime.bottom
+                text: "Thu 26 Nov"
+                color: Theme.accent
+                font.pixelSize: piece.f(11)
+                font.weight: Font.DemiBold
+                font.family: Theme.fontFamily
+            }
         }
 
         Row {

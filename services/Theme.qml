@@ -130,17 +130,57 @@ Singleton {
     readonly property real idleSleepMinutes: data.idleSleepMinutes
     readonly property bool networkMonitor: data.networkMonitor
     readonly property bool backgroundApps: data.backgroundApps
+    readonly property bool powerMode: data.powerMode
     readonly property bool showEmptyWorkspaces: data.showEmptyWorkspaces !== false
     readonly property bool displayOnDesktop: data.displayOnDesktop
     readonly property bool vscodeThemeSync: data.vscodeThemeSync
     readonly property var controlTiles: data.controlTiles
     readonly property var controlSections: data.controlSections
+    readonly property var controlWidths: data.controlWidths
+    readonly property var controlItems: data.controlItems
+    readonly property var controlGrid: data.controlGrid
+    readonly property var controlBottom: data.controlBottom
 
     Process {
         id: seed
-        command: ["sh", "-c", '[ -s "$1" ] && exit 0; [ -f "$2" ] && cp "$2" "$1" && exit 10; exit 0', "sh",
-            Quickshell.shellPath("theme.json"), Quickshell.shellPath("theme.default.json")]
-        onExited: code => { if (code === 10) settingsFile.reload() }
+        command: ["sh", "-c",
+            '[ -s "$1" ] && exit 0; [ -f "$2" ] && cp "$2" "$1" || exit 0;'
+            + ' for b in /sys/class/power_supply/*; do'
+            + '  [ "$(cat "$b/type" 2>/dev/null)" = Battery ] || continue;'
+            + '  [ "$(cat "$b/scope" 2>/dev/null)" = Device ] && continue;'
+            + '  [ -s "$3" ] && exit 11;'
+            + ' done; exit 10', "sh",
+            Quickshell.shellPath("theme.json"), Quickshell.shellPath("theme.default.json"),
+            Quickshell.shellPath("theme.laptop.json")]
+        onExited: code => {
+            if (code === 11) {
+                laptopDefaults.pending = true
+                laptopDefaults.reload()
+            }
+            else if (code === 10) settingsFile.reload()
+        }
+    }
+
+    FileView {
+        id: laptopDefaults
+        property bool pending: false
+        path: Quickshell.shellPath("theme.laptop.json")
+        blockLoading: true
+        printErrors: false
+        onLoaded: {
+            if (!pending) return
+            pending = false
+            var extra
+            try { extra = JSON.parse(text()) } catch (e) { extra = null }
+            if (extra && typeof extra === "object" && !Array.isArray(extra))
+                Settings.edit(function (s) { for (var k in extra) s[k] = extra[k] })
+            settingsFile.reload()
+        }
+        onLoadFailed: {
+            if (!pending) return
+            pending = false
+            settingsFile.reload()
+        }
     }
 
     Component.onCompleted: seed.running = true
@@ -157,7 +197,7 @@ Singleton {
         adapter: JsonAdapter {
             id: data
 
-            property real scale: 1.0
+            property real scale: 1.1
             property real cornerRadius: 15
             property string fontFamily: "Inter"
             property string iconFont: "phosphor"
@@ -165,13 +205,13 @@ Singleton {
             property bool minimal: false
             property bool autoHide: false
             property string monitor: ""
-            property bool glowEnabled: true
-            property bool darkShadow: false
+            property bool glowEnabled: false
+            property bool darkShadow: true
             property bool glass: false
             property bool glassAuto: false
-            property real glassOpacity: 0.55
+            property real glassOpacity: 0.75
             property string theme: "midnight"
-            property bool bluetoothOnStartup: false
+            property bool bluetoothOnStartup: true
             property bool lockBlur: true
             property bool loginBlur: true
             property bool lockScreen: true
@@ -183,14 +223,15 @@ Singleton {
             property string wallpaperDir: "~/Wallpapers"
             property string wallpaperTransition: "grow"
             property bool vscodeThemeSync: true
-            property bool networkMonitor: false
+            property bool networkMonitor: true
             property bool backgroundApps: true
+            property bool powerMode: true
             property bool showEmptyWorkspaces: true
-            property bool displayOnDesktop: false
+            property bool displayOnDesktop: true
             property string layout: "bar"
-            property string barStyle: "floating"
-            property bool barFrame: true
-            property bool barCurves: true
+            property string barStyle: "pills"
+            property bool barFrame: false
+            property bool barCurves: false
             property bool barFused: true
             property real barLength: 100
             property real edgeGap: 5
@@ -203,14 +244,18 @@ Singleton {
             property bool clockDay: false
             property bool clockMonth: false
             property string toastPosition: "top-right"
-            property bool toastSeparate: false
+            property bool toastSeparate: true
             property string popupAnimation: "pop"
             property string popupSpeed: "normal"
-            property string mediaPosition: ""
-            property string osdPosition: ""
-            property bool audioPanel: false
+            property string mediaPosition: "top"
+            property string osdPosition: "bottom"
+            property bool audioPanel: true
             property var controlTiles: "auto"
             property var controlSections: "auto"
+            property var controlWidths: ({})
+            property var controlItems: "auto"
+            property var controlGrid: "auto"
+            property var controlBottom: "auto"
             property var themeWallpapers: ({})
             property var wallpaperThemes: ({})
         }

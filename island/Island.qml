@@ -149,8 +149,10 @@ PanelWindow {
     property int requestRadius: 0
     readonly property int cornerRadius: owner !== "" && requestRadius > 0 ? requestRadius : defaultRadius
 
+    property bool smoothResize: false
     function open(id, w, h, keyboard, radius) {
         var isNew = owner !== id
+        smoothResize = !isNew && (h > requestH + 1 || w > requestW + 1)
         owner = id
         requestW = w
         requestH = h
@@ -162,6 +164,7 @@ PanelWindow {
 
     function close(id) {
         if (owner !== id) return
+        smoothResize = false
         owner = ""
         wantsKeyboard = false
     }
@@ -358,8 +361,8 @@ PanelWindow {
             id: widthBehavior
             NumberAnimation {
                 readonly property bool closing: widthBehavior.targetValue <= win.idleW
-                duration: win.hiddenMode ? 280 : (closing ? 320 : 380)
-                easing.type: win.hiddenMode ? Easing.OutCubic : Easing.OutBack
+                duration: win.hiddenMode ? 280 : win.smoothResize ? 280 : (closing ? 320 : 380)
+                easing.type: win.hiddenMode ? Easing.OutCubic : win.smoothResize ? Easing.OutCubic : Easing.OutBack
                 easing.overshoot: closing ? 0.5 : 1.1
             }
         }
@@ -367,8 +370,8 @@ PanelWindow {
             id: heightBehavior
             NumberAnimation {
                 readonly property bool closing: heightBehavior.targetValue <= win.idleH
-                duration: win.hiddenMode ? 280 : (closing ? 320 : 380)
-                easing.type: win.hiddenMode ? Easing.OutCubic : Easing.OutBack
+                duration: win.hiddenMode ? 280 : win.smoothResize ? 280 : (closing ? 320 : 380)
+                easing.type: win.hiddenMode ? Easing.OutCubic : win.smoothResize ? Easing.OutCubic : Easing.OutBack
                 easing.overshoot: closing ? 0.5 : 1.1
             }
         }

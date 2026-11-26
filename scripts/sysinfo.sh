@@ -12,10 +12,21 @@ if [ -r /etc/os-release ]; then
     put os "${PRETTY_NAME:-$NAME}"
     put osid "${ID:-linux}"
     put logo "${LOGO:-}"
-    for f in "$shelldir/assets/logos/${ID:-linux}.svg" "$shelldir/assets/logos/${ID:-linux}.png" \
-             "/usr/share/pixmaps/${LOGO:-none}.svg" "/usr/share/pixmaps/${LOGO:-none}.png"; do
-        [ -n "$shelldir" ] || case "$f" in /assets/*) continue ;; esac
-        if [ -f "$f" ]; then put logofile "$f"; break; fi
+    id=${ID:-linux}
+    lg=${LOGO:-$id-logo}
+    {
+        if [ -n "$shelldir" ]; then
+            printf '%s\n' "$shelldir/assets/logos/$id.svg" "$shelldir/assets/logos/$id.png"
+        fi
+        printf '%s\n' "/usr/share/pixmaps/$lg.svg" "/usr/share/pixmaps/$lg.png"
+        find /usr/share/icons /usr/share/pixmaps -maxdepth 4 \( -name "$lg.svg" -o -name "$lg-icon.svg" \
+            -o -name "$lg-symbolic.svg" -o -name "$id-logo.svg" -o -name "$id-logo-icon.svg" \
+            -o -name "distributor-logo-$id.svg" -o -name "$lg.png" -o -name "$lg-icon.png" \
+            -o -name "$id-logo.png" -o -name "distributor-logo-$id.png" \) 2>/dev/null \
+            | awk '{ s = $0 ~ /\.svg$/ ? 0 : 1; m = match($0, /\/[0-9]+x[0-9]+\//); n = m ? substr($0, RSTART + 1) + 0 : 0; printf "%d %06d %s\n", s, 999999 - n, $0 }' \
+            | sort | cut -d' ' -f3-
+    } | awk '!seen[$0]++' | while IFS= read -r f; do
+        [ -f "$f" ] && put logofile "$f"
     done
 fi
 [ "$mode" = logo ] && exit 0

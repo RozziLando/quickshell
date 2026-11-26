@@ -1,5 +1,6 @@
 import QtQuick
 import qs.services
+import qs.island
 import qs.widgets
 
 Item {
@@ -184,10 +185,16 @@ Item {
         }
         LineIcon {
             anchors.centerIn: parent
-            visible: glyph.kind === "audio" || glyph.kind === "sysmon"
-            kind: glyph.kind === "audio" ? "volume" : "cpu"
+            visible: glyph.kind === "audio"
+            kind: "volume"
             size: SettingsUi.u(15)
             color: Theme.text
+        }
+        BatteryIndicator {
+            anchors.centerIn: parent
+            visible: glyph.kind === "sysmon"
+            width: SettingsUi.u(24)
+            height: SettingsUi.u(24)
         }
         Text {
             anchors.centerIn: parent
@@ -348,8 +355,8 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: d.dragId !== "" && d.zone === "out" && d.dragFromBar ? "Release to remove"
-                : d.dividers ? "Drag items into the bar; a divider starts a new pill"
-                : "Drag items into the bar, drag them out to remove them"
+                : d.dividers ? "Drag items in or out; a divider starts a new pill"
+                : "Drag items in or out"
             color: Theme.textMuted
             font.pixelSize: SettingsUi.u(9)
             font.family: Theme.fontFamily

@@ -9,7 +9,7 @@ SettingsPage {
 
     icon: "palette"
     title: "Appearance"
-    description: "Fonts, icons, the shape of the island and its effects."
+    description: "Shape, fonts, icons and effects."
 
     readonly property var animationItems: [
         { value: "pop", label: "Pop", detail: "springs out of its item" },
@@ -107,7 +107,7 @@ SettingsPage {
 
     SliderRow {
         title: "Corner radius"
-        info: "Roundness of every corner of the shell: island, bar, panels, cards, buttons. Lower values turn the circles into rounded squares, 0 makes everything square."
+        info: "Roundness of every corner. 0 is square."
         from: 0
         to: 30
         step: 1
@@ -128,9 +128,9 @@ SettingsPage {
                 icon: Theme.hyprRounding ? (remembered ? "reboot" : "close") : "monitor"
                 text: Theme.hyprRounding ? (remembered ? "Undo" : "Unlink") : "Hyprland"
                 tip: Theme.hyprRounding
-                    ? (remembered ? "Give the windows of Hyprland back the corners they had before"
-                                  : "Stop following this radius: Hyprland goes back to its own config")
-                    : "Round the windows of Hyprland like the shell, and keep them in sync"
+                    ? (remembered ? "Restore the window corners"
+                                  : "Stop syncing the window corners")
+                    : "Sync the window corners"
                 onClicked: Theme.hyprRounding ? SettingsUi.undoHypr("rounding") : SettingsUi.linkHypr("rounding")
             }
         ]
@@ -138,7 +138,7 @@ SettingsPage {
 
     SliderRow {
         title: "Distance from the edges"
-        info: "Space between the floating island or the floating bar and the edges of the screen, at the top and at the sides."
+        info: "Space between the floating island or bar and the screen edges."
         from: 0
         to: 30
         step: 1
@@ -159,9 +159,9 @@ SettingsPage {
                 icon: Theme.hyprGaps ? (remembered ? "reboot" : "close") : "monitor"
                 text: Theme.hyprGaps ? (remembered ? "Undo" : "Unlink") : "Hyprland"
                 tip: Theme.hyprGaps
-                    ? (remembered ? "Give Hyprland back the outer gaps it had before"
-                                  : "Stop following this distance: Hyprland goes back to its own config")
-                    : "Set the outer gaps of Hyprland (windows to screen edges) to this distance, and keep them in sync"
+                    ? (remembered ? "Restore the window gaps"
+                                  : "Stop syncing the window gaps")
+                    : "Sync the window gaps"
                 onClicked: Theme.hyprGaps ? SettingsUi.undoHypr("gaps") : SettingsUi.linkHypr("gaps")
             }
         ]
@@ -174,7 +174,7 @@ SettingsPage {
 
     OptionRow {
         title: "Font"
-        info: "Font of the whole shell. The list shows every font installed on this computer."
+        info: "Font of the shell."
 
         Row {
             spacing: SettingsUi.u(8)
@@ -183,7 +183,7 @@ SettingsPage {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: Theme.fontFamily !== "Inter"
                 icon: "reboot"
-                tip: "Back to the default font (Inter)"
+                tip: "Default font"
                 onClicked: Settings.set("fontFamily", "Inter")
             }
 
@@ -201,7 +201,7 @@ SettingsPage {
 
     OptionRow {
         title: "Icons"
-        info: "Style of the icons. The shell uses the Phosphor icon set: every Phosphor weight found in assets/fonts or installed on the computer is listed. Classic draws simple line icons."
+        info: "Icon style. Classic: simple lines."
 
         Row {
             spacing: SettingsUi.u(8)
@@ -210,7 +210,7 @@ SettingsPage {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: page.currentIcon !== "phosphor"
                 icon: "reboot"
-                tip: "Back to the default icons (Phosphor Regular)"
+                tip: "Default icons"
                 onClicked: Settings.set("iconFont", "phosphor")
             }
 
@@ -343,7 +343,7 @@ SettingsPage {
     ToggleRow {
         visible: !Theme.barMode
         title: "Minimal"
-        info: "At rest the island shows only the clock; the other icons appear when the mouse is over it."
+        info: "Only the clock; the icons appear on hover."
         key: "minimal"
         checked: Theme.minimalIsland
     }
@@ -351,7 +351,7 @@ SettingsPage {
     ToggleRow {
         visible: !Theme.barMode
         title: "Full audio panel"
-        info: "The audio button of the island opens the playing media together with all the outputs, inputs and app volumes, like the bar. Off: it opens only the media player."
+        info: "Media, app volumes and devices together. Off: only the media."
         key: "audioPanel"
         checked: Theme.audioPanel
     }
@@ -365,7 +365,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode && Theme.barStyle !== "transparent" && !Theme.barPills
         title: "Panels fused to the bar"
-        info: "The panels of the bar buttons grow out of the bar. Off: they open as separate floating cards, next to their button, like the notifications."
+        info: "Panels grow out of the bar. Off: floating cards."
         key: "barFused"
         checked: Theme.barFused
     }
@@ -421,7 +421,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode && Theme.barStyle === "integrated"
         title: "Curved ends"
-        info: "The ends of the bar curve into the sides of the monitor. Off: the bar is a straight strip along the whole edge."
+        info: "The bar ends curve into the screen sides."
         key: "barCurves"
         checked: Theme.barCurves
     }
@@ -429,7 +429,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode && ((Theme.barStyle === "integrated" && Theme.barCurves) || Theme.barStyle === "pillsAttached")
         title: "Screen frame"
-        info: "A thin frame of the bar color around the whole screen, with rounded inner corners."
+        info: "A thin frame around the screen."
         key: "barFrame"
         checked: Theme.barFrame
     }
@@ -437,7 +437,7 @@ SettingsPage {
     SliderRow {
         visible: Theme.barMode && (Theme.barStyle === "floating" || Theme.barStyle === "attached")
         title: "Bar width"
-        info: "Length of the bar along its edge, as a share of the screen. It never gets shorter than its items."
+        info: "Bar length, as a share of the screen."
         from: 20
         to: 100
         step: 5
@@ -449,7 +449,7 @@ SettingsPage {
     OptionRow {
         visible: Theme.barMode
         title: "Position"
-        info: "Edge of the screen where the bar sits."
+        info: "Screen edge of the bar."
 
         Segmented {
             options: [
@@ -482,7 +482,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode
         title: "Weekday in the clock"
-        info: "Shows the day of the week next to the time, e.g. Sun."
+        info: "Day of the week, e.g. Sun."
         key: "clockWeekday"
         checked: Theme.clockWeekday
     }
@@ -490,7 +490,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode
         title: "Day in the clock"
-        info: "Shows the day of the month next to the time, e.g. 22."
+        info: "Day of the month, e.g. 22."
         key: "clockDay"
         checked: Theme.clockDay
     }
@@ -498,7 +498,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode
         title: "Month in the clock"
-        info: "Shows the month next to the time, e.g. Nov."
+        info: "Month, e.g. Nov."
         key: "clockMonth"
         checked: Theme.clockMonth
     }
@@ -506,7 +506,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode
         title: "Show empty workspaces"
-        info: "Bar workspaces: also show the empty workspaces between the used ones, as dimmer dots. Off: only the workspaces with windows and the current one."
+        info: "Show empty workspaces as dimmer dots."
         key: "showEmptyWorkspaces"
         checked: Theme.showEmptyWorkspaces
     }
@@ -514,8 +514,8 @@ SettingsPage {
     OptionRow {
         visible: Theme.barMode
         title: "Notifications"
-        subtitle: Theme.toastSeparate ? "Where notifications appear" : "Where notifications, volume, brightness and media appear"
-        info: "With the bar, the popups appear in this place of the screen. With pills they grow the pill on that side, or the pill of the bell."
+        subtitle: Theme.toastSeparate ? "Notifications" : "Notifications, media, volume"
+        info: "Where the popups appear. With pills, from the pill on that side."
 
         ToastPicker {
             current: Theme.toastPosition
@@ -526,7 +526,7 @@ SettingsPage {
     ToggleRow {
         visible: Theme.barMode
         title: "Separate positions"
-        info: "Off: notifications, media and the volume and brightness bar appear in the same place. On: each of the three has its own place."
+        info: "Give notifications, media and volume their own place."
         key: "toastSeparate"
         checked: Theme.toastSeparate
     }
@@ -534,8 +534,8 @@ SettingsPage {
     OptionRow {
         visible: Theme.barMode && Theme.toastSeparate
         title: "Media"
-        subtitle: "Where the media player appears"
-        info: "The media player that appears when a song changes or with the media keys."
+        subtitle: "Media player"
+        info: "Shown when a song changes or with the media keys."
 
         ToastPicker {
             current: Theme.mediaPosition
@@ -546,8 +546,8 @@ SettingsPage {
     OptionRow {
         visible: Theme.barMode && Theme.toastSeparate
         title: "Volume and brightness"
-        subtitle: "Where the volume and brightness bar appears"
-        info: "The bar that appears when the volume or the brightness changes."
+        subtitle: "Volume and brightness"
+        info: "Shown when volume or brightness changes."
 
         ToastPicker {
             current: Theme.osdPosition
@@ -558,7 +558,7 @@ SettingsPage {
     OptionRow {
         visible: Theme.barMode
         title: "Card animation"
-        info: "How the panels that appear on their own come in: the launcher in the middle of the screen, the panels not fused to the bar and the notifications, media and volume cards."
+        info: "How floating panels and cards appear."
 
         Dropdown {
             text: page.labelOf(page.animationItems, Theme.popupAnimation)
@@ -591,21 +591,21 @@ SettingsPage {
 
     ToggleRow {
         title: "Auto hide"
-        info: "The island or the bar hides when windows are open. Move the mouse to its edge of the screen to bring it back."
+        info: "Hide with open windows; show at the screen edge."
         key: "autoHide"
         checked: Theme.autoHide
     }
 
     ToggleRow {
         title: "Glow"
-        info: "A soft glow in the color of the theme around the island or the bar and the windows. When the dark shadow is also on, the shadow covers it."
+        info: "A soft glow in the theme color."
         key: "glowEnabled"
         checked: Theme.glowEnabled
     }
 
     ToggleRow {
         title: "Dark shadow"
-        info: "A classic dark shadow around the island or the bar and the windows. When it is on it replaces the glow."
+        info: "A dark shadow. Replaces the glow."
         key: "darkShadow"
         checked: Theme.darkShadow
     }
@@ -617,7 +617,7 @@ SettingsPage {
 
     ToggleRow {
         title: "Glass"
-        info: "Liquid glass: translucent, blurred surfaces with a light-catching rim. Bar and panels melt into one piece."
+        info: "Translucent, blurred surfaces."
         key: "glass"
         checked: Theme.glass
     }
@@ -625,7 +625,7 @@ SettingsPage {
     SliderRow {
         active: Theme.glass
         title: "Glass opacity"
-        info: "How opaque the glass is: lower values let more of the background show through."
+        info: "Glass opacity."
         from: 0.3
         to: 1
         step: 0.05

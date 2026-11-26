@@ -10,7 +10,7 @@ SettingsPage {
 
     icon: "gear"
     title: "General"
-    description: "Size of the shell, the main screen and the extra features."
+    description: "Size, main screen and extras."
 
     readonly property var battery: UPower.displayDevice
     readonly property bool desktop: !(battery && battery.ready && battery.isLaptopBattery && battery.isPresent)
@@ -60,7 +60,7 @@ SettingsPage {
 
     SliderRow {
         title: "Scale"
-        info: "Size of the whole shell: island, panels, lock screen and this window. 1.00 is the original size."
+        info: "Size of the whole shell."
         from: 0.75
         to: 2
         step: 0.05
@@ -71,7 +71,7 @@ SettingsPage {
 
     OptionRow {
         title: "Main monitor"
-        info: "Screen of the island, the lock screen and the login screen. Auto uses the laptop screen, otherwise the first one. The monitor is recognized by its model, so it stays the same on any port."
+        info: "Screen for the island, lock and login. Auto: the laptop screen, or the first one."
         subtitle: Theme.monitor !== "" && !page.currentScreen ? Theme.monitor + " is not connected, using Auto" : ""
 
         Dropdown {
@@ -93,36 +93,44 @@ SettingsPage {
     ToggleRow {
         visible: page.hasBluetooth
         title: "Bluetooth on startup"
-        info: "Bluetooth is turned on at the first shell start after boot. Off: it starts turned off."
+        info: "Turn Bluetooth on at boot."
         key: "bluetoothOnStartup"
         checked: Theme.bluetoothOnStartup
     }
 
     ToggleRow {
         title: "Network monitor"
-        info: "The system monitor (right click on the island) also shows the download and upload speed of all the network cards."
+        info: "Show download and upload speed in the system monitor."
         key: "networkMonitor"
         checked: Theme.networkMonitor
     }
 
     ToggleRow {
         title: "Background apps"
-        info: "The apps with open windows, in the system monitor under the temperatures, or in the control center if you add them there. A click opens the app, the × closes all its processes."
+        info: "Apps with open windows, in the system monitor or the control center. × closes them."
         key: "backgroundApps"
         checked: Theme.backgroundApps
     }
 
     ToggleRow {
+        visible: Controls.hasPowerProfiles
+        title: "Power mode"
+        info: "Switches Saver, Balanced and Performance, in the system monitor or the control center."
+        key: "powerMode"
+        checked: Theme.powerMode
+    }
+
+    ToggleRow {
         visible: page.desktop
         title: "Monitor brightness"
-        info: "Shows the Display slider and page in the control center. The slider sets the brightness of the monitors through DDC/CI (ddcutil; DDC/CI must be on in the monitor menu)."
+        info: "Monitor brightness in the control center. Needs DDC/CI on in the monitor menu."
         key: "displayOnDesktop"
         checked: Theme.displayOnDesktop
     }
 
     ToggleRow {
         title: "VS Code theme sync"
-        info: "VS Code (and VSCodium, Code - OSS) follows the shell theme. Needs the Quickshell Theme Sync extension. Off: the editor keeps its own theme."
+        info: "VS Code follows the shell theme. Needs the Quickshell extension."
         key: "vscodeThemeSync"
         checked: Theme.vscodeThemeSync
     }

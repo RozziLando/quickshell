@@ -414,7 +414,7 @@ PanelWindow {
     }
 
     readonly property var kindOf: ({
-        "control": "clock", "audio": "audio", "wifi": "network", "bluetooth": "bluetooth",
+        "control": "clock", "clockpanel": "clock", "audio": "audio", "wifi": "network", "bluetooth": "bluetooth",
         "display": "display", "sysmon": "sysmon", "inbox": "notifications", "power": "power"
     })
 
@@ -474,7 +474,7 @@ PanelWindow {
                      ears: rimmed, earSize: rimmed ? frameRadius : 0, straight: !rimmed }
         }
         if (pillsBar && item && item.pill && !pillTakenBy(item.pill, toastHosts, null))
-            return { mode: "pill", pill: item.pill, keep: id === "control" }
+            return { mode: "pill", pill: item.pill, keep: false }
         if (!Theme.barFused)
             return { mode: "anchored", along: along, origin: barInner, gap: Theme.s(8) }
         var framed = integratedBar && frameOn
@@ -487,13 +487,14 @@ PanelWindow {
     }
 
     function activate(kind, item) {
-        var owners = { "clock": "control", "audio": "audio", "network": Controls.hasWifi ? "wifi" : "control",
+        var owners = { "clock": Theme.controlCenter ? "control" : "clockpanel", "audio": "audio", "network": "wifi",
                        "bluetooth": "bluetooth", "display": "display", "sysmon": "sysmon",
                        "notifications": "inbox", "power": "power" }
         if (owners[kind]) pending = { id: owners[kind], item: item }
-        if (kind === "clock" || (kind === "network" && !Controls.hasWifi)) controlCenter.toggle()
+        if (kind === "clock" && !Theme.controlCenter) clockPanel.toggle()
+        else if (kind === "clock") controlCenter.toggle()
         else if (kind === "audio") audioPanel.toggle()
-        else if (kind === "network") wifiPanel.toggle()
+        else if (kind === "network" && Controls.hasWifi) wifiPanel.toggle()
         else if (kind === "bluetooth") bluetoothPanel.toggle()
         else if (kind === "display") displayPanel.toggle()
         else if (kind === "sysmon") sysmonPanel.toggle()
@@ -780,6 +781,7 @@ PanelWindow {
         Launcher { id: launcher; island: panel }
         PowerMenu { id: power; island: panel; lock: stage.lock }
         SystemMonitorPanel { id: sysmonPanel; island: panel }
+        ClockPanel { id: clockPanel; island: panel; full: stage.pillsBar }
         AudioPanel { id: audioPanel; island: panel }
         NotificationsPanel { id: inboxPanel; island: panel; notifications: notifications }
         PagePanel {

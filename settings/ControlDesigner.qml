@@ -7,21 +7,22 @@ Item {
 
     function f(v) { return SettingsUi.u(v * 0.79) }
 
-    property var tiles: []
-    property var sections: []
-    property var tilePool: []
-    property var sectionPool: []
+    property var grid: []
+    property var lower: []
+    property var gridPool: []
+    property var bottomPool: []
 
-    signal tilesEdited(var list)
-    signal sectionsEdited(var list)
+    signal gridEdited(var list)
+    signal bottomEdited(var list)
+    signal widthsEdited(var map)
 
     readonly property int panelW: Math.min(f(436), width)
     readonly property int pad: f(14)
     readonly property int gap: f(10)
     readonly property int tileH: f(54)
-    readonly property int circle: f(48)
     readonly property int innerW: panelW - 2 * pad
     readonly property int emptyH: f(44)
+    readonly property real unit: (innerW + gap) / Controls.maxSlots
 
     width: parent ? parent.width : 0
     height: layoutColumn.implicitHeight
@@ -36,8 +37,58 @@ Item {
     property real ghostW: 0
     property real ghostH: 0
     property string zone: ""
+    property var target: null
     property int index: -1
-    property bool overfull: false
+    property string resizeId: ""
+    property var resizeWidths: ({})
+    property bool rejected: false
+    property real frozenLower: 0
+    readonly property var widths: resizeId !== "" ? resizeWidths : (Theme.controlWidths || {})
+    readonly property bool dragGrid: dragId !== "" && Controls.isGrid(dragId)
+
+    Timer {
+        id: rejectTimer
+        interval: 900
+        onTriggered: d.rejected = false
+    }
+    function reject() {
+        rejected = true
+        rejectTimer.restart()
+    }
+
+    function heightOf(id) {
+        if (Controls.isTile(id)) return tileH
+        if (id === "notifications") return f(64)
+        if (id === "search" || id === "apps") return f(44)
+        return f(60)
+    }
+
+    function withSpans(list, widths) {
+        return list.map(function (e) { return { id: e.id, row: e.row, col: e.col, span: Controls.spanOf(e.id, widths) } })
+    }
+
+    readonly property int maxRow: {
+        var m = -1
+        grid.forEach(function (e) { m = Math.max(m, e.row) })
+        return m
+    }
+    readonly property int rowsShown: Math.min(Controls.maxRows, Math.max(1, maxRow + 2))
+    readonly property var entries: withSpans(grid, widths)
+    readonly property var geom: Controls.gridLayout(entries, innerW, gap, heightOf, rowsShown, tileH)
+
+    readonly property var shownBottom: dragId !== "" && !dragGrid
+        ? (zone === "bottom" ? inserted(lower, dragId, index) : without(lower, dragId)) : lower
+    function bottomLayout(list) {
+        var y = 0, out = {}
+        list.forEach(function (id) {
+            out[id] = { y: y, h: d.heightOf(id) }
+            y += d.heightOf(id) + d.gap
+        })
+        out.total = Math.max(0, y - gap)
+        return out
+    }
+    readonly property var bottomGeom: bottomLayout(shownBottom)
+    readonly property var baseBottomGeom: bottomLayout(lower)
 
     function without(list, id) {
         return list.filter(function (x) { return x !== id })
@@ -49,56 +100,47 @@ Item {
         return l
     }
 
-    function sectionHeight(id) {
-        if (id === "notifications") return f(64)
-        if (id === "search" || id === "apps") return f(44)
-        return f(60)
+    function cellsWithout(id) {
+        var cells = {}
+        entries.forEach(function (e) { if (e.id !== id) Controls.occupy(cells, e.row, e.col, e.span, e.id) })
+        return cells
     }
 
-    readonly property var shownTiles: dragId !== "" && dragTile
-        ? (zone === "tiles" && !overfull ? inserted(tiles, dragId, index) : without(tiles, dragId)) : tiles
-    readonly property var shownSections: dragId !== "" && !dragTile
-        ? (zone === "sections" ? inserted(sections, dragId, index) : without(sections, dragId)) : sections
-
-    function tileLayout(list) {
-        var wide = list.filter(function (id) { return Controls.tileInfo[id].slots === 2 }).length
-        var circles = list.length - wide
-        var tileW = wide > 0 ? (innerW - circles * circle - (list.length - 1) * gap) / wide : 0
-        var used = wide > 0 ? innerW : circles * circle + Math.max(0, circles - 1) * gap
-        var x = (innerW - used) / 2, out = {}
-        list.forEach(function (id) {
-            var w = Controls.tileInfo[id].slots === 2 ? tileW : circle
-            out[id] = { x: x, w: w }
-            x += w + d.gap
-        })
-        return out
+    function rowAt(py) {
+        var best = 0
+        for (var r = 0; r < rowsShown; r++) {
+            var y = geom.rows[r]
+            if (y === undefined) continue
+            if (py >= y - gap / 2) best = r
+        }
+        return best
     }
 
-    function sectionLayout(list) {
-        var y = 0, out = {}
-        list.forEach(function (id) {
-            var h = d.sectionHeight(id)
-            out[id] = { y: y, h: h }
-            y += h + d.gap
-        })
-        out.total = Math.max(0, y - gap)
-        return out
+    function placeTarget(id, row, left) {
+        var span = Controls.spanOf(id, widths)
+        var col = Math.max(0, Math.min(Controls.maxSlots - span, Math.round(left / unit)))
+        var cells = cellsWithout(id)
+        if (Controls.fits(cells, row, col, span)) return { row: row, col: col, span: span, valid: true }
+        for (var step = 1; step < Controls.maxSlots; step++) {
+            for (var sgn = -1; sgn <= 1; sgn += 2) {
+                var c = col + sgn * step
+                if (c >= 0 && c + span <= Controls.maxSlots && Controls.fits(cells, row, c, span))
+                    return { row: row, col: c, span: span, valid: true }
+            }
+        }
+        return { row: row, col: col, span: span, valid: false }
     }
-
-    readonly property var tileGeom: tileLayout(shownTiles)
-    readonly property var sectionGeom: sectionLayout(shownSections)
-    readonly property var baseTileGeom: tileLayout(tiles)
-    readonly property var baseSectionGeom: sectionLayout(sections)
 
     function begin(id, tile, fromPanel, gx, gy, w, h) {
-        rejectTimer.stop()
         dragId = id
         dragTile = tile
         dragFromPanel = fromPanel
-        grabX = gx
-        grabY = gy
-        ghostW = w
-        ghostH = h
+        ghostW = Controls.isGrid(id) ? Controls.spanOf(id, widths) * unit - gap : innerW
+        ghostH = heightOf(id)
+        frozenLower = Math.max(emptyH, baseBottomGeom.total
+            + (!Controls.isGrid(id) && !fromPanel ? heightOf(id) + (lower.length > 0 ? gap : 0) : 0))
+        grabX = Math.min(gx, ghostW)
+        grabY = Math.min(gy, ghostH)
     }
 
     function move(x, y) {
@@ -108,65 +150,100 @@ Item {
         var tol = f(24)
         if (p.x < -tol || p.y < -tol || p.x > panel.width + tol || p.y > panel.height + tol) {
             zone = "out"
+            target = null
             index = -1
-            overfull = false
             return
         }
-        if (dragTile) {
-            var base = without(tiles, dragId), lay = tileLayout(base), n = 0
-            var lx = p.x - pad
-            base.forEach(function (id) { if (lay[id].x + lay[id].w / 2 < lx) n++ })
-            zone = "tiles"
-            index = n
-            overfull = Controls.slotsOf(inserted(tiles, dragId, n)) > Controls.maxSlots
+        if (dragGrid) {
+            var g = gridArea.mapFromItem(d, x - grabX, y - grabY + ghostH / 2)
+            zone = "grid"
+            target = placeTarget(dragId, rowAt(g.y), g.x)
         } else {
-            var sbase = without(sections, dragId), slay = sectionLayout(sbase), m = 0
-            var ly = p.y - sectionArea.y
-            sbase.forEach(function (id) { if (slay[id].y + slay[id].h / 2 < ly) m++ })
-            zone = "sections"
-            index = m
-            overfull = false
+            var b = bottomArea.mapFromItem(d, x, y)
+            var base = without(lower, dragId), lay = bottomLayout(base), n = 0
+            base.forEach(function (id) { if (lay[id].y + lay[id].h / 2 < b.y) n++ })
+            zone = "bottom"
+            index = n
         }
     }
 
     function finish() {
-        if (zone === "tiles" && dragTile && !overfull) tilesEdited(inserted(tiles, dragId, index))
-        else if (zone === "sections" && !dragTile) sectionsEdited(inserted(sections, dragId, index))
-        else if (zone === "out" && dragFromPanel) {
-            if (dragTile) tilesEdited(without(tiles, dragId))
-            else sectionsEdited(without(sections, dragId))
-        } else if (overfull) rejectTimer.restart()
+        if (zone === "grid" && target) {
+            if (target.valid) {
+                var list = grid.filter(function (e) { return e.id !== d.dragId })
+                    .map(function (e) { return { id: e.id, row: e.row, col: e.col } })
+                list.push({ id: dragId, row: target.row, col: target.col })
+                gridEdited(list)
+            } else {
+                reject()
+            }
+        } else if (zone === "bottom") {
+            bottomEdited(inserted(lower, dragId, index))
+        } else if (zone === "out" && dragFromPanel) {
+            remove(dragId, dragTile)
+        }
         cancel()
     }
 
     function cancel() {
         dragId = ""
         zone = ""
+        target = null
         index = -1
-        overfull = false
     }
 
     function add(id, tile) {
-        if (tile) {
-            var next = tiles.concat([id])
-            if (Controls.slotsOf(next) > Controls.maxSlots) {
-                rejectTimer.restart()
+        if (Controls.isGrid(id)) {
+            var spot = Controls.firstFree(entries, id, widths)
+            if (!spot) {
+                reject()
                 return
             }
-            tilesEdited(next)
+            var list = grid.map(function (e) { return { id: e.id, row: e.row, col: e.col } })
+            list.push({ id: id, row: spot.row, col: spot.col })
+            gridEdited(list)
         } else {
-            sectionsEdited(sections.concat([id]))
+            bottomEdited(lower.concat([id]))
         }
     }
 
     function remove(id, tile) {
-        if (tile) tilesEdited(without(tiles, id))
-        else sectionsEdited(without(sections, id))
+        if (Controls.isGrid(id))
+            gridEdited(grid.filter(function (e) { return e.id !== id })
+                .map(function (e) { return { id: e.id, row: e.row, col: e.col } }))
+        else bottomEdited(without(lower, id))
     }
 
-    Timer {
-        id: rejectTimer
-        interval: 800
+    function beginResize(id) {
+        var m = {}, src = Theme.controlWidths || {}
+        for (var k in src) m[k] = src[k]
+        resizeWidths = m
+        resizeId = id
+    }
+
+    function resizeTo(id, right) {
+        var e = null
+        grid.forEach(function (x) { if (x.id === id) e = x })
+        if (!e) return
+        var limit = Controls.maxSlots - e.col
+        grid.forEach(function (x) {
+            if (x.id !== id && x.row === e.row && x.col > e.col) limit = Math.min(limit, x.col - e.col)
+        })
+        var slots = Math.round((right - e.col * unit + gap) / unit)
+        slots = Math.max(Controls.minSpan(id), Math.min(limit, slots))
+        if (Controls.spanOf(id, resizeWidths) === slots) return
+        var m = {}
+        for (var k in resizeWidths) m[k] = resizeWidths[k]
+        if (slots === Controls.defaultSpan(id)) delete m[id]
+        else m[id] = slots
+        resizeWidths = m
+    }
+
+    function endResize() {
+        if (resizeId === "") return
+        var m = resizeWidths
+        resizeId = ""
+        widthsEdited(m)
     }
 
     Column {
@@ -178,83 +255,129 @@ Item {
             id: panel
             anchors.horizontalCenter: parent.horizontalCenter
             width: d.panelW
-            height: d.pad + d.tileH + d.gap + Math.max(d.emptyH, d.sectionGeom.total) + d.pad
+            height: d.pad + d.geom.total + d.gap + bottomArea.height + d.pad
             radius: Theme.radius + d.pad * Theme.roundness
             color: Theme.panel
-            border.width: d.overfull || rejectTimer.running ? 2 : 1
-            border.color: d.overfull || rejectTimer.running ? Theme.warning
-                        : d.dragId !== "" && d.zone !== "out" ? Theme.accent : Theme.border
+            border.width: d.rejected ? 2 : 1
+            border.color: d.rejected ? Theme.warning : d.dragId !== "" && d.zone !== "out" ? Theme.accent : Theme.border
             Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
             Item {
-                id: tileRow
+                id: gridArea
                 x: d.pad
                 y: d.pad
                 width: d.innerW
-                height: d.tileH
+                height: d.geom.total
 
-                Rectangle {
-                    anchors.fill: parent
-                    visible: d.shownTiles.length === 0
-                    radius: Math.min(Theme.radius, height / 2)
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Theme.cardBorder
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Drag buttons here"
-                        color: Theme.textMuted
-                        font.pixelSize: d.f(11)
-                        font.family: Theme.fontFamily
+                Repeater {
+                    model: d.rowsShown * Controls.maxSlots
+                    delegate: Rectangle {
+                        required property int index
+                        readonly property int row: Math.floor(index / Controls.maxSlots)
+                        readonly property int col: index % Controls.maxSlots
+                        x: col * d.unit
+                        y: d.geom.rows[row] !== undefined ? d.geom.rows[row] : 0
+                        width: d.unit - d.gap
+                        height: d.geom.heights[row] !== undefined ? d.geom.heights[row] : d.tileH
+                        radius: Math.min(Theme.radius, width / 2)
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Theme.cardBorder
+                        opacity: d.dragGrid || d.resizeId !== "" ? 0.9 : 0.35
+                        Behavior on opacity { NumberAnimation { duration: 140 } }
                     }
                 }
 
+                Rectangle {
+                    readonly property var t: d.target
+                    visible: d.zone === "grid" && t !== null
+                    x: t ? t.col * d.unit : 0
+                    y: t && d.geom.rows[t.row] !== undefined ? d.geom.rows[t.row] : 0
+                    width: t ? t.span * d.unit - d.gap : 0
+                    height: t && d.geom.heights[t.row] !== undefined ? d.geom.heights[t.row] : d.tileH
+                    radius: Math.min(Theme.radius, height / 2)
+                    color: "transparent"
+                    border.width: 2
+                    border.color: t && t.valid ? Theme.accent : Theme.warning
+                }
+
                 Repeater {
-                    model: Controls.tileOrder
+                    model: Controls.gridOrder
                     delegate: CCPiece {
-                        id: tilePiece
+                        id: piece
                         required property string modelData
-                        readonly property bool held: modelData === d.dragId && d.dragFromPanel
-                        readonly property var g: d.tileGeom[modelData] || (held ? d.baseTileGeom[modelData] : undefined)
+                        readonly property var g: d.geom[modelData]
                         kind: modelData
-                        tile: true
+                        tile: Controls.isTile(modelData)
+                        outline: grip.containsMouse || sizer.containsMouse || sizer.pressed
                         visible: g !== undefined
                         x: g ? g.x : 0
+                        y: g ? g.y : 0
                         width: g ? g.w : 0
-                        height: d.tileH
-                        opacity: modelData !== d.dragId ? 1 : d.tileGeom[modelData] ? 0.35 : 0
-                        Behavior on x {
-                            enabled: d.dragId !== ""
-                            NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                        height: g ? g.h : 0
+                        opacity: modelData === d.dragId ? 0.35 : 1
+                        Behavior on width {
+                            enabled: d.resizeId !== ""
+                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
                         }
 
                         DragGrip {
-                            id: tileGrip
+                            id: grip
                             designer: d
-                            itemId: tilePiece.modelData
-                            tile: true
+                            itemId: piece.modelData
+                            tile: piece.tile
                             fromPanel: true
                         }
 
                         RemoveBadge {
-                            active: tileGrip.containsMouse && d.dragId === ""
-                            onClicked: d.remove(tilePiece.modelData, true)
+                            active: (grip.containsMouse || sizer.containsMouse) && d.dragId === "" && d.resizeId === ""
+                            onClicked: d.remove(piece.modelData, piece.tile)
+                        }
+
+                        MouseArea {
+                            id: sizer
+                            readonly property bool can: Controls.resizable.indexOf(piece.modelData) >= 0
+                            visible: can && d.dragId === ""
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: d.f(14)
+                            hoverEnabled: true
+                            preventStealing: true
+                            cursorShape: Qt.SizeHorCursor
+                            onPressed: d.beginResize(piece.modelData)
+                            onPositionChanged: mouse => {
+                                if (!pressed) return
+                                var p = mapToItem(gridArea, mouse.x, mouse.y)
+                                d.resizeTo(piece.modelData, p.x)
+                            }
+                            onReleased: d.endResize()
+                            onCanceled: d.endResize()
+
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: d.f(4)
+                                height: Math.min(d.f(22), parent.height * 0.5)
+                                radius: Theme.round(width)
+                                color: sizer.pressed ? Theme.accent : Theme.textMuted
+                                opacity: sizer.containsMouse || sizer.pressed || grip.containsMouse ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 140 } }
+                            }
                         }
                     }
                 }
             }
 
             Item {
-                id: sectionArea
+                id: bottomArea
                 x: d.pad
-                y: d.pad + d.tileH + d.gap
+                y: d.pad + d.geom.total + d.gap
                 width: d.innerW
-                height: Math.max(d.emptyH, d.sectionGeom.total)
+                height: d.dragId !== "" ? Math.max(d.frozenLower, d.bottomGeom.total) : Math.max(d.emptyH, d.bottomGeom.total)
 
                 Rectangle {
                     anchors.fill: parent
-                    visible: d.shownSections.length === 0
+                    visible: d.shownBottom.length === 0
                     radius: Theme.radius
                     color: "transparent"
                     border.width: 1
@@ -262,7 +385,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "Drag sections here"
+                        text: "Lists go here"
                         color: Theme.textMuted
                         font.pixelSize: d.f(11)
                         font.family: Theme.fontFamily
@@ -270,35 +393,35 @@ Item {
                 }
 
                 Repeater {
-                    model: Controls.sectionOrder
+                    model: Controls.bottomOrder
                     delegate: CCPiece {
-                        id: sectionPiece
+                        id: lowerPiece
                         required property string modelData
                         readonly property bool held: modelData === d.dragId && d.dragFromPanel
-                        readonly property var g: d.sectionGeom[modelData] || (held ? d.baseSectionGeom[modelData] : undefined)
+                        readonly property var g: d.bottomGeom[modelData] || (held ? d.baseBottomGeom[modelData] : undefined)
                         kind: modelData
                         tile: false
                         visible: g !== undefined
                         y: g ? g.y : 0
                         width: d.innerW
                         height: g ? g.h : 0
-                        opacity: modelData !== d.dragId ? 1 : d.sectionGeom[modelData] ? 0.35 : 0
+                        opacity: modelData !== d.dragId ? 1 : d.bottomGeom[modelData] ? 0.35 : 0
                         Behavior on y {
                             enabled: d.dragId !== ""
                             NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                         }
 
                         DragGrip {
-                            id: sectionGrip
+                            id: lowerGrip
                             designer: d
-                            itemId: sectionPiece.modelData
+                            itemId: lowerPiece.modelData
                             tile: false
                             fromPanel: true
                         }
 
                         RemoveBadge {
-                            active: sectionGrip.containsMouse && d.dragId === ""
-                            onClicked: d.remove(sectionPiece.modelData, false)
+                            active: lowerGrip.containsMouse && d.dragId === ""
+                            onClicked: d.remove(lowerPiece.modelData, false)
                         }
                     }
                 }
@@ -308,17 +431,18 @@ Item {
         Text {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: d.dragId !== "" && d.zone === "out" && d.dragFromPanel ? "Release to remove"
-                : rejectTimer.running || d.overfull ? "No room: the top row holds six places, Wi-Fi and Bluetooth take two"
-                : "Drag items into the control center, drag them out to remove them"
-            color: rejectTimer.running || d.overfull ? Theme.warning : Theme.textMuted
+            text: d.rejected ? "No room there"
+                : d.dragId !== "" && d.zone === "out" && d.dragFromPanel ? "Release to remove"
+                : d.resizeId !== "" ? "Sliders: 3–6 places, clock: 2–6"
+                : "Drag items in or out. Drag the right edge of a slider or the clock to resize it"
+            color: d.rejected ? Theme.warning : Theme.textMuted
             font.pixelSize: SettingsUi.u(9)
             font.family: Theme.fontFamily
             wrapMode: Text.WordWrap
         }
 
         Rectangle {
-            visible: d.tilePool.length > 0 || d.sectionPool.length > 0
+            visible: d.gridPool.length > 0 || d.bottomPool.length > 0
             width: parent.width
             height: poolColumn.implicitHeight + 2 * SettingsUi.u(12)
             radius: SettingsUi.radius
@@ -334,8 +458,8 @@ Item {
                 spacing: SettingsUi.u(8)
 
                 Text {
-                    visible: d.tilePool.length > 0
-                    text: "Buttons"
+                    visible: d.gridPool.length > 0
+                    text: "Top"
                     color: Theme.textSecondary
                     font.pixelSize: SettingsUi.u(10)
                     font.weight: Font.DemiBold
@@ -343,31 +467,33 @@ Item {
                 }
 
                 Flow {
-                    visible: d.tilePool.length > 0
+                    visible: d.gridPool.length > 0
                     width: parent.width
                     spacing: d.gap
 
                     Repeater {
-                        model: d.tilePool
+                        model: d.gridPool
                         delegate: CCPiece {
-                            id: poolTile
+                            id: poolItem
                             required property string modelData
                             kind: modelData
-                            tile: true
+                            tile: Controls.isTile(modelData)
+                            outline: true
+                            width: tile ? implicitWidth : Math.min(d.f(200), parent.width)
                             opacity: modelData === d.dragId ? 0.35 : 1
 
                             DragGrip {
                                 designer: d
-                                itemId: poolTile.modelData
-                                tile: true
+                                itemId: poolItem.modelData
+                                tile: poolItem.tile
                             }
                         }
                     }
                 }
 
                 Text {
-                    visible: d.sectionPool.length > 0
-                    text: "Sections"
+                    visible: d.bottomPool.length > 0
+                    text: "Bottom"
                     color: Theme.textSecondary
                     font.pixelSize: SettingsUi.u(10)
                     font.weight: Font.DemiBold
@@ -375,14 +501,14 @@ Item {
                 }
 
                 Flow {
-                    visible: d.sectionPool.length > 0
+                    visible: d.bottomPool.length > 0
                     width: parent.width
                     spacing: d.gap
 
                     Repeater {
-                        model: d.sectionPool
+                        model: d.bottomPool
                         delegate: CCPiece {
-                            id: poolSection
+                            id: poolLower
                             required property string modelData
                             kind: modelData
                             tile: false
@@ -391,7 +517,7 @@ Item {
 
                             DragGrip {
                                 designer: d
-                                itemId: poolSection.modelData
+                                itemId: poolLower.modelData
                                 tile: false
                             }
                         }
@@ -406,6 +532,7 @@ Item {
         z: 100
         kind: d.dragId
         tile: d.dragTile
+        outline: true
         x: d.dragX - d.grabX
         y: d.dragY - d.grabY
         width: d.ghostW

@@ -22,7 +22,7 @@ Item {
     readonly property int gap: u(10)
     readonly property bool hasMedia: media.playerCount > 0
     readonly property int mediaH: hasMedia ? Theme.s(media.multi ? 112 : 96) : 0
-    readonly property int pageH: Math.max(u(120), Math.min(u(390), audioPage.naturalHeight + u(10)))
+    readonly property int pageH: Math.max(u(120), Math.min(u(390), audioPage.naturalHeight))
     readonly property int openWidth: u(436)
     readonly property int openHeight: edgePad + (hasMedia ? mediaH + gap : 0) + pageH + edgePad
     readonly property int panelRadius: Theme.radius + edgePad * Theme.roundness
@@ -91,7 +91,7 @@ Item {
             height: root.pageH
             sizeFactor: root.sizeFactor
             showBack: false
-            bottomGap: root.u(6)
+            compact: true
         }
     }
 }

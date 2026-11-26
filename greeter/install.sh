@@ -13,7 +13,7 @@ WALLPAPER=""
 
 usage() {
     printf '%s\n' \
-        "Quickshell login screen (greetd + cage), Arch and Fedora." \
+        "Quickshell login screen (greetd + cage): Arch, Debian, Ubuntu, Fedora, RHEL." \
         "" \
         "  sudo greeter/install.sh [options] [wallpaper]" \
         "" \
@@ -82,14 +82,8 @@ fi
 USER_HOME=$(getent passwd "$USER_NAME" | cut -d: -f6)
 USER_UID=$(id -u "$USER_NAME")
 
-DISTRO=""
-if [ -r /etc/os-release ]; then
-    . /etc/os-release
-    case " ${ID:-} ${ID_LIKE:-} " in
-        *" arch "*) DISTRO=arch ;;
-        *" fedora "*) DISTRO=fedora ;;
-    esac
-fi
+DISTRO=$(sh "$SRC/scripts/deps.sh" family)
+case "$DISTRO" in arch|debian|ubuntu|fedora|el) ;; *) DISTRO="" ;; esac
 
 if [ -z "$WALLPAPER" ]; then
     for q in awww swww; do
@@ -121,7 +115,7 @@ if [ "$PREVIEW" = 1 ]; then
 fi
 
 if [ -z "$DISTRO" ]; then
-    echo "Unsupported distribution: only Arch Linux and Fedora (and their derivatives) are supported."
+    echo "Unsupported distribution: Arch, Debian, Ubuntu, Fedora, RHEL and their derivatives are supported."
     exit 1
 fi
 
@@ -152,12 +146,15 @@ if [ "$YES" = 0 ] && [ "$DRY" = 0 ] && [ -t 0 ]; then
 fi
 
 say "Packages"
-if [ "$DISTRO" = arch ]; then
-    run pacman -S --needed --noconfirm greetd greetd-agreety cage
-else
-    run dnf install -y greetd cage
-    command -v agreety >/dev/null 2>&1 || run dnf install -y greetd-agreety || true
-fi
+case "$DISTRO" in
+    arch)
+        run pacman -S --needed --noconfirm greetd greetd-agreety cage ;;
+    debian|ubuntu)
+        run env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-remove greetd cage ;;
+    *)
+        run dnf install -y greetd cage
+        command -v agreety >/dev/null 2>&1 || run dnf install -y greetd-agreety || true ;;
+esac
 if [ "$DRY" = 0 ]; then
     for c in greetd cage quickshell; do
         command -v "$c" >/dev/null 2>&1 || { echo "    $c is not installed: the login screen cannot start. Nothing changed in greetd."; exit 1; }

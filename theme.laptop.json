@@ -1,0 +1,20 @@
+{
+  "barItems": {
+    "start": [
+      "logo",
+      "workspaces",
+      "search"
+    ],
+    "center": [
+      "clock"
+    ],
+    "end": [
+      "network",
+      "audio",
+      "split1",
+      "sysmon",
+      "notifications",
+      "power"
+    ]
+  }
+}

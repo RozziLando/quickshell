@@ -393,6 +393,12 @@ Item {
             }
         }
 
+        PowerMode {
+            here: !Controls.powerInControl
+            radius: root.cardRadius
+            sizeFactor: root.sizeFactor
+        }
+
         BackgroundApps {
             here: !Controls.appsInControl
             radius: root.cardRadius

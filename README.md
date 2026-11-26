@@ -3,7 +3,8 @@
 A Hyprland shell built on Quickshell (>= 0.3): an island at the top of the
 screen, or a bar on any edge, with clock, notifications, launcher, media
 player, control center, lock screen, login screen and a settings window.
-Works on **Arch** and **Fedora**.
+Works on **Arch**, **Debian**, **Ubuntu**, **Fedora**, **RHEL** and their
+derivatives.
 
 ## Screenshots
 
@@ -39,8 +40,8 @@ cd ~/.config/quickshell
 
 Run it as your normal user (it asks for sudo when needed). `install.sh`
 installs the [dependencies](#dependencies) (laptop or desktop packages are
-detected), makes Wi-Fi and Bluetooth work, creates `theme.json` and the
-wallpaper folder (`~/Wallpapers`) and offers the [VS Code
+detected), makes Wi-Fi and Bluetooth work, creates the wallpaper folder
+(`~/Wallpapers`) and offers the login screen and the [VS Code
 extension](#vs-code-themes). Options: `-y` (ask nothing), `--no-packages`,
 `--laptop` / `--desktop`.
 
@@ -68,26 +69,37 @@ Wallpapers & Themes, and System (system info and updates).
 
 ## Dependencies
 
-| Used for | Arch | Fedora |
-|---|---|---|
-| Shell (>= 0.3) | `quickshell` | `quickshell` (COPR `errornointernet/quickshell`) |
-| Compositor | `hyprland` | `hyprland` (COPR `solopasha/hyprland`) |
-| Wallpaper | `awww` | `swaybg` |
-| Wi-Fi | `networkmanager` `linux-firmware` `wireless-regdb` | `NetworkManager` `NetworkManager-wifi` `wireless-regdb` + firmware packages |
-| Bluetooth | `bluez` `bluez-utils` | `bluez` |
-| Audio | `pipewire` `pipewire-pulse` `wireplumber` `libpulse` | `pipewire` `pipewire-pulseaudio` `wireplumber` `pulseaudio-utils` |
-| Screen brightness, battery (laptop only) | `brightnessctl` `upower` | `brightnessctl` `upower` |
-| Monitor brightness (desktop only) | `ddcutil` | `ddcutil` |
-| Media keys | `playerctl` | `playerctl` |
-| Screenshots, lock screen | `grim` `slurp` `wl-clipboard` | `grim` `slurp` `wl-clipboard` |
-| Notifications, logind signals | `libnotify` `glib2` | `libnotify` `glib2` |
-| Login screen copy | `diffutils` | `diffutils` |
-| .webp wallpapers | `qt6-imageformats` | `qt6-qtimageformats` |
-| Fonts | `inter-font` `noto-fonts-emoji` `noto-fonts-cjk` | `rsms-inter-fonts` `google-noto-color-emoji-fonts` `google-noto-sans-cjk-fonts` |
-| Login screen (installed by `greeter/install.sh`) | `greetd` `greetd-agreety` `cage` | `greetd` `cage` |
-| Settings: file chooser, updates, GPU name | `zenity` `curl` `pciutils` | `zenity` `curl` `pciutils` |
+`scripts/deps.sh` installs only what is missing, at install and at every
+update (in a terminal). It never removes or replaces packages.
 
-`install.sh` installs all of them. The icon font (Phosphor) ships with the
+| Family | Minimum | Quickshell and Hyprland from |
+|---|---|---|
+| Arch and derivatives | | official repositories |
+| Ubuntu and derivatives | 25.10 | `universe`, PPA `avengemedia/danklinux` |
+| Debian, Kali | 13 | `trixie-backports` or the archive |
+| Fedora and derivatives | 42 | repositories or COPRs `errornointernet/quickshell`, `sdegler/hyprland` |
+| RHEL, Rocky, Alma, CentOS Stream | 10 | EPEL, COPRs `errornointernet/quickshell`, `perutzit/hyprland-el` |
+
+Image-based systems (Silverblue, Bazzite) are not supported.
+
+| Used for | Arch | Debian / Ubuntu | Fedora / RHEL |
+|---|---|---|---|
+| Shell, compositor | `quickshell` `hyprland` | `quickshell` `hyprland` + `qml6-module-qtquick-*` | `quickshell` `hyprland` |
+| Wallpaper | `awww` | `awww`, `swww` or `swaybg` | `swww` or `swaybg` |
+| Wi-Fi | `networkmanager` `linux-firmware` `wireless-regdb` | `network-manager` `wireless-regdb` | `NetworkManager` `NetworkManager-wifi` + firmware |
+| Bluetooth | `bluez` `bluez-utils` | `bluez` | `bluez` |
+| Audio | `pipewire` `pipewire-pulse` `wireplumber` `libpulse` | `pipewire` `pipewire-pulse` `wireplumber` `pulseaudio-utils` | `pipewire` `pipewire-pulseaudio` `wireplumber` `pulseaudio-utils` |
+| Power mode (laptop) | `power-profiles-daemon` | `power-profiles-daemon` | `tuned-ppd` |
+| Brightness, battery | `brightnessctl` (laptop) or `ddcutil` (desktop), `upower` | same | same |
+| Screenshots, media keys | `grim` `slurp` `wl-clipboard` `playerctl` | same | same |
+| Notifications, logind | `libnotify` `glib2` | `libnotify-bin` `libglib2.0-bin` | `libnotify` `glib2` |
+| Images | `qt6-imageformats` `qt6-svg` | `qt6-image-formats-plugins` `qt6-svg-plugins` | `qt6-qtimageformats` `qt6-qtsvg` |
+| Fonts | `inter-font` `noto-fonts-emoji` `noto-fonts-cjk` | `fonts-inter` `fonts-noto-color-emoji` `fonts-noto-cjk` | `rsms-inter-fonts` `google-noto-color-emoji-fonts` `google-noto-sans-cjk-fonts` |
+| Settings, updates | `zenity` `curl` `pciutils` `git` `diffutils` `xdg-user-dirs` | same | same |
+| Login screen (`greeter/install.sh`) | `greetd` `greetd-agreety` `cage` | `greetd` `cage` | `greetd` `cage` |
+
+If PulseAudio, TLP, auto-cpufreq or tuned are installed, the matching
+package is skipped. The icon font (Phosphor) ships with the repository.
 
 ## IPC and keybinds
 
@@ -142,9 +154,9 @@ written file get a theme generated from the shell colors.
 ## theme.json
 
 All the settings live in `theme.json`, which the settings window edits and
-the shell reloads on save. It is not in the repository: it is created from
-`theme.default.json` at install or first start, updates never touch it, and
-deleting it restores the defaults.
+the shell reloads on save. It is not in the repository: the shell creates it
+at the first start from `theme.default.json` (plus `theme.laptop.json` on
+laptops), updates never touch it, and deleting it restores the defaults.
 
 | Option | Values |
 |---|---|
@@ -164,7 +176,9 @@ deleting it restores the defaults.
 | `popupSpeed` | `"relaxed"`, `"normal"`, `"snappy"` |
 | `clockWeekday`, `clockDay`, `clockMonth`, `showEmptyWorkspaces` | `true` / `false` |
 | `controlCenter` | `true` / `false` |
-| `controlTiles`, `controlSections` | list or `"auto"` |
+| `controlGrid` | `"auto"` or `[{ "id": "clock", "row": 0, "col": 0 }, …]` (6×6 grid) |
+| `controlBottom` | `"auto"` or an order of `notifications`, `search`, `apps` |
+| `controlWidths` | `{ "audio": 3, "clock": 2 }`: sliders 3–6, clock 2–6 |
 | `scale` | 0.5–3 |
 | `monitor` | `""` (auto), a model (`"OMEN by HP 25"`) or a port (`"HDMI-A-1"`) |
 | `fontFamily` | font name (default `"Inter"`) |
@@ -177,4 +191,4 @@ deleting it restores the defaults.
 | `wallpaperThemes`, `themeWallpapers` | `{ "wallpaper.png": ["theme-id"] }`, `{ "theme-id": ["wallpaper.png"] }` |
 | `lockScreen`, `lockBlur`, `loginScreen`, `loginBlur`, `sleepEnabled` | `true` / `false` (`loginScreen`: run `sudo greeter/install.sh` again after a change) |
 | `idleLockMinutes`, `idleSleepMinutes` | minutes, `0` = never |
-| `bluetoothOnStartup`, `networkMonitor`, `backgroundApps`, `displayOnDesktop`, `vscodeThemeSync`, `updates` | `true` / `false` |
+| `bluetoothOnStartup`, `networkMonitor`, `backgroundApps`, `powerMode`, `displayOnDesktop`, `vscodeThemeSync`, `updates` | `true` / `false` |

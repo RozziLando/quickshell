@@ -14,18 +14,19 @@ for arg in "$@"; do
         --desktop) FORM=desktop ;;
         -h|--help)
             printf '%s\n' \
-                "Quickshell: dependencies (Arch and Fedora)." \
+                "Quickshell: dependencies (Arch, Debian, Ubuntu, Fedora, RHEL and their derivatives)." \
                 "" \
-                "  1. detects Arch or Fedora and installs the dependencies" \
+                "  1. detects the distribution and installs only the missing dependencies (scripts/deps.sh)" \
                 "  2. makes Wi-Fi and Bluetooth work: firmware, drivers, NetworkManager and bluetooth services" \
                 "  3. turns on FastConnectable in /etc/bluetooth/main.conf" \
-                "  4. creates theme.json from theme.default.json if it is missing" \
+                "  4. leaves theme.json to the shell: at the first start it uses the desktop or laptop defaults" \
                 "  5. creates the wallpaper folder (wallpaperDir in theme.json) if it is missing" \
-                "  6. asks whether VS Code and its forks should follow the shell theme (scripts/vscode.sh)" \
+                "  6. asks whether to set up the Quickshell login screen (greetd); if not, nothing is installed for it" \
+                "  7. asks whether VS Code and its forks should follow the shell theme (scripts/vscode.sh)" \
                 "" \
                 "  ./install.sh -y             accept the defaults, ask nothing" \
                 "  ./install.sh --no-packages  skip the package installation" \
-                "  ./install.sh --laptop       install the laptop packages (brightnessctl, upower)" \
+                "  ./install.sh --laptop       install the laptop packages (brightnessctl, power profiles)" \
                 "  ./install.sh --desktop      install the desktop packages (ddcutil, monitor brightness)" \
                 "" \
                 "Without --laptop / --desktop the script detects the computer (battery, built-in screen)."
@@ -55,48 +56,14 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 
-DISTRO=""
-if [ -r /etc/os-release ]; then
-    . /etc/os-release
-    case " ${ID:-} ${ID_LIKE:-} " in
-        *" arch "*) DISTRO=arch ;;
-        *" fedora "*) DISTRO=fedora ;;
-    esac
-fi
-if [ -z "$DISTRO" ] && [ "$PACKAGES_STEP" = 1 ]; then
-    echo "Unsupported distribution: only Arch Linux and Fedora (and their derivatives) are supported."
+DEPS="$SRC/scripts/deps.sh"
+DISTRO=$(sh "$DEPS" family)
+REASON=$(sh "$DEPS" reason)
+if [ -n "$REASON" ] && [ "$PACKAGES_STEP" = 1 ]; then
+    echo "$REASON"
+    echo "Use ./install.sh --no-packages if you installed Quickshell and Hyprland by hand."
     exit 1
 fi
-
-ARCH_PACKAGES=(
-    quickshell hyprland
-    awww
-    networkmanager
-    bluez bluez-utils
-    linux-firmware wireless-regdb
-    pipewire pipewire-pulse wireplumber libpulse
-    playerctl
-    grim slurp wl-clipboard
-    libnotify
-    glib2
-    diffutils
-    qt6-imageformats
-    inter-font noto-fonts-emoji noto-fonts-cjk
-    zenity curl pciutils
-)
-FEDORA_OPTIONAL=(
-    linux-firmware iwlwifi-mvm-firmware iwlwifi-dvm-firmware realtek-firmware
-    atheros-firmware brcmfmac-firmware mt7xxx-firmware
-    webp-pixbuf-loader
-)
-FEDORA_PACKAGES=(
-    quickshell hyprland swaybg NetworkManager NetworkManager-wifi bluez wireless-regdb
-    pipewire pipewire-pulseaudio wireplumber pulseaudio-utils
-    playerctl
-    grim slurp wl-clipboard libnotify glib2 diffutils
-    qt6-qtimageformats rsms-inter-fonts google-noto-color-emoji-fonts google-noto-sans-cjk-fonts
-    zenity curl pciutils
-)
 
 SYS=${SYS:-/sys}
 
@@ -111,36 +78,7 @@ broadcom_wl_needed() {
     return 1
 }
 
-LAPTOP_PACKAGES=(brightnessctl upower)
-DESKTOP_PACKAGES=(ddcutil)
-
-detect_form() {
-    local b t
-    for b in "$SYS"/class/power_supply/*; do
-        [ "$(cat "$b/type" 2>/dev/null)" = Battery ] || continue
-        [ "$(cat "$b/scope" 2>/dev/null)" = Device ] && continue
-        echo laptop; return
-    done
-    if ls "$SYS"/class/backlight/* >/dev/null 2>&1; then echo laptop; return; fi
-    t=$(cat "$SYS"/class/dmi/id/chassis_type 2>/dev/null || true)
-    case "$t" in 8|9|10|11|14|30|31|32) echo laptop; return ;; esac
-    echo desktop
-}
-
-install_packages() {
-    if [ "$DISTRO" = arch ]; then
-        local opts=(--needed)
-        [ "$YES" = 1 ] && opts+=(--noconfirm)
-        sudo pacman -S "${opts[@]}" "$@"
-    else
-        local opts=()
-        [ "$YES" = 1 ] && opts+=(-y)
-        sudo dnf install "${opts[@]}" "$@"
-    fi
-}
-
-[ -n "$FORM" ] || FORM=$(detect_form)
-if [ "$FORM" = laptop ]; then FORM_PACKAGES=("${LAPTOP_PACKAGES[@]}"); else FORM_PACKAGES=("${DESKTOP_PACKAGES[@]}"); fi
+[ -n "$FORM" ] || FORM=$(sh "$DEPS" form)
 
 if [ "$PACKAGES_STEP" = 1 ]; then
     if [ "$FORM" = laptop ]; then
@@ -148,30 +86,27 @@ if [ "$PACKAGES_STEP" = 1 ]; then
     else
         say "Desktop detected: ddcutil for the brightness of the monitors (displayOnDesktop in theme.json)"
     fi
-    if [ "$DISTRO" = arch ]; then
-        say "Arch Linux detected: installing dependencies (pacman --needed, installed ones are skipped)"
-        install_packages "${ARCH_PACKAGES[@]}" "${FORM_PACKAGES[@]}"
-        if broadcom_wl_needed; then
-            say "Broadcom Wi-Fi without an open driver: installing broadcom-wl-dkms"
-            HEADERS=()
-            for k in linux linux-lts linux-zen linux-hardened linux-rt; do
-                pacman -Q "$k" >/dev/null 2>&1 && HEADERS+=("$k-headers")
-            done
-            install_packages broadcom-wl-dkms "${HEADERS[@]}" || warn "broadcom-wl-dkms could not be installed"
-        fi
-    else
-        say "Fedora detected: installing dependencies (installed ones are skipped)"
-        if ! dnf copr --help >/dev/null 2>&1; then
-            sudo dnf install -y 'dnf-command(copr)'
-        fi
-        sudo dnf copr enable -y errornointernet/quickshell
-        sudo dnf copr enable -y solopasha/hyprland
-        install_packages "${FEDORA_PACKAGES[@]}" "${FORM_PACKAGES[@]}"
-        if dnf --version 2>/dev/null | grep -qi dnf5; then SKIP=(--skip-unavailable); else SKIP=(--setopt=strict=0); fi
-        install_packages "${SKIP[@]}" "${FEDORA_OPTIONAL[@]}" || warn "some firmware or image packages could not be installed"
-        if broadcom_wl_needed; then
-            warn "Broadcom Wi-Fi without an open driver: install akmod-wl from RPM Fusion (nonfree) to use it"
-        fi
+    DEPS_ARGS=("--$FORM")
+    [ "$YES" = 1 ] && DEPS_ARGS+=(-y)
+    sh "$DEPS" install "${DEPS_ARGS[@]}" || warn "some packages are missing (see above)"
+    if broadcom_wl_needed; then
+        case "$DISTRO" in
+            arch)
+                say "Broadcom Wi-Fi without an open driver: installing broadcom-wl-dkms"
+                HEADERS=()
+                for k in linux linux-lts linux-zen linux-hardened linux-rt; do
+                    pacman -Q "$k" >/dev/null 2>&1 && HEADERS+=("$k-headers")
+                done
+                if [ "$YES" = 1 ]; then BW=(--needed --noconfirm); else BW=(--needed); fi
+                sudo pacman -S "${BW[@]}" broadcom-wl-dkms "${HEADERS[@]}" || warn "broadcom-wl-dkms could not be installed"
+                ;;
+            ubuntu)
+                warn "Broadcom Wi-Fi without an open driver: install bcmwl-kernel-source (restricted) to use it" ;;
+            debian)
+                warn "Broadcom Wi-Fi without an open driver: install broadcom-sta-dkms (non-free) to use it" ;;
+            *)
+                warn "Broadcom Wi-Fi without an open driver: install akmod-wl from RPM Fusion (nonfree) to use it" ;;
+        esac
     fi
     if [ "$FORM" = desktop ] && ! ls "$SYS"/class/i2c-dev/i2c-* >/dev/null 2>&1; then
         if ! grep -qsE '^[[:space:]]*i2c[-_]dev[[:space:]]*$' /etc/modules-load.d/*.conf /usr/lib/modules-load.d/*.conf; then
@@ -336,12 +271,13 @@ say "Settings"
 if [ -s "$SRC/theme.json" ]; then
     info "theme.json found: your settings are kept"
 else
-    cp "$SRC/theme.default.json" "$SRC/theme.json"
-    info "created theme.json from theme.default.json"
+    info "theme.json is created at the first start, with the defaults for this $FORM"
 fi
 
 say "Wallpapers"
-WALL_DIR=$(sed -n 's/.*"wallpaperDir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SRC/theme.json" 2>/dev/null | head -n 1)
+THEME_FILE="$SRC/theme.json"
+[ -s "$THEME_FILE" ] || THEME_FILE="$SRC/theme.default.json"
+WALL_DIR=$(sed -n 's/.*"wallpaperDir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$THEME_FILE" 2>/dev/null | head -n 1)
 WALL_DIR=${WALL_DIR:-~/Wallpapers}
 WALL_DIR=${WALL_DIR/#\~/$HOME}
 if [ ! -d "$WALL_DIR" ]; then
@@ -363,6 +299,18 @@ if [ -n "$OTHER_NOTIFY" ]; then
     say "Notifications"
     warn "also installed:$OTHER_NOTIFY. It can take the notifications before the shell starts:"
     warn "remove it, or make sure it is not started by your Hyprland config"
+fi
+
+say "Login screen"
+if grep -qs quickshell /etc/greetd/config.toml; then
+    info "the Quickshell login screen is already set up"
+    if [ "$(ask_yn "Refresh it with the current settings?" false)" = true ]; then
+        sh "$SRC/greeter/install.sh" $( [ "$YES" = 1 ] && echo -y ) || warn "login screen: something went wrong (see above)"
+    fi
+elif [ "$(ask_yn "Use the Quickshell login screen (installs greetd and cage, replaces the current login manager)?" false)" = true ]; then
+    sh "$SRC/greeter/install.sh" $( [ "$YES" = 1 ] && echo -y ) || warn "login screen: something went wrong (see above)"
+else
+    info "skipped: nothing installed, the current login manager stays (run greeter/install.sh later to add it)"
 fi
 
 say "VS Code themes"

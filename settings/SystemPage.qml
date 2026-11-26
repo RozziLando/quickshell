@@ -304,7 +304,7 @@ SettingsPage {
             if (Updater.checked && !Updater.available) return v + " · up to date"
             return v
         }
-        info: "Updates download the latest version from GitHub and keep theme.json, the avatar, the wallpapers and the themes you added."
+        info: "Downloads the latest version. Settings, avatar, wallpapers and themes are kept."
 
         PillButton {
             visible: Updater.enabled || Updater.running
@@ -318,7 +318,7 @@ SettingsPage {
 
     ToggleRow {
         title: "Updates"
-        info: "Look for new versions on GitHub and offer to install them. Off: the shell never checks and never shows the update button."
+        info: "Check GitHub for new versions."
         key: "updates"
         checked: Theme.updates
     }

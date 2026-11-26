@@ -50,11 +50,14 @@ Item {
     readonly property bool showDisplay: !desktop || Theme.displayOnDesktop
     readonly property bool showKeyboard: !desktop && keyboardAvailable
 
-    readonly property var sections: Controls.sections.filter(function (id) {
+    function shownHere(id) {
         if (id === "display") return root.showDisplay
         if (id === "keyboard") return root.showKeyboard
         return true
-    })
+    }
+    readonly property var gridEntries: Controls.grid.filter(function (e) { return root.shownHere(e.id) })
+    readonly property var bottomIds: Controls.bottom.filter(function (id) { return root.itemHeight(id) > 0 })
+    readonly property var sections: Controls.sections.filter(shownHere)
     readonly property bool hasTiles: Controls.tiles.length > 0
 
     function sectionItem(id) {
@@ -64,28 +67,39 @@ Item {
             "keyboard": keyboardSlider,
             "notifications": notifCard,
             "search": searchCard,
-            "apps": appsCard
+            "apps": appsCard,
+            "clock": clockCard
         })[id] || null
     }
 
+    function itemHeight(id) {
+        if (Controls.isTile(id)) return tileH
+        var item = sectionItem(id)
+        return item ? item.height : 0
+    }
+
+    readonly property int innerW: openWidth - 2 * sidePad
     readonly property var sectionLayout: {
-        var y = hasTiles ? tileH + gap : 0, out = {}, last = 0
-        for (var i = 0; i < sections.length; i++) {
-            var item = sectionItem(sections[i])
-            if (!item) continue
-            var h = sections[i] === "apps" ? appsCard.height : item.height
-            if (h <= 0) continue
-            out[sections[i]] = y
-            y += h + gap
-            last = y - gap
-        }
-        out.total = Math.max(hasTiles ? tileH : 0, last)
+        var out = Controls.gridLayout(gridEntries, innerW, gap, itemHeight)
+        var y = out.total > 0 ? out.total + gap : 0, last = out.total
+        bottomIds.forEach(function (id) {
+            out[id] = { x: 0, y: y, w: root.innerW, h: root.itemHeight(id) }
+            last = y + root.itemHeight(id)
+            y = last + root.gap
+        })
+        out.total = last
         return out
     }
 
     function sectionShown(id) { return sectionLayout[id] !== undefined }
+    function sectionY(id) { return sectionLayout[id] ? sectionLayout[id].y : 0 }
+    function sectionX(id) { return sectionLayout[id] ? sectionLayout[id].x : 0 }
+    function sectionW(id) { return sectionLayout[id] ? sectionLayout[id].w : innerW }
 
-    readonly property int openHeight: topPad + Math.max(root.u(20), sectionLayout.total) + bottomPad
+    readonly property int mainH: Math.max(root.u(20), sectionLayout.total)
+    readonly property int pageH: pageLoader.item && pageLoader.item.naturalHeight !== undefined
+        ? Math.max(root.u(160), Math.min(root.u(500), pageLoader.item.naturalHeight)) : mainH
+    readonly property int openHeight: topPad + (page !== "" ? pageH : mainH) + bottomPad
 
     onOpenHeightChanged: if (shown) island.open(ownerId, openWidth, openHeight,
                                                 typeToSearch || island.wantsKeyboard)
@@ -107,7 +121,9 @@ Item {
         return false
     }
     readonly property string wiredStatus: {
-        if (Networking.backend === NetworkBackendType.None) return "Unknown"
+        var none = false
+        try { none = Networking.backend === NetworkBackendType.None } catch (e) {}
+        if (none) return "Unknown"
         return wiredConnected ? "Connected" : "Offline"
     }
 
@@ -300,28 +316,23 @@ Item {
         visible: root.shown && root.page === ""
         FadeIn { active: (root.shown && root.page === ""); pause: 160; duration: 220 }
 
-        Row {
-            id: topRow
+        Item {
             visible: root.hasTiles
-            width: parent.width
-            height: root.tileH
-            spacing: root.gap
-
-            readonly property int tiles: Controls.tiles.filter(function (id) { return Controls.tileInfo[id].slots === 2 }).length
-            readonly property int circles: Controls.tiles.length - tiles
-            readonly property int tileW: tiles > 0
-                ? (width - circles * root.circleSize - (tiles + circles - 1) * spacing) / tiles : 0
-            readonly property int usedW: tiles > 0 ? width
-                : circles * root.circleSize + Math.max(0, circles - 1) * spacing
-            x: (parent.width - usedW) / 2
+            anchors.fill: parent
 
             Repeater {
                 model: Controls.tiles
                 delegate: Loader {
                     required property string modelData
-                    anchors.verticalCenter: parent.verticalCenter
+                    readonly property var g: root.sectionLayout[modelData]
+                    visible: g !== undefined
+                    x: g ? g.x : 0
+                    y: g ? g.y : 0
+                    width: g ? g.w : 0
+                    height: root.tileH
                     sourceComponent: Controls.tileInfo[modelData].slots === 2 ? wideTile : circleTile
                     property string tileId: modelData
+                    property int wideW: width
                 }
             }
 
@@ -330,20 +341,23 @@ Item {
                 ToggleTile {
                     readonly property string tileId: parent ? parent.tileId : ""
                     readonly property bool net: tileId === "network"
+                    readonly property bool mode: tileId === "powermode"
                     sizeFactor: root.sizeFactor
                     cornerRadius: root.cardRadius
-                    width: topRow.tileW
+                    width: parent ? parent.wideW : 0
                     height: root.tileH
-                    kind: net ? (root.hasWifi ? "wifi" : "ethernet") : "bluetooth"
-                    title: net ? (root.hasWifi ? "Wi-Fi" : "Ethernet") : "Bluetooth"
-                    subtitle: net ? (root.hasWifi ? root.wifiStatus : root.wiredStatus) : root.bluetoothStatus
-                    active: net ? (root.hasWifi ? root.wifiOn : root.wiredConnected) : root.bluetoothOn
+                    kind: mode ? Controls.powerMode.icon : net ? (root.hasWifi ? "wifi" : "ethernet") : "bluetooth"
+                    title: mode ? "Power" : net ? (root.hasWifi ? "Wi-Fi" : "Ethernet") : "Bluetooth"
+                    subtitle: mode ? Controls.powerMode.label : net ? (root.hasWifi ? root.wifiStatus : root.wiredStatus) : root.bluetoothStatus
+                    active: mode ? true : net ? (root.hasWifi ? root.wifiOn : root.wiredConnected) : root.bluetoothOn
                     onToggled: {
-                        if (!net) root.toggleBluetooth()
+                        if (mode) Controls.cyclePower()
+                        else if (!net) root.toggleBluetooth()
                         else if (root.hasWifi) root.toggleWifi()
                     }
                     onClicked: {
-                        if (!net) root.openPage("bluetooth")
+                        if (mode) Controls.cyclePower()
+                        else if (!net) root.openPage("bluetooth")
                         else if (root.hasWifi) root.openPage("wifi")
                     }
                 }
@@ -351,11 +365,16 @@ Item {
 
             Component {
                 id: circleTile
-                CircleButton {
+                Item {
+                    id: circleSlot
                     readonly property string tileId: parent ? parent.tileId : ""
-                    kind: Controls.tileInfo[tileId] ? Controls.tileInfo[tileId].icon : ""
-                    size: root.circleSize
-                    onClicked: root.activateTile(tileId)
+
+                    CircleButton {
+                        anchors.centerIn: parent
+                        kind: Controls.tileInfo[circleSlot.tileId] ? Controls.tileInfo[circleSlot.tileId].icon : ""
+                        size: root.circleSize
+                        onClicked: root.activateTile(circleSlot.tileId)
+                    }
                 }
             }
         }
@@ -363,8 +382,9 @@ Item {
         ControlSlider {
             sizeFactor: root.sizeFactor
             id: volumeSlider
-            y: root.sectionLayout["audio"] || 0
-            width: parent.width
+            x: root.sectionX("audio")
+            y: root.sectionY("audio")
+            width: root.sectionW("audio")
             height: root.sliderCardH
             visible: root.sectionShown("audio")
             title: "Audio"
@@ -381,10 +401,11 @@ Item {
         ControlSlider {
             sizeFactor: root.sizeFactor
             id: displaySlider
-            y: root.sectionLayout["display"] || 0
+            x: root.sectionX("display")
+            y: root.sectionY("display")
             visible: root.sectionShown("display")
             onDetailsClicked: root.openPage("display")
-            width: parent.width
+            width: root.sectionW("display")
             height: root.sliderCardH
             title: "Display"
             icon: "sun"
@@ -396,10 +417,11 @@ Item {
         ControlSlider {
             sizeFactor: root.sizeFactor
             id: keyboardSlider
-            y: root.sectionLayout["keyboard"] || 0
+            x: root.sectionX("keyboard")
+            y: root.sectionY("keyboard")
             showDetails: false
             visible: root.sectionShown("keyboard")
-            width: parent.width
+            width: root.sectionW("keyboard")
             height: root.sliderCardH
             title: "Keyboard"
             icon: "keyboard"
@@ -410,9 +432,10 @@ Item {
 
         NotificationCard {
             id: notifCard
-            y: root.sectionLayout["notifications"] || 0
+            x: root.sectionX("notifications")
+            y: root.sectionY("notifications")
             visible: root.sectionShown("notifications")
-            width: parent.width
+            width: root.sectionW("notifications")
             notifications: root.notifications
             sizeFactor: root.sizeFactor
             cardRadius: root.cardRadius
@@ -421,18 +444,33 @@ Item {
 
         BackgroundApps {
             id: appsCard
-            y: root.sectionLayout["apps"] || 0
+            x: root.sectionX("apps")
+            width: root.sectionW("apps")
+            y: root.sectionY("apps")
             here: Controls.appsInControl
             active: root.shown
             radius: root.cardRadius
             sizeFactor: root.sizeFactor
         }
 
+        ClockCard {
+            id: clockCard
+            x: root.sectionX("clock")
+            y: root.sectionY("clock")
+            visible: root.sectionShown("clock")
+            active: root.shown
+            width: root.sectionW("clock")
+            height: root.sliderCardH
+            sizeFactor: root.sizeFactor
+        }
+
+
         Card {
             id: searchCard
-            y: root.sectionLayout["search"] || 0
+            x: root.sectionX("search")
+            y: root.sectionY("search")
             visible: root.sectionShown("search")
-            width: parent.width
+            width: root.sectionW("search")
             height: root.searchH
             radius: root.cardRadius
 

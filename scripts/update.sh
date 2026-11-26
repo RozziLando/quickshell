@@ -27,7 +27,35 @@ restart() {
     done
 }
 
+open_terminal() {
+    for t in ${TERMINAL:-} kitty foot alacritty wezterm ghostty konsole gnome-terminal xfce4-terminal xterm; do
+        command -v "$t" >/dev/null 2>&1 || continue
+        case "$t" in
+            kitty|foot) "$t" "$@" ;;
+            wezterm) wezterm start --always-new-process -- "$@" ;;
+            gnome-terminal) gnome-terminal --wait -- "$@" ;;
+            xfce4-terminal) xfce4-terminal --disable-server -x "$@" ;;
+            *) "$t" -e "$@" ;;
+        esac
+        return 0
+    done
+    return 1
+}
+
+deps() {
+    script="$dir/scripts/deps.sh"
+    [ -f "$script" ] || return 0
+    need=$(sh "$script" check 2>/dev/null)
+    [ $? -eq 1 ] && [ -n "$need" ] || return 0
+    list=$(printf '%s' "$need" | tr '\n' ' ')
+    if ! open_terminal sh "$script" install --update; then
+        command -v notify-send >/dev/null 2>&1 \
+            && notify-send -a Quickshell "Missing packages" "Install them with ./install.sh: $list" || true
+    fi
+}
+
 finish() {
+    deps
     say "done	$1"
     restart
     if command -v notify-send >/dev/null 2>&1; then
@@ -51,7 +79,6 @@ if [ -d "$dir/.git" ]; then
     out=$(git -C "$dir" pull --ff-only 2>&1); code=$?
     if [ -n "$keep" ]; then cp "$keep" "$dir/theme.json"; rm -f "$keep"; fi
     [ "$code" -eq 0 ] || fail "git pull failed: $(printf '%s' "$out" | tail -n 1)"
-    [ -s "$dir/theme.json" ] || cp "$dir/theme.default.json" "$dir/theme.json" 2>/dev/null
     finish "$(git -C "$dir" rev-parse HEAD)"
 fi
 
@@ -77,8 +104,6 @@ if [ -f "$dir/.update-files" ]; then
     done
 fi
 
-[ -s "$dir/theme.json" ] || cp "$tmp/new/theme.default.json" "$dir/theme.json" 2>/dev/null \
-    || cp "$tmp/new/theme.json" "$dir/theme.json" 2>/dev/null
 (cd "$tmp/new" && tar -cf - --exclude=./theme.json .) | (cd "$dir" && tar -xf -) \
     || fail "Cannot copy the new files"
 cp "$tmp/files" "$dir/.update-files"

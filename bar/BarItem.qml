@@ -31,7 +31,7 @@ Item {
     Behavior on implicitWidth { enabled: barItem.kind === "workspaces" && barItem.stage.settled; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
     Behavior on implicitHeight { enabled: barItem.kind === "workspaces" && barItem.stage.settled; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
-    readonly property bool veiled: !!pill && pill.activeOwner !== "" && !ccMode
+    readonly property bool veiled: !!pill && pill.activeOwner !== ""
     enabled: !veiled
     FadeIn { active: !barItem.veiled; pause: 100; duration: 250 }
 
@@ -41,7 +41,8 @@ Item {
     Component.onCompleted: stage.registerItem(kind, barItem)
     Component.onDestruction: stage.unregisterItem(kind, barItem)
 
-    readonly property bool clickable: kind !== "workspaces" && (kind !== "clock" || Theme.controlCenter)
+    readonly property bool clickable: kind !== "workspaces" && (kind !== "network" || Controls.hasWifi)
+        && (kind !== "clock" || Theme.controlCenter || Controls.clockParts(!!stage && stage.pillsBar).length > 0)
 
     Rectangle {
         visible: barItem.kind === "notifications" && barItem.stage.notificationCount > 0
@@ -152,30 +153,29 @@ Item {
     }
 
     readonly property bool islandClock: !!pill && pill.islandLike && !vertical
-    readonly property bool ccMode: kind === "clock" && !!pill && pill.activeOwner === "control"
-    readonly property var ccDate: {
-        var t = timeText
-        var now = new Date()
-        return { weekday: Qt.locale("en_US").dayName(now.getDay(), Locale.ShortFormat),
-                 day: Qt.formatDateTime(now, "d") + " " + Qt.locale("en_US").monthName(now.getMonth(), Locale.ShortFormat) }
-    }
+    readonly property bool timeHidden: kind === "clock" && !!stage && !stage.pillsBar && !!stage.mainPanel
+        && stage.mainPanel.owner === "control" && Controls.items.indexOf("clock") >= 0
 
-    readonly property real ccTarget: {
-        if (!ccMode || !stage || !stage.mainPanel) return 0
-        var f = stage.mainPanel.bloomFull
-        if (f.width <= 0 || f.height <= 0) return 0
-        var c = mapToItem(stage.contentItem, width / 2, height / 2)
-        return vertical ? f.y + f.height / 2 - c.y : f.x + f.width / 2 - c.x
+    Rectangle {
+        visible: barItem.kind === "clock"
+        anchors.centerIn: parent
+        width: Theme.s(8)
+        height: width
+        radius: Theme.round(width)
+        color: Theme.accent
+        opacity: barItem.timeHidden ? 1 : 0
+        scale: barItem.timeHidden ? 1 : 0.4
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack } }
     }
-    property real ccShift: ccTarget
-    Behavior on ccShift { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
 
     Row {
         id: clockRow
         visible: barItem.kind === "clock" && !barItem.vertical
         anchors.centerIn: parent
-        anchors.horizontalCenterOffset: barItem.ccShift
         spacing: Theme.s(8)
+        opacity: barItem.timeHidden ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 200 } }
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
@@ -197,36 +197,12 @@ Item {
         }
     }
 
-    Text {
-        visible: barItem.kind === "clock"
-        x: barItem.vertical ? (barItem.width - width) / 2 : clockRow.x - Theme.s(8) - width
-        y: barItem.vertical ? clockColumn.y - Theme.s(4) - height : (barItem.height - height) / 2
-        text: barItem.ccDate.weekday
-        color: Theme.accent
-        font.pixelSize: barItem.vertical ? Theme.s(10) : Theme.s(11.5)
-        font.weight: Font.DemiBold
-        font.family: Theme.fontFamily
-        FadeIn { active: barItem.ccMode; pause: 100; duration: 250 }
-    }
-
-    Text {
-        visible: barItem.kind === "clock"
-        x: barItem.vertical ? (barItem.width - width) / 2 : clockRow.x + clockRow.width + Theme.s(8)
-        y: barItem.vertical ? clockColumn.y + clockColumn.height + Theme.s(4) : (barItem.height - height) / 2
-        text: barItem.vertical ? barItem.ccDate.day.split(" ").join("\n") : barItem.ccDate.day
-        horizontalAlignment: Text.AlignHCenter
-        color: Theme.accent
-        font.pixelSize: barItem.vertical ? Theme.s(10) : Theme.s(11.5)
-        font.weight: Font.DemiBold
-        font.family: Theme.fontFamily
-        FadeIn { active: barItem.ccMode; pause: 100; duration: 250 }
-    }
-
     Column {
         id: clockColumn
         visible: barItem.kind === "clock" && barItem.vertical
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: barItem.ccShift
+        opacity: barItem.timeHidden ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         spacing: Theme.s(1)
 
         Repeater {

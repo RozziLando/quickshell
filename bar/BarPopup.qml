@@ -30,9 +30,11 @@ Item {
 
     property var place: ({ mode: "center", along: 0 })
 
+    property bool smoothResize: false
     function open(id, w, h, keyboard, radius) {
         var isNew = owner !== id
         var fresh = !active
+        smoothResize = !isNew && active && (h > requestH + 1 || w > requestW + 1)
         if (fresh) snap = true
         if (isNew && stage) {
             var next = stage.placementFor(id, toast, host)
@@ -65,6 +67,7 @@ Item {
 
     function close(id) {
         if (owner !== id) return
+        smoothResize = false
         owner = ""
         wantsKeyboard = false
     }
@@ -111,8 +114,8 @@ Item {
         enabled: host.attach !== "none"
         NumberAnimation {
             readonly property bool closing: animWBehavior.targetValue <= 1
-            duration: closing ? 260 : 340
-            easing.type: closing ? Easing.OutCubic : Easing.OutBack
+            duration: host.smoothResize ? 280 : closing ? 260 : 340
+            easing.type: host.smoothResize ? Easing.OutCubic : closing ? Easing.OutCubic : Easing.OutBack
             easing.overshoot: 0.8
         }
     }
@@ -121,8 +124,8 @@ Item {
         enabled: host.attach !== "none"
         NumberAnimation {
             readonly property bool closing: animHBehavior.targetValue <= 1
-            duration: closing ? 260 : 340
-            easing.type: closing ? Easing.OutCubic : Easing.OutBack
+            duration: host.smoothResize ? 280 : closing ? 260 : 340
+            easing.type: host.smoothResize ? Easing.OutCubic : closing ? Easing.OutCubic : Easing.OutBack
             easing.overshoot: 0.8
         }
     }
@@ -254,8 +257,8 @@ Item {
         enabled: host.sizeAnimate
         NumberAnimation {
             readonly property bool closing: bwBehavior.targetValue <= host.pillRect.width + 0.5
-            duration: closing ? 320 : 380
-            easing.type: Easing.OutBack
+            duration: host.smoothResize ? 280 : closing ? 320 : 380
+            easing.type: host.smoothResize ? Easing.OutCubic : Easing.OutBack
             easing.overshoot: closing ? 0.5 : 1.1
         }
     }
@@ -264,8 +267,8 @@ Item {
         enabled: host.sizeAnimate
         NumberAnimation {
             readonly property bool closing: bhBehavior.targetValue <= host.pillRect.height + 0.5
-            duration: closing ? 320 : 380
-            easing.type: Easing.OutBack
+            duration: host.smoothResize ? 280 : closing ? 320 : 380
+            easing.type: host.smoothResize ? Easing.OutCubic : Easing.OutBack
             easing.overshoot: closing ? 0.5 : 1.1
         }
     }

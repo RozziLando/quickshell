@@ -167,7 +167,7 @@ Rectangle {
             cursorShape: Qt.PointingHandCursor
             onClicked: root.chooseAvatar()
             onContainsMouseChanged: {
-                if (containsMouse) SettingsUi.showTip(avatar, "Change the photo of the lock and login screens")
+                if (containsMouse) SettingsUi.showTip(avatar, "Change photo")
                 else SettingsUi.hideTip(avatar)
             }
         }

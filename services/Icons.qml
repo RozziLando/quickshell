@@ -73,7 +73,11 @@ Singleton {
         "sliders": 0xe434,
         "drag": 0xeae2,
         "layout": 0xe6d6,
-        "calendar": 0xe108
+        "calendar": 0xe108,
+        "gauge": 0xe628,
+        "leaf": 0xe2da,
+        "lightning": 0xe2de,
+        "scales": 0xe750
     })
 
     function glyph(kind, level) {

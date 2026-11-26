@@ -66,6 +66,8 @@ Card {
             text: root.title
             color: Theme.text
             font.pixelSize: root.u(12)
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: root.u(9)
             font.bold: true
             font.family: Theme.fontFamily
             elide: Text.ElideRight
@@ -75,6 +77,8 @@ Card {
             text: root.subtitle
             color: Theme.textSecondary
             font.pixelSize: root.u(10)
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: root.u(8)
             font.family: Theme.fontFamily
             elide: Text.ElideRight
         }

@@ -9,7 +9,7 @@ SettingsPage {
 
     icon: "lock"
     title: "Login & Lock"
-    description: "Login screen, lock screen, sleep and what happens when the computer is not used."
+    description: "Login, lock, sleep and idle."
 
     readonly property var minuteSteps: [0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120]
 
@@ -48,12 +48,14 @@ SettingsPage {
 
     readonly property string greeterNote: {
         if (greeterState === "missing" || greeterState === "other")
-            return "The login screen of the shell is not installed. To install it, run in a terminal:"
+            return "Not installed, your login manager is in use. To install it, run:"
         if (greeterState === "auto" && Theme.loginScreen)
-            return "Now the computer logs in automatically. To ask for the password, run in a terminal:"
+            return "Now it logs in automatically. To ask for the password, run:"
         if (greeterState === "password" && !Theme.loginScreen)
-            return "Now the login screen asks for the password. To log in automatically, run in a terminal:"
-        return ""
+            return "Now it asks for the password. To log in automatically, run:"
+        if (greeterState === "")
+            return ""
+        return "Installed. To apply the current settings, run:"
     }
 
     property bool copied: false
@@ -70,7 +72,7 @@ SettingsPage {
 
     ToggleRow {
         title: "Login screen"
-        info: "Ask for the password at boot. Off: the computer logs in automatically. The change needs the installer of the login screen to run again as root."
+        info: "Ask for the password at boot. Off: automatic login. Applied by the installer below."
         key: "loginScreen"
         checked: Theme.loginScreen
         hasBelow: page.greeterNote !== ""
@@ -133,7 +135,7 @@ SettingsPage {
 
     ToggleRow {
         title: "Login blur"
-        info: "Login screen background: the wallpaper blurred. Off: the plain wallpaper."
+        info: "Blur the wallpaper behind the login."
         key: "loginBlur"
         checked: Theme.loginBlur
     }
@@ -145,7 +147,7 @@ SettingsPage {
 
     ToggleRow {
         title: "Lock screen"
-        info: "Lock the screen with the shortcut, after the inactivity time and before sleep. Off: the screen is never locked."
+        info: "Lock with the shortcut, when idle and before sleep."
         key: "lockScreen"
         checked: Theme.lockScreen
     }
@@ -153,7 +155,7 @@ SettingsPage {
     ToggleRow {
         active: Theme.lockScreen
         title: "Lock blur"
-        info: "Lock screen background: what was on the screen, blurred. Off: the plain wallpaper."
+        info: "Blur the screen behind the lock. Off: the wallpaper."
         key: "lockBlur"
         checked: Theme.lockBlur
     }
@@ -165,7 +167,7 @@ SettingsPage {
 
     ToggleRow {
         title: "Sleep"
-        info: "Sleep in the power menu and after the inactivity time. Off: the computer never goes to sleep by itself."
+        info: "Sleep from the power menu and when idle."
         key: "sleepEnabled"
         checked: Theme.sleepEnabled
     }
@@ -173,7 +175,7 @@ SettingsPage {
     SliderRow {
         active: Theme.lockScreen
         title: "Lock after"
-        info: "Lock the screen after this much time without using the computer. Needs the lock screen."
+        info: "Idle time before locking."
         values: page.minuteSteps
         value: Theme.idleLockMinutes
         format: function (v) { return page.minutes(v) }
@@ -183,7 +185,7 @@ SettingsPage {
     SliderRow {
         active: Theme.sleepEnabled
         title: "Sleep after"
-        info: "Put the computer to sleep after this much time without using it. Needs sleep."
+        info: "Idle time before sleeping."
         values: page.minuteSteps
         value: Theme.idleSleepMinutes
         format: function (v) { return page.minutes(v) }

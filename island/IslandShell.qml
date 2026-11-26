@@ -18,7 +18,7 @@ Scope {
 
         onLeftClicked: Theme.audioPanel ? audioModule.toggle() : mediaModule.toggle()
         onRightClicked: sysmonModule.toggle()
-        onClockClicked: controlCenterModule.toggle()
+        onClockClicked: Theme.controlCenter ? controlCenterModule.toggle() : clockPanelModule.toggle()
 
         Clock { island: mainIsland }
         Notifications { id: notificationsModule; island: mainIsland }
@@ -26,6 +26,7 @@ Scope {
         MediaPlayer { id: mediaModule; island: mainIsland }
         AudioPanel { id: audioModule; island: mainIsland }
         SystemMonitorPanel { id: sysmonModule; island: mainIsland }
+        ClockPanel { id: clockPanelModule; island: mainIsland }
         Osd { island: mainIsland }
         PowerMenu { id: powerModule; island: mainIsland; lock: root.lock }
         ControlCenter {

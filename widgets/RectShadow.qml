@@ -1,16 +1,31 @@
 import QtQuick
-import QtQuick.Effects
 import qs.services
 
-RectangularShadow {
+Item {
+    id: root
+
     property bool drop: true
-    readonly property bool dark: Theme.darkShadow
+    property real radius: 0
 
     visible: Theme.shadowEnabled
-    opacity: Theme.glass ? Theme.glassOpacity : 1
-    color: dark ? "#90000000" : Theme.glow
-    blur: dark ? 17 : 4
-    spread: 0
-    offset.x: 0
-    offset.y: dark && drop ? Theme.s(3) : 0
+
+    Loader {
+        id: impl
+        anchors.fill: parent
+        active: root.visible
+        source: "RectShadowNative.qml"
+    }
+
+    Binding {
+        when: impl.status === Loader.Ready
+        target: impl.item
+        property: "radius"
+        value: root.radius
+    }
+    Binding {
+        when: impl.status === Loader.Ready
+        target: impl.item
+        property: "drop"
+        value: root.drop
+    }
 }

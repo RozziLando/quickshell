@@ -10,7 +10,7 @@ SettingsPage {
 
     icon: "image"
     title: "Wallpapers & Themes"
-    description: "Pick the wallpaper and the colors of the shell. The pencil chooses which themes go with a wallpaper and which wallpapers go with a theme."
+    description: "Wallpaper and colors. The pencil links themes and wallpapers."
 
     readonly property var wallpapers: ThemeManager.wallpapers
     readonly property var themes: ThemeManager.themes.map(function (t) {
@@ -159,7 +159,7 @@ SettingsPage {
         SettingsUi.openMenu({
             anchor: edit.anchor,
             title: "Themes for " + name,
-            hint: "Picking this wallpaper applies one of these themes, at random if more than one.",
+            hint: "This wallpaper applies one of these themes.",
             items: items,
             current: ThemeManager.themesFor(name),
             multi: true,
@@ -175,7 +175,7 @@ SettingsPage {
         SettingsUi.openMenu({
             anchor: anchor,
             title: "Wallpapers for " + item.name,
-            hint: "Applying this theme sets one of these wallpapers, at random if more than one.",
+            hint: "This theme sets one of these wallpapers.",
             items: items,
             current: ThemeManager.wallpapersFor(item.id),
             multi: true,
@@ -424,7 +424,7 @@ SettingsPage {
                     anchors.bottom: parent.bottom
                     anchors.margins: SettingsUi.u(6)
                     paired: wpCard.paired
-                    tip: "Choose the themes that go with this wallpaper: picking the wallpaper applies one of them"
+                    tip: "Themes for this wallpaper"
                     onClicked: page.editWallpaper(wpCard.modelData, wpPencil)
                 }
             }
@@ -592,7 +592,7 @@ SettingsPage {
                     tint: card.c.accent || Theme.accent
                     base: card.c.background || Theme.background
                     ink: card.c.text || Theme.text
-                    tip: "Choose the wallpapers that go with this theme: applying the theme sets one of them"
+                    tip: "Wallpapers for this theme"
                     onClicked: page.editTheme(card.modelData, themePencil)
                 }
             }
@@ -615,7 +615,7 @@ SettingsPage {
 
     OptionRow {
         title: "Folder"
-        info: "Folder of the wallpapers shown here and in the launcher. Images: png, jpg, webp."
+        info: "Wallpaper folder (png, jpg, webp)."
 
         Dropdown {
             text: SettingsUi.home(Theme.wallpaperDir)
@@ -629,7 +629,7 @@ SettingsPage {
     OptionRow {
         visible: page.hasTransitions
         title: "Transition"
-        info: "Animation used when the wallpaper changes."
+        info: "Wallpaper change animation."
 
         Dropdown {
             text: {
