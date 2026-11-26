@@ -7,6 +7,8 @@ import qs.widgets
 
 SettingsPage {
     id: page
+    onVisibleChanged: if (visible) Controls.recheckPower()
+    Component.onCompleted: Controls.recheckPower()
 
     icon: "gear"
     title: "General"

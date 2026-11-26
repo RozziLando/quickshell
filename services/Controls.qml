@@ -25,7 +25,9 @@ Singleton {
 
     property bool powerDaemon: false
     property bool hasPowerProfiles: false
+    function recheckPower() { if (!powerCheck.running) powerCheck.running = true }
     Process {
+        id: powerCheck
         running: true
         command: ["sh", "-c",
             'command -v gdbus >/dev/null 2>&1 || exit 1;'
